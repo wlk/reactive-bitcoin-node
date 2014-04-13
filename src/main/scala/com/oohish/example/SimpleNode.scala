@@ -1,4 +1,4 @@
-package example
+package com.oohish.example
 
 import com.oohish.chain.SPVBlockChain
 import com.oohish.wire.Node
