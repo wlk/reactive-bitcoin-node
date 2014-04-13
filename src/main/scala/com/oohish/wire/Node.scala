@@ -2,15 +2,11 @@ package com.oohish.wire
 
 import java.net.InetAddress
 import java.net.InetSocketAddress
-
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-
-import com.oohish.peermessages.Addr
-import com.oohish.peermessages.MessagePayload
+import com.oohish.peermessages._
 import com.oohish.structures.int32_t
 import com.oohish.structures.uint64_t
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -19,6 +15,9 @@ import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout
+import com.oohish.wire.BTCConnection._
+import com.oohish.structures.VarStruct
+import com.oohish.structures.InvVect
 
 object Node {
   def props(listener: ActorRef) =
@@ -58,14 +57,42 @@ class Node(listener: ActorRef) extends Actor with ActorLogging {
 
   def receive = {
 
+    case Inv(vectors) => {
+
+      log.info("Node received Inv")
+
+      val validTxs = vectors.seq.filter { hash =>
+        hash.t.name == "MSG_TX"
+      }
+
+      val x = GetData(VarStruct[InvVect](validTxs))
+      log.debug("sending getdata: " + x)
+      sender ! Outgoing(x)
+    }
+
+    case tx: Tx => {
+      // https://en.bitcoin.it/wiki/Protocol_rules#.22tx.22_messages
+
+      log.info("received Tx!!!!!!!!!!!")
+
+      // Make sure neither in or out lists are empty
+
+      // Size in bytes < MAX_BLOCK_SIZE
+
+      // Each output value, as well as the total, must be in legal money range
+
+      // Make sure none of the inputs have hash=0, n=-1 (coinbase transactions)
+
+    }
+
     case msg: MessagePayload => {
-      //log.debug("peer: " + i.peer + " sent: " + i.msg)
+      log.info("received: " + msg.getClass().getName())
       listener forward msg
       hangleMsg(msg)
     }
 
     case other => {
-      log.warning("got other: " + other)
+      log.info("got other: " + other)
     }
   }
 
