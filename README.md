@@ -8,6 +8,6 @@ How to run
 - Install sbt
 - Then enter
 
-'''sbt run'''
+    sbt run
 
 - select SimpleNode
