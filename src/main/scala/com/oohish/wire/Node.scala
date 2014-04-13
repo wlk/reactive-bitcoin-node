@@ -61,8 +61,8 @@ class Node(listener: ActorRef) extends Actor with ActorLogging {
 
       log.info("Node received Inv")
 
-      val validTxs = vectors.seq.filter { hash =>
-        hash.t.name == "MSG_TX"
+      val validTxs = vectors.seq.filter { inv =>
+        inv.t.name == "MSG_TX"
       }
 
       val x = GetData(VarStruct[InvVect](validTxs))

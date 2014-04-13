@@ -1,11 +1,9 @@
-package com.oohish.example
-
 import com.oohish.chain.SPVBlockChain
 import com.oohish.wire.Node
 
 import akka.actor.ActorSystem
 
-object SimpleNode {
+object SimpleNode extends App {
 
   val system = ActorSystem("node")
 
