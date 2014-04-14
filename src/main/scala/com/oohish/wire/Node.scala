@@ -61,13 +61,11 @@ class Node(listener: ActorRef) extends Actor with ActorLogging {
 
       log.info("Node received Inv")
 
-      val validTxs = vectors.seq.filter { inv =>
+      val txVectors = vectors.seq.filter { inv =>
         inv.t.name == "MSG_TX"
       }
 
-      val x = GetData(VarStruct[InvVect](validTxs))
-      log.debug("sending getdata: " + x)
-      sender ! Outgoing(x)
+      sender ! Outgoing(GetData(VarStruct[InvVect](txVectors)))
     }
 
     case tx: Tx => {
