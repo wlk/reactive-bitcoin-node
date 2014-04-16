@@ -2,26 +2,32 @@ package com.oohish.wire
 
 import java.net.InetAddress
 import java.net.InetSocketAddress
+
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-import com.oohish.peermessages._
+
+import com.oohish.chain.SPVBlockChain
+import com.oohish.peermessages.Addr
+import com.oohish.peermessages.GetData
+import com.oohish.peermessages.Inv
+import com.oohish.peermessages.MessagePayload
+import com.oohish.peermessages.Tx
+import com.oohish.structures.InvVect
+import com.oohish.structures.VarStruct
 import com.oohish.structures.int32_t
 import com.oohish.structures.uint64_t
+import com.oohish.wire.BTCConnection.Outgoing
+
+import PeerManager.Discovered
 import akka.actor.Actor
 import akka.actor.ActorLogging
-import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.actorRef2Scala
-import akka.pattern.ask
-import akka.pattern.pipe
 import akka.util.Timeout
-import com.oohish.wire.BTCConnection._
-import com.oohish.structures.VarStruct
-import com.oohish.structures.InvVect
 
 object Node {
-  def props(listener: ActorRef) =
-    Props(classOf[Node], listener)
+  def props() =
+    Props(classOf[Node])
 
   def version = int32_t(60002)
 
@@ -32,7 +38,7 @@ object Node {
 
 }
 
-class Node(listener: ActorRef) extends Actor with ActorLogging {
+class Node() extends Actor with ActorLogging {
   import Node._
   import com.oohish.peermessages.Addr
   import PeerManager._
@@ -40,10 +46,14 @@ class Node(listener: ActorRef) extends Actor with ActorLogging {
   implicit val timeout = Timeout(5 seconds)
   import context.dispatcher
 
+  //start the header chain store
+  val chainStore = context.actorOf(SPVBlockChain.props)
+
   // start the peer manager
   val peerManager = context.actorOf(PeerManager.props(self))
 
-  def hangleMsg: PartialFunction[MessagePayload, Unit] = {
+  def receive = {
+
     case Addr(addresses) => {
       val peers = addresses.seq.map { netAddr =>
         val addr = InetAddress.getByAddress(netAddr.ip.ip.toArray)
@@ -52,10 +62,6 @@ class Node(listener: ActorRef) extends Actor with ActorLogging {
       }
       peerManager ! Discovered(peers)
     }
-    case _ =>
-  }
-
-  def receive = {
 
     case Inv(vectors) => {
 
@@ -85,8 +91,7 @@ class Node(listener: ActorRef) extends Actor with ActorLogging {
 
     case msg: MessagePayload => {
       log.info("received: " + msg.getClass().getName())
-      listener forward msg
-      hangleMsg(msg)
+      chainStore forward msg
     }
 
     case other => {
