@@ -1,5 +1,14 @@
 package com.oohish.pool
 
+import java.nio.ByteOrder
+import java.util.NoSuchElementException
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+import akka.util.ByteIterator
+import Script._
+import akka.util.ByteString
+
 object Script {
 
   // push value
@@ -144,23 +153,129 @@ object Script {
 
   // opcode types
   sealed class Opcode(code: Int) {
+    def c = code
+  }
 
+  case class Op(code: Int, constant: Option[List[Byte]])
+
+  object Opcode {
+    def unapply(x: Opcode): Some[Int] = {
+      Some(x.c)
+    }
+  }
+
+}
+
+/**
+ * A script
+ */
+class Script(bytes: List[Byte]) {
+
+  def iterator: ScriptIterator = {
+    val bb = ByteString.newBuilder
+    bb.putBytes(bytes.toArray)
+    val bs = bb.result
+    new ScriptIterator(bs.iterator)
   }
 
   /**
-   * The number of signature operands in the signature.
+   * Same as GetSigOpCount in bitcoin reference client.
+   * Check that nLockTime <= INT_MAX[1], size in bytes >= 100[2], and sig opcount <= 2
    */
-  def GetSigOpCount(script: List[Byte]): Int = {
-
-    0
+  def GetSigOpCount(): Int = {
+    iterator.count { op =>
+      val opcode = op.code
+      opcode == OP_CHECKSIG.c || opcode == OP_CHECKSIGVERIFY.c
+    }
   }
 
   /**
-   * The next item in the script.
+   * My op count
    */
-  def nextScriptItem(script: List[Byte]): List[Byte] = {
+  def OpCount(): Int = {
+    iterator.length
+  }
 
-    List.empty
+  /**
+   * Reject "nonstandard" transactions: scriptSig doing anything other than pushing numbers on the stack
+   */
+  def isStandardScriptSig: Boolean = {
+    iterator.forall { op =>
+      val opcode = op.code
+      opcode <= OP_PUSHDATA4.c
+    }
+  }
+
+  /**
+   * Reject "nonstandard" transactions: scriptPubkey not matching the two usual forms
+   */
+  def isStandardScriptPubkey: Boolean = {
+    true // TODO
+  }
+
+}
+
+/**
+ * Iterator for extracting ops from script string.
+ */
+class ScriptIterator(it: ByteIterator) extends Iterator[Op] {
+
+  implicit val byteOrder = ByteOrder.LITTLE_ENDIAN
+
+  var cached: Option[Op] = None
+
+  def hasNext() =
+    cached match {
+      case Some(c) => true
+      case None => {
+        Try(getOp) match {
+          case Success(op) => {
+            cached = Some(op)
+            true
+          }
+          case Failure(ex) => false
+        }
+      }
+    }
+
+  def next() =
+    cached match {
+      case Some(c) => {
+        cached = None
+        c
+      }
+      case None => {
+        Try(getOp) match {
+          case Success(op) => op
+          case Failure(ex) => throw new NoSuchElementException()
+        }
+      }
+    }
+
+  private def getOp(): Op = {
+    val op = it.getByte & 0xFF
+
+    if (op <= OP_PUSHDATA4.c) {
+      val nSize: Long = op match {
+        case i: Int if i < OP_PUSHDATA1.c => {
+          i
+        }
+        case i: Int if i == OP_PUSHDATA1.c => {
+          it.getLongPart(1)
+        }
+        case i: Int if i == OP_PUSHDATA2.c => {
+          it.getLongPart(2)
+        }
+        case i: Int if i == OP_PUSHDATA4.c => {
+          it.getLongPart(4)
+        }
+      }
+      val constBytes: Array[Byte] = Array.fill(nSize.toInt)(0)
+      it.getBytes(constBytes)
+      Op(op, Some(constBytes.toList))
+    } else {
+      Op(op, None)
+    }
   }
 
 }
