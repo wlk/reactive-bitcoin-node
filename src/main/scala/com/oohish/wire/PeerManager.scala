@@ -20,17 +20,11 @@ import akka.actor.Terminated
 import akka.actor.actorRef2Scala
 
 object PeerManager {
-  def props(node: ActorRef) =
-    Props(classOf[PeerManager], node)
+  def props(node: ActorRef, network: String) =
+    Props(classOf[PeerManager], node, network)
 
-  val dnsSeeds = List(
-    "seed.bitcoin.sipa.be",
-    "dnsseed.bluematt.me",
-    "dnsseed.bitcoin.dashjr.org",
-    "bitseed.xf2.org")
-
-  def seedPeers = for {
-    fallback <- dnsSeeds
+  def seedPeers(net: String) = for {
+    fallback <- Node.dnsSeeds(net)
     address <- Try(InetAddress.getAllByName(fallback))
       .getOrElse(Array())
   } yield Peer(new InetSocketAddress(address, 8333))
@@ -44,7 +38,7 @@ object PeerManager {
 
 }
 
-class PeerManager(node: ActorRef) extends Actor with ActorLogging {
+class PeerManager(node: ActorRef, network: String) extends Actor with ActorLogging {
   import PeerManager._
   import akka.actor.PoisonPill
   import akka.actor.Terminated
@@ -58,7 +52,7 @@ class PeerManager(node: ActorRef) extends Actor with ActorLogging {
   var connectedPeers = Map.empty[ActorRef, (Peer, Long)]
   def unconnectedPeers = allPeers.filterNot(p => connectedPeers.exists(kv => kv._2._1 == p))
 
-  PeerManager.seedPeers.foreach { peer =>
+  PeerManager.seedPeers(network).foreach { peer =>
     allPeers += peer
   }
 
@@ -79,7 +73,7 @@ class PeerManager(node: ActorRef) extends Actor with ActorLogging {
         val toConnectOption: Option[Peer] = randomUnconnected
         toConnectOption.foreach { toConnect =>
           log.info("starting client...")
-          val pc = context.actorOf(Client.props(toConnect, node))
+          val pc = context.actorOf(Client.props(toConnect, network, node))
         }
       } else if (connectedPeers.size > maxConnections) {
         connectedPeers.headOption foreach { kv =>

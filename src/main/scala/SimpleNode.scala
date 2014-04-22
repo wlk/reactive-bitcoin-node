@@ -7,6 +7,6 @@ object SimpleNode extends App {
   val system = ActorSystem("node")
 
   //start the node
-  val node = system.actorOf(Node.props())
+  val node = system.actorOf(Node.props("main"))
 
 }

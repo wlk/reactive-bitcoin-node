@@ -19,17 +19,17 @@ object SPVBlockChain {
   case class AddBlocks(newblocks: List[BlockHeader])
   case class NumBlocks(n: Int)
 
-  def props() =
-    Props(classOf[SPVBlockChain])
+  def props(network: String) =
+    Props(classOf[SPVBlockChain], network)
 
 }
 
-class SPVBlockChain extends Actor with ActorLogging {
+class SPVBlockChain(network: String) extends Actor with ActorLogging {
   import SPVBlockChain._
   import BTCConnection._
 
   //vector representing the blockchain.
-  var chain: Vector[BlockHeader] = Vector(Genesis.header)
+  var chain: Vector[BlockHeader] = Vector(Chain.getGenesisHeader(network))
 
   def blockLocator(): VarStruct[char32] = {
     val indices = Chain.blockLocatorIndices(chain.length)

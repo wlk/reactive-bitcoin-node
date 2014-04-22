@@ -22,4 +22,16 @@ object Genesis {
       )
   }
 
+  val testnetHeader = {
+    BlockHeader(
+      uint32_t(1), //version
+      char32(HexBytesUtil.hex2bytes("0000000000000000000000000000000000000000000000000000000000000000").toList), //prev block
+      char32(HexBytesUtil.hex2bytes("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b").toList), //merkle root
+      uint32_t(1296688602), //timestamp
+      uint32_t(486604799), //bits
+      uint32_t(414098458), //nonce
+      VarInt(1) //number of transactions
+      )
+  }
+
 }

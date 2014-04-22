@@ -13,11 +13,11 @@ import akka.io.Tcp.Connected
 import akka.io.Tcp.Register
 
 object Client {
-  def props(peer: Peer, node: ActorRef) =
-    Props(classOf[Client], peer, node)
+  def props(peer: Peer, network: String, node: ActorRef) =
+    Props(classOf[Client], peer, network, node)
 }
 
-class Client(peer: Peer, node: ActorRef) extends Actor with ActorLogging {
+class Client(peer: Peer, network: String, node: ActorRef) extends Actor with ActorLogging {
 
   import Tcp._
   import context.system
@@ -35,7 +35,7 @@ class Client(peer: Peer, node: ActorRef) extends Actor with ActorLogging {
       log.debug("connected...............................")
       //node ! c
       val connection = sender
-      val handler = context.actorOf(TCPConnection.props("main", peer, node, context.parent, connection))
+      val handler = context.actorOf(TCPConnection.props(network, peer, node, context.parent, connection))
       connection ! Register(handler)
       context.watch(handler)
 

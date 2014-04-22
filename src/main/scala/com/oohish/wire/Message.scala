@@ -8,12 +8,6 @@ import java.nio.ByteOrder
 
 object Message {
 
-  val networkMagic: Map[String, Long] = Map(
-    "main" -> 0xD9B4BEF9,
-    "testnet" -> 0xDAB5BFFA,
-    "testnet3" -> 0x0709110B,
-    "namecoin" -> 0xFEB4BEF9)
-
   val commands = List(
     "verack",
     "version",
@@ -43,7 +37,7 @@ object Message {
   }
 
   def networkFromMagic(mag: Long): String = {
-    networkMagic.map(_.swap).getOrElse(mag, "")
+    Node.networkMagic.map(_.swap).getOrElse(mag, "")
   }
 
   /*
@@ -65,7 +59,7 @@ abstract class Message {
   def network: String
   def command: String
 
-  def magic: Long = Message.networkMagic(network)
+  def magic: Long = Node.networkMagic(network)
 
 }
 

@@ -122,7 +122,7 @@ class DataTypesSpec extends FlatSpec with Matchers {
 
   "A nonce" should "have the right size" in {
 
-    val nonce = BTCConnection.genNonce
+    val nonce = Node.genNonce
     val bytes = nonce.encode
 
     bytes.length should be(8)
@@ -131,7 +131,7 @@ class DataTypesSpec extends FlatSpec with Matchers {
 
   it should "deserialize back to itself" in {
 
-    val nonce = BTCConnection.genNonce
+    val nonce = Node.genNonce
     val bytes = nonce.encode
 
     val it = bytes.iterator

@@ -5,6 +5,9 @@ import java.net.InetSocketAddress
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
+import scala.util.Random
+
+import org.joda.time.DateTime
 
 import com.oohish.chain.SPVBlockChain
 import com.oohish.peermessages.Addr
@@ -12,9 +15,16 @@ import com.oohish.peermessages.GetData
 import com.oohish.peermessages.Inv
 import com.oohish.peermessages.MessagePayload
 import com.oohish.peermessages.Tx
+import com.oohish.peermessages.Verack
+import com.oohish.peermessages.Version
+import com.oohish.structures.IP
 import com.oohish.structures.InvVect
+import com.oohish.structures.NetworkAddressInVersion
+import com.oohish.structures.Port
+import com.oohish.structures.VarStr
 import com.oohish.structures.VarStruct
 import com.oohish.structures.int32_t
+import com.oohish.structures.int64_t
 import com.oohish.structures.uint64_t
 import com.oohish.wire.BTCConnection.Outgoing
 
@@ -26,10 +36,59 @@ import akka.actor.actorRef2Scala
 import akka.util.Timeout
 
 object Node {
-  def props() =
-    Props(classOf[Node])
+  def props(network: String) =
+    Props(classOf[Node], network)
 
-  def version = int32_t(60002)
+  def dnsSeeds(net: String): List[String] = net match {
+    case "main" => {
+      List(
+        "seed.bitcoin.sipa.be",
+        "dnsseed.bluematt.me",
+        "dnsseed.bitcoin.dashjr.org",
+        "bitseed.xf2.org")
+    }
+    case "testnet3" => {
+      List(
+        "bitcoin.petertodd.org",
+        "testnet-seed.bitcoin.petertodd.org")
+    }
+  }
+
+  val networkMagic: Map[String, Long] = Map(
+    "main" -> 0xD9B4BEF9,
+    "testnet" -> 0xDAB5BFFA,
+    "testnet3" -> 0x0709110B,
+    "namecoin" -> 0xFEB4BEF9)
+
+  val selfPeer = Peer(new InetSocketAddress(InetAddress.getLocalHost(), 8333))
+
+  def verack = Verack()
+
+  def version(peer: Peer) = Version(
+    Node.versionNum,
+    Node.services,
+    int64_t(DateTime.now().getMillis()),
+    peerNetworkAddress(peer),
+    myNetworkAddress,
+    genNonce,
+    VarStr("/Satoshi:0.7.2/"),
+    int32_t(1))
+
+  def peerNetworkAddress(peer: Peer) = {
+    NetworkAddressInVersion(
+      uint64_t(BigInt(1)),
+      IP(peer.address.getAddress().getHostAddress()),
+      Port(peer.port))
+  }
+
+  def myNetworkAddress = peerNetworkAddress(selfPeer)
+
+  def genNonce(): uint64_t = {
+    val n = new Random().nextLong
+    uint64_t(uint64_t.asBigInt(n))
+  }
+
+  def versionNum = int32_t(60002)
 
   def services = uint64_t(BigInt(1))
 
@@ -38,7 +97,7 @@ object Node {
 
 }
 
-class Node() extends Actor with ActorLogging {
+class Node(network: String) extends Actor with ActorLogging {
   import Node._
   import com.oohish.peermessages.Addr
   import PeerManager._
@@ -47,10 +106,10 @@ class Node() extends Actor with ActorLogging {
   import context.dispatcher
 
   //start the header chain store
-  val chainStore = context.actorOf(SPVBlockChain.props)
+  val chainStore = context.actorOf(SPVBlockChain.props(network))
 
   // start the peer manager
-  val peerManager = context.actorOf(PeerManager.props(self))
+  val peerManager = context.actorOf(PeerManager.props(self, network))
 
   def receive = {
 
