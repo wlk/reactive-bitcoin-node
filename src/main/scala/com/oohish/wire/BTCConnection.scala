@@ -1,24 +1,29 @@
 package com.oohish.wire
 
 import java.net.InetAddress
+
 import scala.util.Random
+
 import org.joda.time.DateTime
+
+import com.oohish.peermessages.MessagePayload
+import com.oohish.peermessages.Verack
+import com.oohish.peermessages.Version
+import com.oohish.structures.IP
+import com.oohish.structures.NetworkAddressInVersion
+import com.oohish.structures.Port
+import com.oohish.structures.VarStr
+import com.oohish.structures.int32_t
+import com.oohish.structures.int64_t
+import com.oohish.structures.uint64_t
+import com.oohish.wire.PeerManager.PeerConnected
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.Props
+import akka.actor.Terminated
 import akka.actor.actorRef2Scala
-import com.oohish.peermessages.MessagePayload
-import com.oohish.structures.NetworkAddressInVersion
-import com.oohish.peermessages.Verack
-import com.oohish.structures.uint64_t
-import com.oohish.structures.IP
-import com.oohish.peermessages.Version
-import com.oohish.structures.int64_t
-import com.oohish.structures.Port
-import com.oohish.structures.VarStr
-import com.oohish.structures.int32_t
-import com.oohish.wire.PeerManager.PeerConnected
 
 object BTCConnection {
   def props(peer: Peer, node: ActorRef, manager: ActorRef) =
@@ -67,25 +72,25 @@ class BTCConnection(peer: Peer, node: ActorRef, manager: ActorRef) extends Actor
 
   context.parent ! BTCConnection.version(peer)
 
-  def receive = connecting(false, false)
+  def receive = connecting(false, None)
 
-  def connecting(verackReceived: Boolean, versionReceived: Boolean): Receive = {
+  def connecting(verackReceived: Boolean, versionReceived: Option[int64_t]): Receive = {
 
     case _: Verack => {
-      if (versionReceived) {
-        finishHandshake()
+      if (versionReceived.isDefined) {
+        finishHandshake(versionReceived.get)
       } else {
-        context.become(connecting(true, false))
+        context.become(connecting(true, None))
       }
     }
 
     case m: Version => {
       context.parent ! BTCConnection.verack
       if (verackReceived) {
-        finishHandshake()
+        finishHandshake(m.timestamp)
       } else {
         context.parent ! BTCConnection.version(peer)
-        context.become(connecting(false, true))
+        context.become(connecting(false, Some(m.timestamp)))
       }
     }
 
@@ -99,8 +104,8 @@ class BTCConnection(peer: Peer, node: ActorRef, manager: ActorRef) extends Actor
 
   }
 
-  def finishHandshake(): Unit = {
-    manager ! PeerConnected(peer)
+  def finishHandshake(time: int64_t): Unit = {
+    manager ! PeerConnected(peer, time.n)
     node ! Verack()
     log.info("becoming connected")
     context.become(connected)

@@ -9,10 +9,14 @@ import scala.language.postfixOps
 import scala.util.Random
 import scala.util.Try
 
+import org.joda.time.DateTime
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
+import akka.actor.PoisonPill
 import akka.actor.Props
+import akka.actor.Terminated
 import akka.actor.actorRef2Scala
 
 object PeerManager {
@@ -34,8 +38,8 @@ object PeerManager {
   case class Discovered(peers: List[Peer])
   case object CheckStatus
   case object GetConnectedPeers
-  case class ConnectedPeers(connected: Map[ActorRef, Peer])
-  case class PeerConnected(peer: Peer)
+  case class ConnectedPeers(connected: Map[ActorRef, (Peer, Long)])
+  case class PeerConnected(peer: Peer, offset: Long)
   case class PeerDisconnected(peer: Peer)
 
 }
@@ -51,8 +55,8 @@ class PeerManager(node: ActorRef) extends Actor with ActorLogging {
   var maxConnections = 1
   var allPeers = Set.empty[Peer]
   var peerBlackList = Set.empty[Peer]
-  var connectedPeers = Map.empty[ActorRef, Peer]
-  def unconnectedPeers = allPeers.filterNot(p => connectedPeers.exists(kv => kv._2 == p))
+  var connectedPeers = Map.empty[ActorRef, (Peer, Long)]
+  def unconnectedPeers = allPeers.filterNot(p => connectedPeers.exists(kv => kv._2._1 == p))
 
   PeerManager.seedPeers.foreach { peer =>
     allPeers += peer
@@ -86,21 +90,20 @@ class PeerManager(node: ActorRef) extends Actor with ActorLogging {
     case GetConnectedPeers =>
       sender ! ConnectedPeers(connectedPeers)
 
-    case PeerConnected(peer) => {
+    case PeerConnected(peer, t) => {
       val ref = sender
       context.watch(ref)
       log.info("peer connected: " + peer + " with actorRef: " + ref)
-      connectedPeers += (ref -> peer)
-      node ! PeerConnected(peer)
+      val offset = t - DateTime.now().getMillis() / 1000
+      connectedPeers += (ref -> (peer, offset))
     }
 
     case Terminated(peerConnection) =>
       val peer = connectedPeers.get(peerConnection)
       peer foreach { p =>
-        allPeers -= p
-        peerBlackList += p
+        allPeers -= p._1
+        peerBlackList += p._1
         connectedPeers -= peerConnection
-        node ! PeerDisconnected(p)
       }
 
     case other => {
