@@ -27,7 +27,12 @@ object PeerManager {
     fallback <- Node.dnsSeeds(net)
     address <- Try(InetAddress.getAllByName(fallback))
       .getOrElse(Array())
-  } yield Peer(new InetSocketAddress(address, 8333))
+  } yield {
+    net match {
+      case "main" => Peer(new InetSocketAddress(address, 8333))
+      case "testnet3" => Peer(new InetSocketAddress(address, 18333))
+    }
+  }
 
   case class Discovered(peers: List[Peer])
   case object CheckStatus
