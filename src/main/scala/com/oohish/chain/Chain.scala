@@ -8,13 +8,6 @@ import com.oohish.util.HexBytesUtil
 
 object Chain {
 
-  def getGenesisHeader(network: String): BlockHeader = {
-    network match {
-      case "main" => Genesis.header
-      case "testnet3" => Genesis.testnetHeader
-    }
-  }
-
   /**
    * Calculate the hash of a block header.
    */

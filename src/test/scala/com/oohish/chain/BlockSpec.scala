@@ -8,6 +8,7 @@ import com.oohish.structures.BlockHeader
 import com.oohish.structures.uint32_t
 import com.oohish.structures.char32
 import com.oohish.structures.VarInt
+import com.oohish.wire.MainNetParams
 
 class BlockSpec extends FlatSpec with Matchers {
 
@@ -43,9 +44,9 @@ class BlockSpec extends FlatSpec with Matchers {
    00 00 00 00 3B A3 ED FD  7A 7B 12 B2 7A C7 2C 3E   
    67 76 8F 61 7F C8 1B C3  88 8A 51 32 3A 9F B8 AA   
    4B 1E 5E 4A 29 AB 5F 49  FF FF 00 1D 1D AC 2B 7C   
-   01""".replaceAll("[^0-9A-Fa-f]", "").toLowerCase
+   00""".replaceAll("[^0-9A-Fa-f]", "").toLowerCase
 
-    val genesisBytes = Genesis.header.encode.compact.toParArray.toArray
+    val genesisBytes = BlockHeader.fromBlock(MainNetParams.genesisBlock).encode.compact.toParArray.toArray
 
     val genesisEncoding = HexBytesUtil.bytes2hex(genesisBytes)
 
@@ -55,13 +56,13 @@ class BlockSpec extends FlatSpec with Matchers {
 
   it should "decode back to itself" in {
 
-    val genesisBytes = Genesis.header.encode
+    val genesisBytes = BlockHeader.fromBlock(MainNetParams.genesisBlock).encode
 
     val it = genesisBytes.iterator
 
     val finalGenesisBlockHeader = BlockHeader.decode(it)
 
-    finalGenesisBlockHeader should be(Genesis.header)
+    finalGenesisBlockHeader should be(BlockHeader.fromBlock(MainNetParams.genesisBlock))
 
   }
 
@@ -69,7 +70,7 @@ class BlockSpec extends FlatSpec with Matchers {
 
     val expectedGenesisHashString = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
 
-    val genesis = Genesis.header
+    val genesis = BlockHeader.fromBlock(MainNetParams.genesisBlock)
 
     val genesisHash = Chain.blockHash(genesis)
 
