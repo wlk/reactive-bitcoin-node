@@ -29,7 +29,7 @@ object BlockHeader extends StructureReader[BlockHeader] {
       block.timestamp,
       block.bits,
       block.nonce,
-      VarInt(block.txns.seq.length))
+      VarInt(0))
   }
 }
 
