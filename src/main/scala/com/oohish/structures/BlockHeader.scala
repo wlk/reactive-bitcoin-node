@@ -1,5 +1,7 @@
 package com.oohish.structures
 
+import com.oohish.peermessages.Block
+
 import akka.util.ByteIterator
 import akka.util.ByteString
 
@@ -17,6 +19,17 @@ object BlockHeader extends StructureReader[BlockHeader] {
       uint32_t.decode(it),
       uint32_t.decode(it),
       VarInt.decode(it))
+  }
+
+  def fromBlock(block: Block): BlockHeader = {
+    BlockHeader(
+      block.version,
+      block.prev_block,
+      block.merkle_root,
+      block.timestamp,
+      block.bits,
+      block.nonce,
+      VarInt(block.txns.seq.length))
   }
 }
 

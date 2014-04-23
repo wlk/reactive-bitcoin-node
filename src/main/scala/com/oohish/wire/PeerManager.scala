@@ -20,19 +20,14 @@ import akka.actor.Terminated
 import akka.actor.actorRef2Scala
 
 object PeerManager {
-  def props(node: ActorRef, network: String) =
-    Props(classOf[PeerManager], node, network)
+  def props(node: ActorRef, networkParams: NetworkParameters) =
+    Props(classOf[PeerManager], node, networkParams)
 
-  def seedPeers(net: String) = for {
-    fallback <- Node.dnsSeeds(net)
+  def seedPeers(networkParams: NetworkParameters) = for {
+    fallback <- networkParams.dnsSeeds
     address <- Try(InetAddress.getAllByName(fallback))
       .getOrElse(Array())
-  } yield {
-    net match {
-      case "main" => Peer(new InetSocketAddress(address, 8333))
-      case "testnet3" => Peer(new InetSocketAddress(address, 18333))
-    }
-  }
+  } yield Peer(new InetSocketAddress(address, networkParams.port))
 
   case class Discovered(peers: List[Peer])
   case object CheckStatus
@@ -43,7 +38,7 @@ object PeerManager {
 
 }
 
-class PeerManager(node: ActorRef, network: String) extends Actor with ActorLogging {
+class PeerManager(node: ActorRef, networkParams: NetworkParameters) extends Actor with ActorLogging {
   import PeerManager._
   import akka.actor.PoisonPill
   import akka.actor.Terminated
@@ -57,7 +52,7 @@ class PeerManager(node: ActorRef, network: String) extends Actor with ActorLoggi
   var connectedPeers = Map.empty[ActorRef, (Peer, Long)]
   def unconnectedPeers = allPeers.filterNot(p => connectedPeers.exists(kv => kv._2._1 == p))
 
-  PeerManager.seedPeers(network).foreach { peer =>
+  PeerManager.seedPeers(networkParams).foreach { peer =>
     allPeers += peer
   }
 
@@ -78,7 +73,7 @@ class PeerManager(node: ActorRef, network: String) extends Actor with ActorLoggi
         val toConnectOption: Option[Peer] = randomUnconnected
         toConnectOption.foreach { toConnect =>
           log.info("starting client...")
-          val pc = context.actorOf(Client.props(toConnect, network, node))
+          val pc = context.actorOf(Client.props(toConnect, networkParams, node))
         }
       } else if (connectedPeers.size > maxConnections) {
         connectedPeers.headOption foreach { kv =>

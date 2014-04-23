@@ -36,10 +36,6 @@ object Message {
     }.headOption.getOrElse("")
   }
 
-  def networkFromMagic(mag: Long): String = {
-    Node.networkMagic.map(_.swap).getOrElse(mag, "")
-  }
-
   /*
        * Calculates the checksum of the payload.
        */
@@ -56,20 +52,17 @@ object Message {
 }
 
 abstract class Message {
-  def network: String
+  def magic: Long
   def command: String
-
-  def magic: Long = Node.networkMagic(network)
-
 }
 
 /**
  * @see
  */
-case class FullMessage(network: String, command: String, payload: MessagePayload)
+case class FullMessage(magic: Long, command: String, payload: MessagePayload)
   extends Message
 
-case class PartialMessage(network: String, command: String, body: ByteString)
+case class PartialMessage(magic: Long, command: String, body: ByteString)
   extends Message {
 
 }

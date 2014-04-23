@@ -2,12 +2,10 @@ package com.oohish.peermessages
 
 import scala.Array.canBuildFrom
 import scala.collection.parallel.traversable2ops
-
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
-
 import com.oohish.structures.IP
 import com.oohish.structures.NetworkAddressInVersion
 import com.oohish.structures.Port
@@ -20,10 +18,10 @@ import com.oohish.wire.BTCConnection
 import com.oohish.wire.MessageTypeStage
 import com.oohish.wire.Node
 import com.oohish.wire.peermessagestage
-
 import akka.io.PipelineContext
 import akka.io.PipelineFactory
 import akka.util.ByteString
+import com.oohish.wire.MainNetParams
 
 class peermessagespec extends FlatSpec with Matchers {
 
@@ -46,7 +44,7 @@ class peermessagespec extends FlatSpec with Matchers {
     val ctx = new PipelineContext {}
 
     val pipeline =
-      PipelineFactory.buildWithSinkFunctions(ctx, new peermessagestage("main") >> new MessageTypeStage)(
+      PipelineFactory.buildWithSinkFunctions(ctx, new peermessagestage(MainNetParams.packetMagic) >> new MessageTypeStage)(
         cmd => bytes = cmd.get,
         evt => {})
 
@@ -92,7 +90,7 @@ class peermessagespec extends FlatSpec with Matchers {
     val ctx = new PipelineContext {}
 
     val pipeline =
-      PipelineFactory.buildWithSinkFunctions(ctx, new peermessagestage("main") >> new MessageTypeStage)(
+      PipelineFactory.buildWithSinkFunctions(ctx, new peermessagestage(MainNetParams.packetMagic) >> new MessageTypeStage)(
         cmd => bytes = cmd.get,
         evt => {})
 
@@ -120,7 +118,7 @@ class peermessagespec extends FlatSpec with Matchers {
     val ctx = new PipelineContext {}
 
     val pipeline =
-      PipelineFactory.buildWithSinkFunctions(ctx, new peermessagestage("main") >> new MessageTypeStage)(
+      PipelineFactory.buildWithSinkFunctions(ctx, new peermessagestage(MainNetParams.packetMagic) >> new MessageTypeStage)(
         cmd => bytes = cmd.get,
         evt => {})
 
@@ -155,7 +153,7 @@ class peermessagespec extends FlatSpec with Matchers {
     val ctx = new PipelineContext {}
 
     val pipeline =
-      PipelineFactory.buildWithSinkFunctions(ctx, new peermessagestage("main") >> new MessageTypeStage)(
+      PipelineFactory.buildWithSinkFunctions(ctx, new peermessagestage(MainNetParams.packetMagic) >> new MessageTypeStage)(
         cmd => bytes = cmd.get,
         evt => finalVersion = evt.get)
 
@@ -176,7 +174,7 @@ class peermessagespec extends FlatSpec with Matchers {
     val ctx = new PipelineContext {}
 
     val pipeline =
-      PipelineFactory.buildWithSinkFunctions(ctx, new peermessagestage("main") >> new MessageTypeStage)(
+      PipelineFactory.buildWithSinkFunctions(ctx, new peermessagestage(MainNetParams.packetMagic) >> new MessageTypeStage)(
         cmd => {},
         evt => msg = evt.get)
 

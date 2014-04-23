@@ -15,11 +15,11 @@ import akka.io.Tcp.Write
 import com.oohish.peermessages.MessagePayload
 
 object TCPConnection {
-  def props(network: String, peer: Peer, node: ActorRef, manager: ActorRef, connection: ActorRef) =
-    Props(classOf[TCPConnection], network, peer, node, manager, connection)
+  def props(networkParams: NetworkParameters, peer: Peer, node: ActorRef, manager: ActorRef, connection: ActorRef) =
+    Props(classOf[TCPConnection], networkParams, peer, node, manager, connection)
 }
 
-class TCPConnection(network: String, peer: Peer, node: ActorRef, manager: ActorRef, connection: ActorRef) extends Actor with ActorLogging {
+class TCPConnection(networkParams: NetworkParameters, peer: Peer, node: ActorRef, manager: ActorRef, connection: ActorRef) extends Actor with ActorLogging {
   import akka.actor.Terminated
 
   val ctx = new PipelineContext {}
@@ -28,7 +28,7 @@ class TCPConnection(network: String, peer: Peer, node: ActorRef, manager: ActorR
   context.watch(btcConnection)
 
   val pipeline =
-    PipelineFactory.buildWithSinkFunctions(ctx, new peermessagestage(network) >> new MessageTypeStage)(
+    PipelineFactory.buildWithSinkFunctions(ctx, new peermessagestage(networkParams.packetMagic) >> new MessageTypeStage)(
       cmd => connection ! Write(cmd.get),
       evt => btcConnection ! evt.get)
 

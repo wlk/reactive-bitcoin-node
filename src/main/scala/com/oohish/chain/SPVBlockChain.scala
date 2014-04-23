@@ -8,28 +8,28 @@ import com.oohish.structures.VarStruct
 import com.oohish.structures.char32
 import com.oohish.structures.uint32_t
 import com.oohish.wire.BTCConnection
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.actor.actorRef2Scala
+import com.oohish.wire.NetworkParameters
 
 object SPVBlockChain {
 
   case class AddBlocks(newblocks: List[BlockHeader])
   case class NumBlocks(n: Int)
 
-  def props(network: String) =
-    Props(classOf[SPVBlockChain], network)
+  def props(networkParams: NetworkParameters) =
+    Props(classOf[SPVBlockChain], networkParams)
 
 }
 
-class SPVBlockChain(network: String) extends Actor with ActorLogging {
+class SPVBlockChain(networkParams: NetworkParameters) extends Actor with ActorLogging {
   import SPVBlockChain._
   import BTCConnection._
 
   //vector representing the blockchain.
-  var chain: Vector[BlockHeader] = Vector(Chain.getGenesisHeader(network))
+  var chain: Vector[BlockHeader] = Vector(BlockHeader.fromBlock(networkParams.genesisBlock))
 
   def blockLocator(): VarStruct[char32] = {
     val indices = Chain.blockLocatorIndices(chain.length)

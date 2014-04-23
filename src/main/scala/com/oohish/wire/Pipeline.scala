@@ -106,8 +106,6 @@ class MessageTypeStage extends SymmetricPipelineStage[PipelineContext, PartialMe
 
           val magic = uint32_t.decode(it).n
 
-          val network = Message.networkFromMagic(magic)
-
           val commandArray = Array.fill(commandBytes)(0x0.toByte)
           it.getBytes(commandArray)
           val command = Message.commandFromCommandString(new String(commandArray))
@@ -128,7 +126,7 @@ class MessageTypeStage extends SymmetricPipelineStage[PipelineContext, PartialMe
               throw new IllegalArgumentException(
                 s"checksum $chksm doesn't match expected checksum $chksmExpected.")
 
-            val partial = PartialMessage(network, command, payload)
+            val partial = PartialMessage(magic, command, payload)
             extractPartials(bs drop total, partial :: acc)
           } else {
             (Some(bs.compact), acc)
@@ -138,7 +136,7 @@ class MessageTypeStage extends SymmetricPipelineStage[PipelineContext, PartialMe
     }
 }
 
-class peermessagestage(network: String) extends SymmetricPipelineStage[PipelineContext, MessagePayload, PartialMessage] {
+class peermessagestage(networkMagic: Long) extends SymmetricPipelineStage[PipelineContext, MessagePayload, PartialMessage] {
   import Pipeline._
 
   override def apply(ctx: PipelineContext) =
@@ -164,16 +162,15 @@ class peermessagestage(network: String) extends SymmetricPipelineStage[PipelineC
             case _: Pong => "pong"
             case _: Alert => "alert"
           }
-          ctx.singleCommand(PartialMessage(network, command, m.encode))
+          ctx.singleCommand(PartialMessage(networkMagic, command, m.encode))
         }
 
       def eventPipeline: PartialMessage => Iterable[Result] =
         { pm: PartialMessage =>
           {
-            val messageNetwork = pm.network
-            if (messageNetwork != network)
+            if (pm.magic != networkMagic)
               throw new IllegalArgumentException(
-                s"message network $messageNetwork does not match network $network")
+                s"message magic does not match network $networkMagic")
 
             val key: (String, ByteIterator) = (pm.command, pm.body.iterator)
             val singleEvent = parseMessageBody.andThen { msg =>

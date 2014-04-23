@@ -4,6 +4,8 @@ import com.oohish.structures.char32
 import com.oohish.structures.uint32_t
 import akka.util.ByteString
 import akka.util.ByteIterator
+import com.oohish.structures.VarStruct
+import com.oohish.structures.VarStructReader
 
 object Block extends MessagePayloadReader[Block] {
 
@@ -14,7 +16,8 @@ object Block extends MessagePayloadReader[Block] {
       char32.decode(it),
       uint32_t.decode(it),
       uint32_t.decode(it),
-      uint32_t.decode(it))
+      uint32_t.decode(it),
+      new VarStructReader(Tx).decode(it))
   }
 
 }
@@ -25,7 +28,8 @@ case class Block(
   merkle_root: char32,
   timestamp: uint32_t,
   bits: uint32_t,
-  nonce: uint32_t) extends MessagePayload {
+  nonce: uint32_t,
+  txns: VarStruct[Tx]) extends MessagePayload {
 
   def encode: ByteString = {
     val bb = ByteString.newBuilder
@@ -35,6 +39,7 @@ case class Block(
     bb ++= timestamp.encode
     bb ++= bits.encode
     bb ++= nonce.encode
+    bb ++= txns.encode
     bb.result
   }
 

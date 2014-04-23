@@ -36,29 +36,8 @@ import akka.actor.actorRef2Scala
 import akka.util.Timeout
 
 object Node {
-  def props(network: String) =
-    Props(classOf[Node], network)
-
-  def dnsSeeds(net: String): List[String] = net match {
-    case "main" => {
-      List(
-        "seed.bitcoin.sipa.be",
-        "dnsseed.bluematt.me",
-        "dnsseed.bitcoin.dashjr.org",
-        "bitseed.xf2.org")
-    }
-    case "testnet3" => {
-      List(
-        "bitcoin.petertodd.org",
-        "testnet-seed.bitcoin.petertodd.org")
-    }
-  }
-
-  val networkMagic: Map[String, Long] = Map(
-    "main" -> 0xD9B4BEF9,
-    "testnet" -> 0xDAB5BFFA,
-    "testnet3" -> 0x0709110B,
-    "namecoin" -> 0xFEB4BEF9)
+  def props(networkParams: NetworkParameters) =
+    Props(classOf[Node], networkParams)
 
   val selfPeer = Peer(new InetSocketAddress(InetAddress.getLocalHost(), 8333))
 
@@ -97,7 +76,7 @@ object Node {
 
 }
 
-class Node(network: String) extends Actor with ActorLogging {
+class Node(networkParams: NetworkParameters) extends Actor with ActorLogging {
   import Node._
   import com.oohish.peermessages.Addr
   import PeerManager._
@@ -106,10 +85,10 @@ class Node(network: String) extends Actor with ActorLogging {
   import context.dispatcher
 
   //start the header chain store
-  val chainStore = context.actorOf(SPVBlockChain.props(network))
+  val chainStore = context.actorOf(SPVBlockChain.props(networkParams))
 
   // start the peer manager
-  val peerManager = context.actorOf(PeerManager.props(self, network))
+  val peerManager = context.actorOf(PeerManager.props(self, networkParams))
 
   def receive = {
 
