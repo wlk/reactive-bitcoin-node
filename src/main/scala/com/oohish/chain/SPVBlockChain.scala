@@ -3,7 +3,6 @@ package com.oohish.chain
 import com.oohish.peermessages.GetHeaders
 import com.oohish.peermessages.Headers
 import com.oohish.peermessages.Verack
-import com.oohish.structures.BlockHeader
 import com.oohish.structures.VarStruct
 import com.oohish.structures.char32
 import com.oohish.structures.uint32_t
@@ -13,10 +12,11 @@ import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.actor.actorRef2Scala
 import com.oohish.wire.NetworkParameters
+import com.oohish.peermessages.Block
 
 object SPVBlockChain {
 
-  case class AddBlocks(newblocks: List[BlockHeader])
+  case class AddBlocks(newblocks: List[Block])
   case class NumBlocks(n: Int)
 
   def props(networkParams: NetworkParameters) =
@@ -29,7 +29,7 @@ class SPVBlockChain(networkParams: NetworkParameters) extends Actor with ActorLo
   import BTCConnection._
 
   //vector representing the blockchain.
-  var chain: Vector[BlockHeader] = Vector(BlockHeader.fromBlock(networkParams.genesisBlock))
+  var chain: Vector[Block] = Vector(Chain.toHeader((networkParams.genesisBlock)))
 
   def blockLocator(): VarStruct[char32] = {
     val indices = Chain.blockLocatorIndices(chain.length)

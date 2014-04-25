@@ -1,6 +1,5 @@
 package com.oohish.peermessages
 
-import com.oohish.structures.BlockHeader
 import com.oohish.structures.VarStruct
 import com.oohish.structures.VarStructReader
 
@@ -11,13 +10,13 @@ object Headers extends MessagePayloadReader[Headers] {
 
   def decode(it: ByteIterator) = {
     Headers(
-      new VarStructReader(BlockHeader).decode(it))
+      new VarStructReader(Block).decode(it))
   }
 
 }
 
 case class Headers(
-  headers: VarStruct[BlockHeader]) extends MessagePayload {
+  headers: VarStruct[Block]) extends MessagePayload {
 
   def encode: ByteString = {
     val bb = ByteString.newBuilder
