@@ -29,7 +29,7 @@ class SPVBlockChain(networkParams: NetworkParameters) extends Actor with ActorLo
   import BTCConnection._
 
   //vector representing the blockchain.
-  var chain: Vector[Block] = Vector(Chain.toHeader((networkParams.genesisBlock)))
+  var chain: Vector[Block] = Vector((networkParams.genesisBlock.toHeader))
 
   def blockLocator(): VarStruct[char32] = {
     val indices = Chain.blockLocatorIndices(chain.length)

@@ -48,7 +48,7 @@ class BlockSpec extends FlatSpec with Matchers {
    4B 1E 5E 4A 29 AB 5F 49  FF FF 00 1D 1D AC 2B 7C   
    00""".replaceAll("[^0-9A-Fa-f]", "").toLowerCase
 
-    val genesisBytes = Chain.toHeader(MainNetParams.genesisBlock).encode.compact.toParArray.toArray
+    val genesisBytes = MainNetParams.genesisBlock.toHeader.encode.compact.toParArray.toArray
 
     val genesisEncoding = HexBytesUtil.bytes2hex(genesisBytes)
 
@@ -58,13 +58,13 @@ class BlockSpec extends FlatSpec with Matchers {
 
   it should "decode back to itself" in {
 
-    val genesisBytes = Chain.toHeader(MainNetParams.genesisBlock).encode
+    val genesisBytes = MainNetParams.genesisBlock.toHeader.encode
 
     val it = genesisBytes.iterator
 
     val finalGenesisBlockHeader = Block.decode(it)
 
-    finalGenesisBlockHeader should be(Chain.toHeader(MainNetParams.genesisBlock))
+    finalGenesisBlockHeader should be(MainNetParams.genesisBlock.toHeader)
 
   }
 
@@ -72,7 +72,7 @@ class BlockSpec extends FlatSpec with Matchers {
 
     val expectedGenesisHashString = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
 
-    val genesis = Chain.toHeader(MainNetParams.genesisBlock)
+    val genesis = MainNetParams.genesisBlock.toHeader
 
     val genesisHash = Chain.blockHash(genesis)
 

@@ -43,4 +43,8 @@ case class Block(
     bb.result
   }
 
+  def toHeader(): Block = {
+    copy(txns = new VarStruct[Tx](List()))
+  }
+
 }

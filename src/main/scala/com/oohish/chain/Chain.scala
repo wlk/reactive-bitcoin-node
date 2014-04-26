@@ -11,13 +11,6 @@ import com.oohish.peermessages.Tx
 object Chain {
 
   /**
-   * Get a block's header only.
-   */
-  def toHeader(block: Block): Block = {
-    block.copy(txns = new VarStruct[Tx](List()))
-  }
-
-  /**
    * Calculate the hash of a block.
    */
   def blockHash(block: Block): char32 = {
