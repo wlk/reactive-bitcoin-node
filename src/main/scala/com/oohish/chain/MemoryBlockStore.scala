@@ -9,26 +9,23 @@ import com.oohish.structures.char32
 
 class MemoryBlockStore extends BlockStore {
 
-  val blockMap: HashMap[char32, Block] = HashMap.empty[char32, Block]
+  val blockMap: HashMap[char32, StoredBlock] = HashMap.empty[char32, StoredBlock]
 
-  var chainHead: Option[Block] = None
+  var chainHead: Option[StoredBlock] = None
 
-  def put(block: Block): Future[Unit] =
+  def put(block: StoredBlock): Future[Unit] =
     Future {
-      blockMap.put(Chain.blockHash(block), block)
+      blockMap.put(Chain.blockHash(block.block), block)
       ()
     }
 
-  def get(hash: char32): Future[Option[Block]] =
+  def get(hash: char32): Future[Option[StoredBlock]] =
     Future(blockMap.get(hash))
 
-  def getChainHead(): Future[Option[Block]] =
-    Future(chainHead)
+  def getChainHead(): Option[StoredBlock] =
+    chainHead
 
-  def setChainHead(cHead: Block): Future[Unit] =
-    Future {
-      chainHead = Some(cHead)
-      ()
-    }
+  def setChainHead(cHead: StoredBlock): Unit =
+    chainHead = Some(cHead)
 
 }

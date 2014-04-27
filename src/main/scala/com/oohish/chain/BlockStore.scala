@@ -10,12 +10,12 @@ import com.oohish.structures.char32
  */
 trait BlockStore {
 
-  def put(block: Block): Future[Unit]
+  def put(block: StoredBlock): Future[Unit]
 
-  def get(hash: char32): Future[Option[Block]]
+  def get(hash: char32): Future[Option[StoredBlock]]
 
-  def getChainHead(): Future[Option[Block]]
+  def getChainHead(): Option[StoredBlock]
 
-  def setChainHead(chainHead: Block): Future[Unit]
+  def setChainHead(chainHead: StoredBlock): Unit
 
 }

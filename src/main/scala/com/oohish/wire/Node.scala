@@ -2,13 +2,10 @@ package com.oohish.wire
 
 import java.net.InetAddress
 import java.net.InetSocketAddress
-
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 import scala.util.Random
-
 import org.joda.time.DateTime
-
 import com.oohish.chain.SPVBlockChain
 import com.oohish.peermessages.Addr
 import com.oohish.peermessages.GetData
@@ -27,13 +24,13 @@ import com.oohish.structures.int32_t
 import com.oohish.structures.int64_t
 import com.oohish.structures.uint64_t
 import com.oohish.wire.BTCConnection.Outgoing
-
 import PeerManager.Discovered
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.util.Timeout
+import com.oohish.chain.FullBlockChain
 
 object Node {
   def props(networkParams: NetworkParameters) =
@@ -85,7 +82,7 @@ class Node(networkParams: NetworkParameters) extends Actor with ActorLogging {
   import context.dispatcher
 
   //start the header chain store
-  val chainStore = context.actorOf(SPVBlockChain.props(networkParams))
+  val chainStore = context.actorOf(FullBlockChain.props(networkParams))
 
   // start the peer manager
   val peerManager = context.actorOf(PeerManager.props(self, networkParams))
