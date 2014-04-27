@@ -1,12 +1,17 @@
 package com.oohish.peermessages
 
-import com.oohish.structures.char32
-import com.oohish.structures.uint32_t
-import akka.util.ByteString
-import akka.util.ByteIterator
+import java.security.MessageDigest
+
+import scala.collection.parallel.traversable2ops
+
 import com.oohish.structures.VarStruct
 import com.oohish.structures.VarStructReader
-import java.security.MessageDigest
+import com.oohish.structures.char32
+import com.oohish.structures.uint32_t
+import com.oohish.util.HexBytesUtil
+
+import akka.util.ByteIterator
+import akka.util.ByteString
 
 object Block extends MessagePayloadReader[Block] {
 
@@ -70,7 +75,7 @@ case class Block(
     val headerBytes: Array[Byte] = hashByteString.compact.toParArray.toArray
     val hash1 = messageDigest.digest(headerBytes)
     val hash2 = messageDigest.digest(hash1)
-    char32(hash2.toList.reverse)
+    char32(HexBytesUtil.bytes2hex(hash2.reverse))
   }
 
 }

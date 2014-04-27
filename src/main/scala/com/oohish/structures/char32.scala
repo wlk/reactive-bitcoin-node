@@ -1,7 +1,8 @@
 package com.oohish.structures
 
-import akka.util.ByteString
+import scala.Array.canBuildFrom
 import akka.util.ByteIterator
+import akka.util.ByteString
 import com.oohish.util.HexBytesUtil
 
 /*
@@ -13,23 +14,21 @@ object char32 extends StructureReader[char32] {
 
     val bytesArr: Array[Byte] = Array.fill(32)(0x0)
     it.getBytes(bytesArr)
-    val bytes = bytesArr.toList.reverse
+    val s = HexBytesUtil.bytes2hex(bytesArr.reverse)
 
-    char32(bytes)
+    char32(s)
   }
 }
 
-case class char32(bytes: List[Byte]) extends Structure {
+case class char32(s: String) extends Structure {
 
   def encode: ByteString = {
     val bb = ByteString.newBuilder
 
-    val bytesArr = bytes.reverse.toArray
+    val bytesArr = HexBytesUtil.hex2bytes(s).reverse
     bb.putBytes(bytesArr)
 
     bb.result
   }
-
-  override def toString = "char32(" + HexBytesUtil.bytes2hex(bytes.toArray) + ")"
 
 }

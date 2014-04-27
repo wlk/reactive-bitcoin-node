@@ -19,8 +19,8 @@ class BlockSpec extends FlatSpec with Matchers {
     val bh = {
       Block(
         uint32_t(1), //version
-        char32(HexBytesUtil.hex2bytes("6fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000").toList), //prev block
-        char32(HexBytesUtil.hex2bytes("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b").toList), //merkle root
+        char32("6fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000"), //prev block
+        char32("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"), //merkle root
         uint32_t(1231006505), //timestamp
         uint32_t(486604799), //bits
         uint32_t(2083236893), //nonce
@@ -76,7 +76,7 @@ class BlockSpec extends FlatSpec with Matchers {
 
     val genesisHash = genesis.hash
 
-    val genesisHashString = HexBytesUtil.bytes2hex(genesisHash.bytes.toArray)
+    val genesisHashString = genesisHash.s
 
     genesisHashString should be(expectedGenesisHashString)
 

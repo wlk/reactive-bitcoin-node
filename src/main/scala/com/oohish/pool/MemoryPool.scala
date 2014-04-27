@@ -28,7 +28,7 @@ object MemoryPool {
 
   def nonCoinbase(tx: Tx): Boolean = {
     tx.tx_in.seq.forall { txIn =>
-      !(txIn.previous_output.hash == char32(HexBytesUtil.hex2bytes("0000000000000000000000000000000000000000000000000000000000000000").toList) &&
+      !(txIn.previous_output.hash == char32("0000000000000000000000000000000000000000000000000000000000000000") &&
         txIn.previous_output.index.n == Integer.MAX_VALUE)
     }
   }
