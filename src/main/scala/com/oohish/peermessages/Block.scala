@@ -6,6 +6,7 @@ import akka.util.ByteString
 import akka.util.ByteIterator
 import com.oohish.structures.VarStruct
 import com.oohish.structures.VarStructReader
+import java.security.MessageDigest
 
 object Block extends MessagePayloadReader[Block] {
 
@@ -43,8 +44,33 @@ case class Block(
     bb.result
   }
 
+  /**
+   * Copy of the block without any transactions.
+   */
   def toHeader(): Block = {
     copy(txns = new VarStruct[Tx](List()))
+  }
+
+  /**
+   * Calculate the hash of a block.
+   */
+  def hash(): char32 = {
+    val bh = toHeader()
+
+    val bb = ByteString.newBuilder
+    bb ++= bh.version.encode
+    bb ++= bh.prev_block.encode
+    bb ++= bh.merkle_root.encode
+    bb ++= bh.timestamp.encode
+    bb ++= bh.bits.encode
+    bb ++= bh.nonce.encode
+    val hashByteString = bb.result
+
+    val messageDigest = MessageDigest.getInstance("SHA-256")
+    val headerBytes: Array[Byte] = hashByteString.compact.toParArray.toArray
+    val hash1 = messageDigest.digest(headerBytes)
+    val hash2 = messageDigest.digest(hash1)
+    char32(hash2.toList.reverse)
   }
 
 }

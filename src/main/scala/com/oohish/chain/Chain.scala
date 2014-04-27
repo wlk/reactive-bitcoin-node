@@ -13,26 +13,6 @@ import scala.concurrent.Future
 object Chain {
 
   /**
-   * Calculate the hash of a block.
-   */
-  def blockHash(block: Block): char32 = {
-    val bb = ByteString.newBuilder
-    bb ++= block.version.encode
-    bb ++= block.prev_block.encode
-    bb ++= block.merkle_root.encode
-    bb ++= block.timestamp.encode
-    bb ++= block.bits.encode
-    bb ++= block.nonce.encode
-    val hashByteString = bb.result
-
-    val messageDigest = MessageDigest.getInstance("SHA-256")
-    val headerBytes: Array[Byte] = hashByteString.compact.toParArray.toArray
-    val hash1 = messageDigest.digest(headerBytes)
-    val hash2 = messageDigest.digest(hash1)
-    char32(hash2.toList.reverse)
-  }
-
-  /**
    *   returns the list of indexes of blocks to be used in the block locator.
    */
   def blockLocatorIndices(chainLength: Int): List[Int] = {
@@ -80,9 +60,9 @@ object Chain {
         val futurePrev = prevStoredBlock(store, cur)
         futurePrev.flatMap { maybePrev =>
           if (cur.height == 0) {
-            blockLocatorHelper(futureCons(acc, Chain.blockHash(cur.block)), maybePrev)
+            blockLocatorHelper(futureCons(acc, cur.block.hash), maybePrev)
           } else if (locatorIndices.contains(cur.height)) {
-            blockLocatorHelper(futureCons(acc, Chain.blockHash(cur.block)), maybePrev)
+            blockLocatorHelper(futureCons(acc, cur.block.hash), maybePrev)
           } else {
             blockLocatorHelper(acc, maybePrev)
           }

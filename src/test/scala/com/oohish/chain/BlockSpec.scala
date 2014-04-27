@@ -74,7 +74,7 @@ class BlockSpec extends FlatSpec with Matchers {
 
     val genesis = MainNetParams.genesisBlock.toHeader
 
-    val genesisHash = Chain.blockHash(genesis)
+    val genesisHash = genesis.hash
 
     val genesisHashString = HexBytesUtil.bytes2hex(genesisHash.bytes.toArray)
 

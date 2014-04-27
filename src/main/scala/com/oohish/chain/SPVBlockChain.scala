@@ -87,7 +87,7 @@ class SPVBlockChain(networkParams: NetworkParameters) extends Actor with ActorLo
             val ret = store.put(sb).map(u => Success(u))
             if (sb.height > store.getChainHead.get.height) {
               store.setChainHead(sb)
-              log.info("chain height: " + sb.height + ", last existing block hash: " + Chain.blockHash(sb.block))
+              log.info("chain height: " + sb.height + ", last existing block hash: " + sb.block.hash)
             }
             ret
           }

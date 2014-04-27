@@ -15,7 +15,7 @@ class MemoryBlockStore extends BlockStore {
 
   def put(block: StoredBlock): Future[Unit] =
     Future {
-      blockMap.put(Chain.blockHash(block.block), block)
+      blockMap.put(block.block.hash, block)
       ()
     }
 

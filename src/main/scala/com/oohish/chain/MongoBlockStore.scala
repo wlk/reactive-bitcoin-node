@@ -51,7 +51,7 @@ class MongoBlockStore(
 
       val document = BSONDocument("b" -> x)*/
 
-      blockMap.put(Chain.blockHash(block.block), block)
+      blockMap.put(block.block.hash, block)
       ()
     }
 
