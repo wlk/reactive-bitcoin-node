@@ -1,6 +1,7 @@
 package com.oohish.wire
 
 import java.net.InetAddress
+
 import java.net.InetSocketAddress
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
@@ -31,10 +32,16 @@ import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.util.Timeout
 import com.oohish.chain.FullBlockChain
+import com.oohish.peermessages.Block
+
+import reactivemongo.api._
 
 object Node {
-  def props(networkParams: NetworkParameters) =
-    Props(classOf[Node], networkParams)
+  def props(
+    networkParams: NetworkParameters,
+    spv: Boolean = false,
+    conn: Option[MongoConnection] = None) =
+    Props(classOf[Node], networkParams, spv, conn)
 
   val selfPeer = Peer(new InetSocketAddress(InetAddress.getLocalHost(), 8333))
 
@@ -73,7 +80,10 @@ object Node {
 
 }
 
-class Node(networkParams: NetworkParameters) extends Actor with ActorLogging {
+class Node(
+  networkParams: NetworkParameters,
+  spv: Boolean,
+  conn: Option[MongoConnection]) extends Actor with ActorLogging {
   import Node._
   import com.oohish.peermessages.Addr
   import PeerManager._
@@ -81,8 +91,13 @@ class Node(networkParams: NetworkParameters) extends Actor with ActorLogging {
   implicit val timeout = Timeout(5 seconds)
   import context.dispatcher
 
-  //start the header chain store
-  val chainStore = context.actorOf(FullBlockChain.props(networkParams))
+  //start the blockchain
+  val blockchain =
+    if (spv) {
+      context.actorOf(SPVBlockChain.props(networkParams))
+    } else {
+      context.actorOf(FullBlockChain.props(networkParams, conn))
+    }
 
   // start the peer manager
   val peerManager = context.actorOf(PeerManager.props(self, networkParams))
@@ -106,7 +121,12 @@ class Node(networkParams: NetworkParameters) extends Actor with ActorLogging {
         inv.t.name == "MSG_TX"
       }
 
+      val blockVectors = vectors.seq.filter { inv =>
+        inv.t.name == "MSG_BLOCK"
+      }
+
       sender ! Outgoing(GetData(VarStruct[InvVect](txVectors)))
+      sender ! Outgoing(GetData(VarStruct[InvVect](blockVectors)))
     }
 
     case tx: Tx => {
@@ -124,9 +144,14 @@ class Node(networkParams: NetworkParameters) extends Actor with ActorLogging {
 
     }
 
+    case blk: Block => {
+      log.info("received block!!!!!!!!")
+      blockchain forward blk
+    }
+
     case msg: MessagePayload => {
       log.info("received: " + msg.getClass().getName())
-      chainStore forward msg
+      blockchain forward msg
     }
 
     case other => {

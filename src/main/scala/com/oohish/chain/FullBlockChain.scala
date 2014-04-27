@@ -15,21 +15,26 @@ import scala.util.Try
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
+import reactivemongo.api.MongoConnection
 
 object FullBlockChain {
 
-  def props(networkParams: NetworkParameters) =
-    Props(classOf[FullBlockChain], networkParams)
+  def props(
+    networkParams: NetworkParameters,
+    conn: Option[MongoConnection]) =
+    Props(classOf[FullBlockChain], networkParams, conn)
 
 }
 
-class FullBlockChain(networkParams: NetworkParameters) extends Actor with ActorLogging {
+class FullBlockChain(
+  networkParams: NetworkParameters,
+  conn: Option[MongoConnection]) extends Actor with ActorLogging {
 
   import context.dispatcher
 
-  val store: BlockStore = new MemoryBlockStore()
+  val store: BlockStore = new MongoBlockStore(conn)
   val genesis = networkParams.genesisBlock.toHeader
-  val sb = StoredBlock(genesis, 1)
+  val sb = StoredBlock(genesis, 0)
   store.put(sb)
   store.setChainHead(sb)
 
