@@ -29,7 +29,7 @@ class FullBlockChain(networkParams: NetworkParameters) extends Actor with ActorL
 
   val store: BlockStore = new MemoryBlockStore()
   val genesis = networkParams.genesisBlock.toHeader
-  val sb = StoredBlock(genesis, 1)
+  val sb = StoredBlock(genesis, 0)
   store.put(sb)
   store.setChainHead(sb)
 

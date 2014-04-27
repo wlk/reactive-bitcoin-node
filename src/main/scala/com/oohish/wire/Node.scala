@@ -31,6 +31,7 @@ import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.util.Timeout
 import com.oohish.chain.FullBlockChain
+import com.oohish.peermessages.Block
 
 object Node {
   def props(networkParams: NetworkParameters) =
@@ -82,7 +83,7 @@ class Node(networkParams: NetworkParameters) extends Actor with ActorLogging {
   import context.dispatcher
 
   //start the header chain store
-  val chainStore = context.actorOf(FullBlockChain.props(networkParams))
+  val blockchain = context.actorOf(SPVBlockChain.props(networkParams))
 
   // start the peer manager
   val peerManager = context.actorOf(PeerManager.props(self, networkParams))
@@ -106,7 +107,12 @@ class Node(networkParams: NetworkParameters) extends Actor with ActorLogging {
         inv.t.name == "MSG_TX"
       }
 
+      val blockVectors = vectors.seq.filter { inv =>
+        inv.t.name == "MSG_BLOCK"
+      }
+
       sender ! Outgoing(GetData(VarStruct[InvVect](txVectors)))
+      sender ! Outgoing(GetData(VarStruct[InvVect](blockVectors)))
     }
 
     case tx: Tx => {
@@ -124,9 +130,14 @@ class Node(networkParams: NetworkParameters) extends Actor with ActorLogging {
 
     }
 
+    case blk: Block => {
+      log.info("received block!!!!!!!!")
+      blockchain forward blk
+    }
+
     case msg: MessagePayload => {
       log.info("received: " + msg.getClass().getName())
-      chainStore forward msg
+      blockchain forward msg
     }
 
     case other => {

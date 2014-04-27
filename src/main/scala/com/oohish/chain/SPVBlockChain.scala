@@ -1,23 +1,24 @@
 package com.oohish.chain
 
+import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
+import com.oohish.peermessages.Block
 import com.oohish.peermessages.GetHeaders
 import com.oohish.peermessages.Headers
 import com.oohish.peermessages.Verack
-import com.oohish.structures.VarStruct
-import com.oohish.structures.char32
 import com.oohish.structures.uint32_t
-import com.oohish.wire.BTCConnection
+import com.oohish.wire.BTCConnection.Outgoing
+import com.oohish.wire.NetworkParameters
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
-import akka.actor.actorRef2Scala
-import com.oohish.wire.NetworkParameters
-import com.oohish.peermessages.Block
+import akka.pattern.pipe
 
 object SPVBlockChain {
-
-  case class AddBlocks(newblocks: List[Block])
-  case class NumBlocks(n: Int)
 
   def props(networkParams: NetworkParameters) =
     Props(classOf[SPVBlockChain], networkParams)
@@ -25,65 +26,96 @@ object SPVBlockChain {
 }
 
 class SPVBlockChain(networkParams: NetworkParameters) extends Actor with ActorLogging {
-  import SPVBlockChain._
-  import BTCConnection._
 
-  //vector representing the blockchain.
-  var chain: Vector[Block] = Vector((networkParams.genesisBlock.toHeader))
+  import context.dispatcher
 
-  def blockLocator(): VarStruct[char32] = {
-    val indices = Chain.blockLocatorIndices(chain.length)
-    val hashList = indices.map { index =>
-      Chain.blockHash(chain(index))
-    }
-    VarStruct(hashList)
-  }
+  val store: BlockStore = new MemoryBlockStore()
+  val genesis = networkParams.genesisBlock.toHeader
+  val sb = StoredBlock(genesis, 0)
+  store.put(sb)
+  store.setChainHead(sb)
 
   def receive = {
 
     case Verack() => {
-      log.info("SPV store received Verack")
-      sender ! Outgoing(
-        GetHeaders(uint32_t(60002), blockLocator, Chain.emptyHashStop))
+      log.info("SPV blockchain received Verack")
+      val futureBL = Chain.blockLocator(store)
+      val blockLocator = futureBL.map { bl =>
+        Outgoing(
+          GetHeaders(uint32_t(60002), bl, Chain.emptyHashStop))
+      }
+      blockLocator.pipeTo(sender)
     }
 
     case Headers(h) => {
       val newHeaders = h.seq
-      log.debug("SPV store received Headers with seq length: " + newHeaders.length)
+      log.info("SPV blockchain received Headers with seq length: " + newHeaders.length)
 
-      var newChain = chain
+      log.debug("calling addBlocks")
+      val futureAdded = addBlocks(h.seq)
 
-      val prev = newHeaders.headOption.flatMap { newHeader =>
-        newChain.find { header =>
-          newHeader.prev_block == Chain.blockHash(header)
-        }
+      // if new headers received, ask for more.
+      if (h.seq.length > 0) {
+        val futureBL = for {
+          added <- futureAdded
+          bl <- Chain.blockLocator(store)
+        } yield Outgoing(
+          GetHeaders(uint32_t(60002), bl, Chain.emptyHashStop))
+        futureBL.pipeTo(sender)
       }
+    }
 
-      for (p <- prev) {
-        val i = newChain.indexOf(p)
-        newChain = newChain.slice(0, i + 1)
+    case blk: Block => {
+      addBlock(blk.toHeader)
+    }
 
-        for (newHeader <- newHeaders) {
-          if (newHeader.prev_block == Chain.blockHash(newChain.last)) {
-            newChain = newChain :+ newHeader
-            log.debug("added header at index: " + (newChain.size - 1))
+  }
+
+  /*
+   * Try to add a new block to the block store.
+   */
+  def addBlock(b: Block): Future[Try[Unit]] = {
+    log.debug("adding block: " + b)
+    for {
+      maybePrevBlock <- store.get(b.prev_block)
+      inserted <- {
+        val tryPrev = Try { maybePrevBlock.get }
+        tryPrev match {
+          case Success(prevBlock) => {
+            val sb = StoredBlock(b, prevBlock.height + 1)
+            log.debug("stored block: " + sb)
+            val ret = store.put(sb).map(u => Success(u))
+            if (sb.height > store.getChainHead.get.height) {
+              store.setChainHead(sb)
+              log.info("chain height: " + sb.height + ", last existing block hash: " + Chain.blockHash(sb.block))
+            }
+            ret
+          }
+          case Failure(e) => {
+            Future(Failure(e))
           }
         }
+      }
+    } yield inserted
+  }
 
-        if (newChain.size > chain.size) {
-          chain = newChain
-          log.info("number of headers: " + chain.size + ", last existing block hash: " + Chain.blockHash(chain.last))
-          sender ! Outgoing(
-            GetHeaders(uint32_t(60002), blockLocator, Chain.emptyHashStop))
-        } else {
-          log.info("newChain failed to replace chain.")
+  /*
+   * Add a list of blocks
+   */
+  def addBlocks(blocks: List[Block]) = {
+    def addBlocksHelper(acc: Future[Try[Unit]], blks: List[Block]): Future[Try[Unit]] = {
+      blks match {
+        case Nil => acc
+        case h :: t => {
+          addBlock(h).flatMap { res =>
+            addBlocksHelper(Future(res), t)
+          }
         }
       }
     }
 
-    case other => {
-      log.debug("SPV store received other: " + other)
-    }
+    log.debug("calling addBlocksHelper")
+    addBlocksHelper(Future(Success()), blocks)
   }
 
 }

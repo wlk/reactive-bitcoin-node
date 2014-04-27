@@ -36,7 +36,7 @@ object Chain {
    *   returns the list of indexes of blocks to be used in the block locator.
    */
   def blockLocatorIndices(chainLength: Int): List[Int] = {
-    (0 :: blockLocatorIndicesHelper(List(), chainLength - 1, 1, 0)).reverse
+    0 :: blockLocatorIndicesHelper(List(), chainLength - 1, 1, 0)
   }
 
   /**
@@ -52,53 +52,47 @@ object Chain {
     }
   }
 
-  /////////////////////////////////
-  // new attempt at block locator
-
-  def serialiseFutures[A, B](l: Iterable[A])(fn: A ⇒ Future[B])(implicit ec: ExecutionContext): Future[List[B]] =
-    l.foldLeft(Future(List.empty[B])) {
-      (previousFuture, next) ⇒
-        for {
-          previousResults ← previousFuture
-          next ← fn(next)
-        } yield previousResults :+ next
-    }
-
+  /*
+   * return the previous storedblock from a given storedblock
+   */
   def prevStoredBlock(store: BlockStore, sb: StoredBlock): Future[Option[StoredBlock]] = {
     store.get(sb.block.prev_block)
   }
 
+  /*
+   * useful function
+   */
+  def futureCons[T](flst: Future[List[T]], x: T)(implicit ec: ExecutionContext): Future[List[T]] = {
+    flst.flatMap { lst =>
+      Future(x :: lst)
+    }
+  }
+
+  /*
+   * return a block locator for the block store.
+   */
   def blockLocator(store: BlockStore)(implicit ec: ExecutionContext): Future[VarStruct[char32]] = {
-    val height = store.getChainHead.map(_.height).getOrElse(0)
-    val locatorIndices = Chain.blockLocatorIndices(height)
+    val maxHeight = store.getChainHead.map(_.height).getOrElse(0)
+    val locatorIndices = Chain.blockLocatorIndices(maxHeight + 1)
 
-    // TODO
-    // serialiseFutures()
-
-    def blockLocatorHelper(acc: Future[List[StoredBlock]]): Future[List[StoredBlock]] = {
-      acc.flatMap { lst =>
-        val h = lst.head
-        prevStoredBlock(store, h).map { maybeBlock =>
-          maybeBlock.map { block =>
-            if (block.height == 0) {
-              block :: lst
-            } else if (locatorIndices.contains(block.height)) {
-              block :: lst
-            } else {
-              lst
-            }
-          }.getOrElse(lst)
+    def blockLocatorHelper(acc: Future[List[char32]], maybeCur: Option[StoredBlock]): Future[List[char32]] = {
+      maybeCur.map { cur =>
+        val futurePrev = prevStoredBlock(store, cur)
+        futurePrev.flatMap { maybePrev =>
+          if (cur.height == 0) {
+            blockLocatorHelper(futureCons(acc, Chain.blockHash(cur.block)), maybePrev)
+          } else if (locatorIndices.contains(cur.height)) {
+            blockLocatorHelper(futureCons(acc, Chain.blockHash(cur.block)), maybePrev)
+          } else {
+            blockLocatorHelper(acc, maybePrev)
+          }
         }
-      }
+      }.getOrElse(acc)
     }
 
-    blockLocatorHelper(Future(List(store.getChainHead.get))).map { blockList =>
-      val x = blockList.map { block =>
-        Chain.blockHash(block.block)
-      }
-      VarStruct[char32](x)
+    blockLocatorHelper(Future(List()), store.getChainHead).map { blockList =>
+      VarStruct[char32](blockList.reverse)
     }
-
   }
 
   val emptyHashStop = char32(HexBytesUtil.hex2bytes("0000000000000000000000000000000000000000000000000000000000000000").toList)
