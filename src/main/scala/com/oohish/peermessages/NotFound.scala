@@ -10,17 +10,18 @@ import akka.util.ByteString
 object NotFound extends MessagePayloadReader[NotFound] {
 
   def decode(it: ByteIterator) = {
-    NotFound(new VarStructReader(InvVect).decode(it))
+    NotFound(
+      new VarStructReader(InvVect).decode(it).seq)
   }
 
 }
 
 case class NotFound(
-  vectors: VarStruct[InvVect]) extends MessagePayload {
+  vectors: List[InvVect]) extends MessagePayload {
 
   def encode: ByteString = {
     val bb = ByteString.newBuilder
-    bb ++= vectors.encode
+    bb ++= VarStruct(vectors).encode
     bb.result
   }
 

@@ -55,7 +55,7 @@ class FullBlockChain(
       log.info("FullBlockChain received Headers with seq length: " + newHeaders.length)
 
       log.debug("calling addBlocks")
-      val futureAdded = addBlocks(h.seq)
+      val futureAdded = addBlocks(h)
 
       // if new headers received, ask for more.
       if (h.seq.length > 0) {

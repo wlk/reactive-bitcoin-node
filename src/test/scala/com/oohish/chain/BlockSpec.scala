@@ -24,7 +24,7 @@ class BlockSpec extends FlatSpec with Matchers {
         uint32_t(1231006505), //timestamp
         uint32_t(486604799), //bits
         uint32_t(2083236893), //nonce
-        VarStruct[Tx](List()) //number of transactions
+        List() //number of transactions
         )
     }
 

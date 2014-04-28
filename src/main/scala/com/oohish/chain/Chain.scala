@@ -51,7 +51,7 @@ object Chain {
   /*
    * return a block locator for the block store.
    */
-  def blockLocator(store: BlockStore)(implicit ec: ExecutionContext): Future[VarStruct[char32]] = {
+  def blockLocator(store: BlockStore)(implicit ec: ExecutionContext): Future[List[char32]] = {
     val maxHeight = store.getChainHead.map(_.height).getOrElse(0)
     val locatorIndices = Chain.blockLocatorIndices(maxHeight + 1)
 
@@ -71,7 +71,7 @@ object Chain {
     }
 
     blockLocatorHelper(Future(List()), store.getChainHead).map { blockList =>
-      VarStruct[char32](blockList.reverse)
+      blockList.reverse
     }
   }
 

@@ -10,17 +10,17 @@ object Headers extends MessagePayloadReader[Headers] {
 
   def decode(it: ByteIterator) = {
     Headers(
-      new VarStructReader(Block).decode(it))
+      new VarStructReader(Block).decode(it).seq)
   }
 
 }
 
 case class Headers(
-  headers: VarStruct[Block]) extends MessagePayload {
+  headers: List[Block]) extends MessagePayload {
 
   def encode: ByteString = {
     val bb = ByteString.newBuilder
-    bb ++= headers.encode
+    bb ++= VarStruct(headers).encode
     bb.result
   }
 

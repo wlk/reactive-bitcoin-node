@@ -9,20 +9,20 @@ object Alert extends MessagePayloadReader[Alert] {
 
   def decode(it: ByteIterator) = {
     Alert(
-      VarStr.decode(it),
-      VarStr.decode(it))
+      VarStr.decode(it).s,
+      VarStr.decode(it).s)
   }
 
 }
 
 case class Alert(
-  payload: VarStr,
-  signature: VarStr) extends MessagePayload {
+  payload: String,
+  signature: String) extends MessagePayload {
 
   def encode: ByteString = {
     val bb = ByteString.newBuilder
-    bb ++= payload.encode
-    bb ++= signature.encode
+    bb ++= VarStr(payload).encode
+    bb ++= VarStr(signature).encode
     bb.result
   }
 

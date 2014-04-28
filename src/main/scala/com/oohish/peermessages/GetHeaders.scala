@@ -13,7 +13,7 @@ object GetHeaders extends MessagePayloadReader[GetHeaders] {
   def decode(it: ByteIterator) = {
     GetHeaders(
       uint32_t.decode(it),
-      new VarStructReader(char32).decode(it),
+      new VarStructReader(char32).decode(it).seq,
       char32.decode(it))
   }
 
@@ -21,13 +21,13 @@ object GetHeaders extends MessagePayloadReader[GetHeaders] {
 
 case class GetHeaders(
   version: uint32_t,
-  block_locator: VarStruct[char32],
+  block_locator: List[char32],
   hash_stop: char32) extends MessagePayload {
 
   def encode: ByteString = {
     val bb = ByteString.newBuilder
     bb ++= version.encode
-    bb ++= block_locator.encode
+    bb ++= VarStruct(block_locator).encode
     bb ++= hash_stop.encode
     bb.result
   }

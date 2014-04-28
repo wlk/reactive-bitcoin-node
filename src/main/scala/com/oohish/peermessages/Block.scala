@@ -23,7 +23,7 @@ object Block extends MessagePayloadReader[Block] {
       uint32_t.decode(it),
       uint32_t.decode(it),
       uint32_t.decode(it),
-      new VarStructReader(Tx).decode(it))
+      new VarStructReader(Tx).decode(it).seq)
   }
 
 }
@@ -35,7 +35,7 @@ case class Block(
   timestamp: uint32_t,
   bits: uint32_t,
   nonce: uint32_t,
-  txns: VarStruct[Tx]) extends MessagePayload {
+  txns: List[Tx]) extends MessagePayload {
 
   def encode: ByteString = {
     val bb = ByteString.newBuilder
@@ -45,7 +45,7 @@ case class Block(
     bb ++= timestamp.encode
     bb ++= bits.encode
     bb ++= nonce.encode
-    bb ++= txns.encode
+    bb ++= VarStruct(txns).encode
     bb.result
   }
 
@@ -53,7 +53,7 @@ case class Block(
    * Copy of the block without any transactions.
    */
   def toHeader(): Block = {
-    copy(txns = new VarStruct[Tx](List()))
+    copy(txns = List())
   }
 
   /**

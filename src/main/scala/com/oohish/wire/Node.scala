@@ -105,7 +105,7 @@ class Node(
   def receive = {
 
     case Addr(addresses) => {
-      val peers = addresses.seq.map { tNetAddr =>
+      val peers = addresses.map { tNetAddr =>
         val addr = InetAddress.getByAddress(tNetAddr.addr.ip.ip.toArray)
         val port = tNetAddr.addr.port.n.toInt
         Peer(new InetSocketAddress(addr, port))
@@ -117,16 +117,16 @@ class Node(
 
       log.info("Node received Inv")
 
-      val txVectors = vectors.seq.filter { inv =>
+      val txVectors = vectors.filter { inv =>
         inv.t.name == "MSG_TX"
       }
 
-      val blockVectors = vectors.seq.filter { inv =>
+      val blockVectors = vectors.filter { inv =>
         inv.t.name == "MSG_BLOCK"
       }
 
-      sender ! Outgoing(GetData(VarStruct[InvVect](txVectors)))
-      sender ! Outgoing(GetData(VarStruct[InvVect](blockVectors)))
+      sender ! Outgoing(GetData(txVectors))
+      sender ! Outgoing(GetData(blockVectors))
     }
 
     case tx: Tx => {

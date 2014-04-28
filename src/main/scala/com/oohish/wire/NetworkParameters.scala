@@ -39,7 +39,7 @@ object MainNetParams extends NetworkParameters {
       uint32_t(1231006505), //timestamp
       uint32_t(486604799), //bits
       uint32_t(2083236893), //nonce
-      VarStruct(List()))
+      List())
   def interval: Int = INTERVAL
   def packetMagic: Long = 0xD9B4BEF9
   def port: Int = 8333
@@ -65,7 +65,7 @@ object TestNet3Params extends NetworkParameters {
       uint32_t(1296688602), //timestamp
       uint32_t(486604799), //bits
       uint32_t(414098458), //nonce
-      VarStruct(List()))
+      List())
   def interval: Int = INTERVAL
   def packetMagic: Long = 0x0709110B
   def port: Int = 18333
