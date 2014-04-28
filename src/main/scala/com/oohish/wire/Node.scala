@@ -17,7 +17,7 @@ import com.oohish.peermessages.Verack
 import com.oohish.peermessages.Version
 import com.oohish.structures.IP
 import com.oohish.structures.InvVect
-import com.oohish.structures.NetworkAddressInVersion
+import com.oohish.structures.NetworkAddress
 import com.oohish.structures.Port
 import com.oohish.structures.VarStr
 import com.oohish.structures.VarStruct
@@ -58,7 +58,7 @@ object Node {
     int32_t(1))
 
   def peerNetworkAddress(peer: Peer) = {
-    NetworkAddressInVersion(
+    NetworkAddress(
       uint64_t(BigInt(1)),
       IP(peer.address.getAddress().getHostAddress()),
       Port(peer.port))
@@ -105,9 +105,9 @@ class Node(
   def receive = {
 
     case Addr(addresses) => {
-      val peers = addresses.seq.map { netAddr =>
-        val addr = InetAddress.getByAddress(netAddr.ip.ip.toArray)
-        val port = netAddr.port.n.toInt
+      val peers = addresses.seq.map { tNetAddr =>
+        val addr = InetAddress.getByAddress(tNetAddr.addr.ip.ip.toArray)
+        val port = tNetAddr.addr.port.n.toInt
         Peer(new InetSocketAddress(addr, port))
       }
       peerManager ! Discovered(peers)

@@ -8,7 +8,7 @@ import org.scalatest.FlatSpec
 import org.scalatest.Matchers
 
 import com.oohish.structures.IP
-import com.oohish.structures.NetworkAddressInVersion
+import com.oohish.structures.NetworkAddress
 import com.oohish.structures.Port
 import com.oohish.structures.VarStr
 import com.oohish.structures.int32_t
@@ -95,7 +95,7 @@ class DataTypesSpec extends FlatSpec with Matchers {
 
   "An addr" should "have the right size" in {
 
-    val addr = NetworkAddressInVersion(
+    val addr = NetworkAddress(
       uint64_t(BigInt(1)),
       IP("10.0.0.1"),
       Port(8333))
@@ -107,7 +107,7 @@ class DataTypesSpec extends FlatSpec with Matchers {
 
   it should "have the right hex string" in {
 
-    val addr = NetworkAddressInVersion(Node.services, IP("10.0.0.1"), Port(8333))
+    val addr = NetworkAddress(Node.services, IP("10.0.0.1"), Port(8333))
     val bytes = addr.encode
 
     val byteArray = bytes.compact.toParArray.toArray

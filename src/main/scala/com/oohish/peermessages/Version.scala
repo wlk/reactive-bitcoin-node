@@ -1,6 +1,6 @@
 package com.oohish.peermessages
 
-import com.oohish.structures.NetworkAddressInVersion
+import com.oohish.structures.NetworkAddress
 import com.oohish.structures.VarStr
 import com.oohish.structures.int32_t
 import com.oohish.structures.int64_t
@@ -16,8 +16,8 @@ object Version extends MessagePayloadReader[Version] {
       int32_t.decode(it),
       uint64_t.decode(it),
       int64_t.decode(it),
-      NetworkAddressInVersion.decode(it),
-      NetworkAddressInVersion.decode(it),
+      NetworkAddress.decode(it),
+      NetworkAddress.decode(it),
       uint64_t.decode(it),
       VarStr.decode(it),
       int32_t.decode(it))
@@ -29,8 +29,8 @@ case class Version(
   version: int32_t,
   services: uint64_t,
   timestamp: int64_t,
-  addr_recv: NetworkAddressInVersion,
-  addr_from: NetworkAddressInVersion,
+  addr_recv: NetworkAddress,
+  addr_from: NetworkAddress,
   nonce: uint64_t,
   user_agent: VarStr,
   start_height: int32_t) extends MessagePayload {

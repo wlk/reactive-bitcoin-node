@@ -2,26 +2,28 @@ package com.oohish.peermessages
 
 import scala.Array.canBuildFrom
 import scala.collection.parallel.traversable2ops
+
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
+
 import com.oohish.structures.IP
-import com.oohish.structures.NetworkAddressInVersion
+import com.oohish.structures.NetworkAddress
 import com.oohish.structures.Port
 import com.oohish.structures.VarStr
 import com.oohish.structures.int32_t
 import com.oohish.structures.int64_t
 import com.oohish.structures.uint64_t
 import com.oohish.util.HexBytesUtil
-import com.oohish.wire.BTCConnection
+import com.oohish.wire.MainNetParams
 import com.oohish.wire.MessageTypeStage
 import com.oohish.wire.Node
 import com.oohish.wire.peermessagestage
+
 import akka.io.PipelineContext
 import akka.io.PipelineFactory
 import akka.util.ByteString
-import com.oohish.wire.MainNetParams
 
 class peermessagespec extends FlatSpec with Matchers {
 
@@ -60,8 +62,8 @@ class peermessagespec extends FlatSpec with Matchers {
       Node.versionNum,
       Node.services,
       int64_t(DateTime.now().getMillis()),
-      NetworkAddressInVersion(Node.services, IP("0.0.0.0"), Port(0)),
-      NetworkAddressInVersion(Node.services, IP("0.0.0.0"), Port(0)),
+      NetworkAddress(Node.services, IP("0.0.0.0"), Port(0)),
+      NetworkAddress(Node.services, IP("0.0.0.0"), Port(0)),
       Node.genNonce,
       VarStr("/Satoshi:0.7.2/"),
       int32_t(1))
@@ -79,8 +81,8 @@ class peermessagespec extends FlatSpec with Matchers {
       Node.services,
       int64_t(DateTime.parse("18/12/2012 10:12:33",
         DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss")).getMillis() / 1000),
-      NetworkAddressInVersion(Node.services, IP("0.0.0.0"), Port(0)),
-      NetworkAddressInVersion(Node.services, IP("0.0.0.0"), Port(0)),
+      NetworkAddress(Node.services, IP("0.0.0.0"), Port(0)),
+      NetworkAddress(Node.services, IP("0.0.0.0"), Port(0)),
       Node.genNonce,
       VarStr("/Satoshi:0.7.2/"),
       int32_t(1))
@@ -107,8 +109,8 @@ class peermessagespec extends FlatSpec with Matchers {
       Node.services,
       int64_t(DateTime.parse("18/12/2012 10:12:33",
         DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss")).getMillis() / 1000),
-      NetworkAddressInVersion(Node.services, IP("0.0.0.0"), Port(0)),
-      NetworkAddressInVersion(Node.services, IP("0.0.0.0"), Port(0)),
+      NetworkAddress(Node.services, IP("0.0.0.0"), Port(0)),
+      NetworkAddress(Node.services, IP("0.0.0.0"), Port(0)),
       uint64_t(BigInt(Array(0x3B, 0x2E, 0xB3, 0x5D, 0x8C, 0xE6, 0x17, 0x65).map(_.toByte).reverse)),
       VarStr("/Satoshi:0.7.2/"),
       int32_t(212672))
@@ -141,8 +143,8 @@ class peermessagespec extends FlatSpec with Matchers {
       Node.services,
       int64_t(DateTime.parse("18/12/2012 10:12:33",
         DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss")).getMillis() / 1000),
-      NetworkAddressInVersion(Node.services, IP("106.69.141.207"), Port(8333)),
-      NetworkAddressInVersion(Node.services, IP("127.0.0.1"), Port(8333)),
+      NetworkAddress(Node.services, IP("106.69.141.207"), Port(8333)),
+      NetworkAddress(Node.services, IP("127.0.0.1"), Port(8333)),
       Node.genNonce,
       VarStr("/Satoshi:0.7.2/"),
       int32_t(1))

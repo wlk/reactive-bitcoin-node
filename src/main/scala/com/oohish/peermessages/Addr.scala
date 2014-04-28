@@ -10,13 +10,13 @@ import akka.util.ByteString
 object Addr extends MessagePayloadReader[Addr] {
 
   def decode(it: ByteIterator) = {
-    Addr(new VarStructReader(NetworkAddress).decode(it))
+    Addr(new VarStructReader(TimeNetworkAddress).decode(it))
   }
 
 }
 
 case class Addr(
-  addrs: VarStruct[NetworkAddress]) extends MessagePayload {
+  addrs: VarStruct[TimeNetworkAddress]) extends MessagePayload {
 
   def encode: ByteString = {
     val bb = ByteString.newBuilder
