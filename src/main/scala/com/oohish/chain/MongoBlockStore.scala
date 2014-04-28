@@ -1,25 +1,22 @@
 package com.oohish.chain
 
-import scala.collection.mutable.HashMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+
+import com.oohish.peermessages.Block
 import com.oohish.structures.char32
+
+import play.api.libs.functional.syntax.functionalCanBuildApplicative
+import play.api.libs.functional.syntax.toFunctionalBuilderOps
+import play.api.libs.functional.syntax.toInvariantFunctorOps
+import play.api.libs.json.JsValue
+import play.api.libs.json.Json
+import play.api.libs.json.Json.toJsFieldJsValueWrapper
+import play.api.libs.json.Writes
+import play.api.libs.json.__
+import play.modules.reactivemongo.json.collection.JSONCollection
 import reactivemongo.api.MongoConnection
 import reactivemongo.api.MongoDriver
-import reactivemongo.bson.BSONDocument
-import reactivemongo.bson.BSONWriter
-import reactivemongo.bson.BSONString
-import reactivemongo.bson.BSONInteger
-import com.oohish.util.HexBytesUtil
-import reactivemongo.bson.BSONObjectID
-import com.oohish.peermessages.Block
-import com.oohish.structures.uint32_t
-import play.api.libs.json.Writes
-import play.api.libs.json.JsPath
-import play.api.libs.json.JsValue
-import play.api.libs.json.Reads
-import com.oohish.structures.VarStruct
-import com.oohish.peermessages.Tx
 
 class MongoBlockStore(
   conn: Option[MongoConnection]) extends BlockStore {
@@ -36,27 +33,27 @@ class MongoBlockStore(
 
   // Gets a reference to the collection "blocks"
   // By default, you get a BSONCollection.
-  val collection = db("blocks")
-
-  val blockMap: HashMap[char32, StoredBlock] = HashMap.empty[char32, StoredBlock]
+  def collection: JSONCollection = db.collection[JSONCollection]("blocks")
 
   var chainHead: Option[StoredBlock] = None
 
-  def put(block: StoredBlock): Future[Unit] =
-    Future {
-      //blockMap.put(Chain.blockHash(block.block), block)
+  def put(block: StoredBlock): Future[Unit] = {
+    import JsonFormats.storedBlockWrites
+    val writes = storedBlockWrites
 
-      /*
-      val x = Hi(1, "abc")
+    val futureResult = collection.insert(block)
+    futureResult.map(res => ())
+  }
 
-      val document = BSONDocument("b" -> x)*/
+  def get(hash: char32): Future[Option[StoredBlock]] = {
+    import play.api.libs.json._
 
-      blockMap.put(block.block.hash, block)
-      ()
-    }
+    import JsonFormats.storedBlockReads
+    val reads = storedBlockReads
 
-  def get(hash: char32): Future[Option[StoredBlock]] =
-    Future(blockMap.get(hash))
+    val h = JsonFormats.char32Format.writes(hash)
+    collection.find(Json.obj("_id" -> h)).one
+  }
 
   def getChainHead(): Option[StoredBlock] =
     chainHead
@@ -67,8 +64,35 @@ class MongoBlockStore(
 }
 
 object JsonFormats {
-  import play.api.libs.json.Json
+  import play.api.libs.json._
   import play.api.data._
   import play.api.data.Forms._
+  import play.api.libs.functional.syntax._
+
+  import com.oohish.peermessages._
+  import com.oohish.structures._
+
+  // JSON formats
+  implicit val uint32_tFormat = Json.format[uint32_t]
+  implicit val char32Format = Json.format[char32]
+  implicit val outPointFormat = Json.format[OutPoint]
+  implicit val txInFormat = Json.format[TxIn]
+  implicit val int64_tFormat = Json.format[int64_t]
+  implicit val txOutFormat = Json.format[TxOut]
+  implicit val txFormat = Json.format[Tx]
+  implicit val blockFormat = Json.format[Block]
+
+  implicit val storedBlockWrites = new Writes[StoredBlock] {
+    def writes(sb: StoredBlock): JsValue = {
+      Json.obj(
+        "_id" -> sb.block.hash(),
+        "block" -> sb.block,
+        "height" -> sb.height)
+    }
+  }
+
+  implicit val storedBlockReads = (
+    (__ \ "block").read[Block] and
+    (__ \ "height").read[Int])(StoredBlock.apply _)
 
 }
