@@ -97,7 +97,7 @@ class FullBlockChain(
       storedBlock <- maybeStoredBlock
     } yield {
       if (storedBlock.height > chainHead.height) {
-        store.setChainHead(chainHead).map(_ => true)
+        store.setChainHead(storedBlock).map(_ => true)
       } else {
         Future(false)
       }
