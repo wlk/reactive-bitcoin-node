@@ -65,7 +65,10 @@ class MongoBlockStore(
     for {
       a <- chainHeadCollection.remove(Json.obj())
       b <- chainHeadCollection.find(Json.obj()).one
-    } yield b
+    } yield {
+      println("got chain head: " + b)
+      b
+    }
   }
 
   def setChainHead(cHead: StoredBlock): Future[Unit] = {
@@ -75,7 +78,10 @@ class MongoBlockStore(
     for {
       a <- chainHeadCollection.remove(Json.obj())
       b <- chainHeadCollection.insert(cHead)
-    } yield Unit
+    } yield {
+      println("set chain head: " + cHead)
+      Unit
+    }
   }
 
 }
