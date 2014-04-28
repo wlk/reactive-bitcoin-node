@@ -71,32 +71,38 @@ class FullBlockChain(
   }
 
   /*
-   * Try to add a new block to the block store.
+   * Add a new block to the block store.
    */
   def addBlock(b: Block): Future[Try[Unit]] = {
     log.debug("adding block: " + b)
     for {
+      maybeChainHead <- store.getChainHead
       maybePrevBlock <- store.get(b.prev_block)
-      chainHead <- store.getChainHead
-      inserted <- {
-        val tryPrev = Try { maybePrevBlock.get }
-        tryPrev match {
-          case Success(prevBlock) => {
-            val sb = StoredBlock(b, prevBlock.height + 1)
-            log.debug("stored block: " + sb)
-            val ret = store.put(sb).map(u => Success(u))
-            if (sb.height > chainHead.get.height) {
-              store.setChainHead(sb)
-              log.info("chain height: " + sb.height + ", last existing block hash: " + sb.block.hash)
-            }
-            ret
-          }
-          case Failure(e) => {
-            Future(Failure(e))
-          }
-        }
+      maybeStoredBlock <- maybeStoreBlock(maybePrevBlock, b)
+      updatedChainHead <- maybeUpdateChainHead(maybeStoredBlock, maybeChainHead)
+    } yield Try(maybeStoredBlock.get)
+  }
+
+  def maybeStoreBlock(maybePrevBlock: Option[StoredBlock], block: Block): Future[Option[StoredBlock]] = {
+    maybePrevBlock.map { prevBlock =>
+      val sb = StoredBlock(block, prevBlock.height + 1)
+      log.debug("stored block: " + sb)
+      store.put(sb).map(_ => Some(sb))
+    }.getOrElse(Future(None))
+  }
+
+  def maybeUpdateChainHead(maybeStoredBlock: Option[StoredBlock], maybeChainHead: Option[StoredBlock]): Future[Boolean] = {
+    val x = for {
+      chainHead <- maybeChainHead
+      storedBlock <- maybeStoredBlock
+    } yield {
+      if (storedBlock.height > chainHead.height) {
+        store.setChainHead(chainHead).map(_ => true)
+      } else {
+        Future(false)
       }
-    } yield inserted
+    }
+    x.getOrElse(Future(false))
   }
 
   /*

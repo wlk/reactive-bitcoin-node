@@ -2,8 +2,10 @@ package com.oohish.chain
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
-
 import com.oohish.structures.char32
+import scala.util.Try
+import scala.util.Success
+import com.oohish.peermessages.Block
 
 object Chain {
 
