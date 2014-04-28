@@ -1,14 +1,9 @@
 package com.oohish.chain
 
-import java.security.MessageDigest
-import akka.util.ByteString
-import com.oohish.structures.char32
-import com.oohish.util.HexBytesUtil
-import com.oohish.peermessages.Block
-import com.oohish.structures.VarStruct
-import com.oohish.peermessages.Tx
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+
+import com.oohish.structures.char32
 
 object Chain {
 
@@ -52,27 +47,30 @@ object Chain {
    * return a block locator for the block store.
    */
   def blockLocator(store: BlockStore)(implicit ec: ExecutionContext): Future[List[char32]] = {
-    val maxHeight = store.getChainHead.map(_.height).getOrElse(0)
-    val locatorIndices = Chain.blockLocatorIndices(maxHeight + 1)
+    store.getChainHead.flatMap { maybeSb =>
+      val maxHeight = maybeSb.map(_.height).getOrElse(0)
+      val locatorIndices = Chain.blockLocatorIndices(maxHeight + 1)
 
-    def blockLocatorHelper(acc: Future[List[char32]], maybeCur: Option[StoredBlock]): Future[List[char32]] = {
-      maybeCur.map { cur =>
-        val futurePrev = prevStoredBlock(store, cur)
-        futurePrev.flatMap { maybePrev =>
-          if (cur.height == 0) {
-            blockLocatorHelper(futureCons(acc, cur.block.hash), maybePrev)
-          } else if (locatorIndices.contains(cur.height)) {
-            blockLocatorHelper(futureCons(acc, cur.block.hash), maybePrev)
-          } else {
-            blockLocatorHelper(acc, maybePrev)
+      def blockLocatorHelper(acc: Future[List[char32]], maybeCur: Option[StoredBlock]): Future[List[char32]] = {
+        maybeCur.map { cur =>
+          val futurePrev = prevStoredBlock(store, cur)
+          futurePrev.flatMap { maybePrev =>
+            if (cur.height == 0) {
+              blockLocatorHelper(futureCons(acc, cur.block.hash), maybePrev)
+            } else if (locatorIndices.contains(cur.height)) {
+              blockLocatorHelper(futureCons(acc, cur.block.hash), maybePrev)
+            } else {
+              blockLocatorHelper(acc, maybePrev)
+            }
           }
-        }
-      }.getOrElse(acc)
+        }.getOrElse(acc)
+      }
+
+      blockLocatorHelper(Future(List()), maybeSb).map { blockList =>
+        blockList.reverse
+      }
     }
 
-    blockLocatorHelper(Future(List()), store.getChainHead).map { blockList =>
-      blockList.reverse
-    }
   }
 
   val emptyHashStop = char32("0000000000000000000000000000000000000000000000000000000000000000")

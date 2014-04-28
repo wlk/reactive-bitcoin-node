@@ -77,6 +77,7 @@ class FullBlockChain(
     log.debug("adding block: " + b)
     for {
       maybePrevBlock <- store.get(b.prev_block)
+      chainHead <- store.getChainHead
       inserted <- {
         val tryPrev = Try { maybePrevBlock.get }
         tryPrev match {
@@ -84,7 +85,7 @@ class FullBlockChain(
             val sb = StoredBlock(b, prevBlock.height + 1)
             log.debug("stored block: " + sb)
             val ret = store.put(sb).map(u => Success(u))
-            if (sb.height > store.getChainHead.get.height) {
+            if (sb.height > chainHead.get.height) {
               store.setChainHead(sb)
               log.info("chain height: " + sb.height + ", last existing block hash: " + sb.block.hash)
             }

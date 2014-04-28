@@ -14,8 +14,8 @@ trait BlockStore {
 
   def get(hash: char32): Future[Option[StoredBlock]]
 
-  def getChainHead(): Option[StoredBlock]
+  def getChainHead(): Future[Option[StoredBlock]]
 
-  def setChainHead(chainHead: StoredBlock): Unit
+  def setChainHead(chainHead: StoredBlock): Future[Unit]
 
 }

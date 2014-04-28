@@ -22,10 +22,14 @@ class MemoryBlockStore extends BlockStore {
   def get(hash: char32): Future[Option[StoredBlock]] =
     Future(blockMap.get(hash))
 
-  def getChainHead(): Option[StoredBlock] =
-    chainHead
+  def getChainHead(): Future[Option[StoredBlock]] =
+    Future {
+      chainHead
+    }
 
-  def setChainHead(cHead: StoredBlock): Unit =
-    chainHead = Some(cHead)
+  def setChainHead(cHead: StoredBlock): Future[Unit] =
+    Future {
+      chainHead = Some(cHead)
+    }
 
 }

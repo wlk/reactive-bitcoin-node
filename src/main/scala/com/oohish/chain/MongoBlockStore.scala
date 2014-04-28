@@ -35,14 +35,17 @@ class MongoBlockStore(
   // By default, you get a BSONCollection.
   def collection: JSONCollection = db.collection[JSONCollection]("blocks")
 
-  var chainHead: Option[StoredBlock] = None
+  // Gets a reference to the collection "chainHead"
+  // By default, you get a BSONCollection.
+  def chainHeadCollection: JSONCollection = db.collection[JSONCollection]("chainHead")
 
   def put(block: StoredBlock): Future[Unit] = {
     import JsonFormats.storedBlockWrites
     val writes = storedBlockWrites
 
-    val futureResult = collection.insert(block)
-    futureResult.map(res => ())
+    for {
+      a <- collection.insert(block)
+    } yield ()
   }
 
   def get(hash: char32): Future[Option[StoredBlock]] = {
@@ -55,11 +58,25 @@ class MongoBlockStore(
     collection.find(Json.obj("_id" -> h)).one
   }
 
-  def getChainHead(): Option[StoredBlock] =
-    chainHead
+  def getChainHead(): Future[Option[StoredBlock]] = {
+    import JsonFormats.storedBlockReads
+    val reads = storedBlockReads
 
-  def setChainHead(cHead: StoredBlock): Unit =
-    chainHead = Some(cHead)
+    for {
+      a <- chainHeadCollection.remove(Json.obj())
+      b <- chainHeadCollection.find(Json.obj()).one
+    } yield b
+  }
+
+  def setChainHead(cHead: StoredBlock): Future[Unit] = {
+    import JsonFormats.storedBlockWrites
+    val writes = storedBlockWrites
+
+    for {
+      a <- chainHeadCollection.remove(Json.obj())
+      b <- chainHeadCollection.insert(cHead)
+    } yield Unit
+  }
 
 }
 
