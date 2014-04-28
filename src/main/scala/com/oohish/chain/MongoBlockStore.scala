@@ -63,7 +63,6 @@ class MongoBlockStore(
     val reads = storedBlockReads
 
     for {
-      a <- chainHeadCollection.remove(Json.obj())
       b <- chainHeadCollection.find(Json.obj()).one
     } yield {
       println("got chain head: " + b)
