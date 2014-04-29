@@ -99,7 +99,7 @@ class FullBlockChain(
   }
 
   def maybeStoreBlock(maybePrevBlock: Option[StoredBlock], block: Block): Future[Option[StoredBlock]] = {
-    maybePrevBlock.map { prevBlock =>
+    val x = maybePrevBlock.map { prevBlock =>
       val sb = StoredBlock(block, prevBlock.height + 1)
       log.debug("stored block: " + sb)
       store.put(sb).map(_ => Some(sb))
@@ -108,6 +108,7 @@ class FullBlockChain(
       log.debug("stored block: " + sb)
       store.put(sb).map(_ => Some(sb))
     }
+    x.recover { case _ => None }
   }
 
   def maybeUpdateChainHead(maybeStoredBlock: Option[StoredBlock], maybeChainHead: Option[StoredBlock]): Future[Boolean] = {
