@@ -1,20 +1,21 @@
 package com.oohish.chain
 
+import scala.concurrent.Future
+import scala.util.Success
+import scala.util.Try
+
+import com.oohish.peermessages.Block
 import com.oohish.peermessages.GetHeaders
+import com.oohish.peermessages.Headers
 import com.oohish.peermessages.Verack
 import com.oohish.structures.uint32_t
 import com.oohish.wire.BTCConnection.Outgoing
 import com.oohish.wire.NetworkParameters
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.pattern.pipe
-import com.oohish.peermessages.Headers
-import com.oohish.peermessages.Block
-import scala.util.Try
-import scala.concurrent.Future
-import scala.util.Failure
-import scala.util.Success
 import reactivemongo.api.MongoConnection
 
 object FullBlockChain {
@@ -32,11 +33,9 @@ class FullBlockChain(
 
   import context.dispatcher
 
+  // initialize the block store.
   val store: BlockStore = new MongoBlockStore(conn)
-  val genesis = networkParams.genesisBlock.toHeader
-  val sb = StoredBlock(genesis, 0)
-  store.put(sb)
-  store.setChainHead(sb)
+  addBlock(networkParams.genesisBlock.toHeader)
 
   def receive = {
 
@@ -70,16 +69,32 @@ class FullBlockChain(
 
   }
 
+  def addGenesis(block: Block) = {
+
+  }
+
   /*
    * Add a new block to the block store.
    */
   def addBlock(b: Block): Future[Try[Unit]] = {
-    log.debug("adding block: " + b)
+    log.info("adding block")
     for {
-      maybeChainHead <- store.getChainHead
-      maybePrevBlock <- store.get(b.prev_block)
-      maybeStoredBlock <- maybeStoreBlock(maybePrevBlock, b)
-      updatedChainHead <- maybeUpdateChainHead(maybeStoredBlock, maybeChainHead)
+      maybeChainHead <- {
+        log.info("maybeChainHead")
+        store.getChainHead
+      }
+      maybePrevBlock <- {
+        log.info("maybePrevBlock")
+        store.get(b.prev_block)
+      }
+      maybeStoredBlock <- {
+        log.info("maybeStoredBlock")
+        maybeStoreBlock(maybePrevBlock, b)
+      }
+      updatedChainHead <- {
+        log.info("updatedChainHead")
+        maybeUpdateChainHead(maybeStoredBlock, maybeChainHead)
+      }
     } yield Try(maybeStoredBlock.get)
   }
 
@@ -88,21 +103,23 @@ class FullBlockChain(
       val sb = StoredBlock(block, prevBlock.height + 1)
       log.debug("stored block: " + sb)
       store.put(sb).map(_ => Some(sb))
-    }.getOrElse(Future(None))
+    }.getOrElse {
+      val sb = StoredBlock(block, 0)
+      log.debug("stored block: " + sb)
+      store.put(sb).map(_ => Some(sb))
+    }
   }
 
   def maybeUpdateChainHead(maybeStoredBlock: Option[StoredBlock], maybeChainHead: Option[StoredBlock]): Future[Boolean] = {
-    val x = for {
-      chainHead <- maybeChainHead
-      storedBlock <- maybeStoredBlock
-    } yield {
-      if (storedBlock.height > chainHead.height) {
-        store.setChainHead(storedBlock).map(_ => true)
-      } else {
-        Future(false)
-      }
-    }
-    x.getOrElse(Future(false))
+    maybeStoredBlock.map { storedBlock =>
+      maybeChainHead.map { chainHead =>
+        if (storedBlock.height > chainHead.height) {
+          store.setChainHead(storedBlock).map(_ => true)
+        } else {
+          Future(false)
+        }
+      }.getOrElse(store.setChainHead(storedBlock).map(_ => true))
+    }.getOrElse(Future(false))
   }
 
   /*
@@ -120,7 +137,7 @@ class FullBlockChain(
       }
     }
 
-    log.debug("calling addBlocksHelper")
+    log.info("calling addBlocksHelper")
     addBlocksHelper(Future(Success()), blocks)
   }
 

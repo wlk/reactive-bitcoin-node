@@ -18,6 +18,8 @@ import play.modules.reactivemongo.json.collection.JSONCollection
 import reactivemongo.api.MongoConnection
 import reactivemongo.api.MongoDriver
 
+case class DuplicateHashException(message: String) extends Exception(message)
+
 class MongoBlockStore(
   conn: Option[MongoConnection]) extends BlockStore {
 
@@ -44,8 +46,10 @@ class MongoBlockStore(
     val writes = storedBlockWrites
 
     for {
-      a <- collection.insert(block)
-    } yield ()
+      a <- collection.insert(block).transform(
+        success => (),
+        failure => new DuplicateHashException("foo"))
+    } yield a
   }
 
   def get(hash: char32): Future[Option[StoredBlock]] = {

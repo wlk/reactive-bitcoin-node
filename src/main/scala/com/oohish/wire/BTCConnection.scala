@@ -56,7 +56,7 @@ class BTCConnection(peer: Peer, node: ActorRef, manager: ActorRef) extends Actor
     }
 
     case other => {
-      log.debug("got other: " + other)
+      log.debug("BTCConnection got other: " + other)
     }
 
   }
@@ -84,7 +84,7 @@ class BTCConnection(peer: Peer, node: ActorRef, manager: ActorRef) extends Actor
     }
 
     case other => {
-      log.warning("got other: " + other)
+      log.warning("BTCConnection got other: " + other)
     }
 
   }
