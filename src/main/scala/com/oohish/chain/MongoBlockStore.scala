@@ -76,11 +76,15 @@ class MongoBlockStore(
 
   def setChainHead(cHead: StoredBlock): Future[Unit] = {
     import JsonFormats.storedBlockWrites
+    import JsonFormats.char32Format
     val writes = storedBlockWrites
 
     for {
-      a <- chainHeadCollection.remove(Json.obj())
-      b <- chainHeadCollection.insert(cHead)
+      a <- chainHeadCollection.insert(cHead)
+      b <- chainHeadCollection.remove(
+        Json.obj("_id" ->
+          Json.obj("$ne" ->
+            cHead.block.hash())))
     } yield {
       println("set chain head: " + cHead)
       Unit
