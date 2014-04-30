@@ -3,7 +3,7 @@ import com.oohish.wire.TestNet3Params
 import akka.actor.ActorSystem
 import com.oohish.wire.MainNetParams
 
-object SimpleNode extends App {
+object FullNode extends App {
 
   val system = ActorSystem("node")
 
