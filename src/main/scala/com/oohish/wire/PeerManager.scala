@@ -46,7 +46,7 @@ class PeerManager(node: ActorRef, networkParams: NetworkParameters) extends Acto
   import context.dispatcher
   import scala.language.postfixOps
 
-  var maxConnections = 1
+  var maxConnections = 10
   var allPeers = Set.empty[Peer]
   var peerBlackList = Set.empty[Peer]
   var connectedPeers = Map.empty[ActorRef, (Peer, Long)]
@@ -59,13 +59,13 @@ class PeerManager(node: ActorRef, networkParams: NetworkParameters) extends Acto
   def randomUnconnected = Random.shuffle(unconnectedPeers.toList).headOption
 
   //self ! CheckStatus
-  context.system.scheduler.schedule(0 milliseconds, 1000 milliseconds, self, CheckStatus)
+  context.system.scheduler.schedule(5000 milliseconds, 5000 milliseconds, self, CheckStatus)
 
   def receive = {
     case Discovered(peers) =>
       val notBlacklisted = peers.filterNot(peerBlackList.contains)
       allPeers ++= notBlacklisted
-      log.info("discovered {} peers, now we know {} total peers", notBlacklisted.size, allPeers.size)
+      log.debug("discovered {} peers, now we know {} total peers", notBlacklisted.size, allPeers.size)
 
     case CheckStatus =>
       log.debug("received CheckStatus message. connectedPeers.size: " + connectedPeers.size)

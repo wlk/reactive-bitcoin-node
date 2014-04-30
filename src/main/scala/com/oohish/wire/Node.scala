@@ -114,25 +114,26 @@ class Node(
     }
 
     case Inv(vectors) => {
-
-      log.info("Node received Inv")
-
       val txVectors = vectors.filter { inv =>
         inv.t.name == "MSG_TX"
       }
 
+      /*
       val blockVectors = vectors.filter { inv =>
         inv.t.name == "MSG_BLOCK"
       }
+       */
 
       sender ! Outgoing(GetData(txVectors))
-      sender ! Outgoing(GetData(blockVectors))
+      //sender ! Outgoing(GetData(blockVectors))
+
+      blockchain forward Inv(vectors)
     }
 
     case tx: Tx => {
       // https://en.bitcoin.it/wiki/Protocol_rules#.22tx.22_messages
 
-      log.info("received Tx!!!!!!!!!!!")
+      //log.debug("received Tx!!!!!!!!!!!")
 
       // Make sure neither in or out lists are empty
 
@@ -145,17 +146,16 @@ class Node(
     }
 
     case blk: Block => {
-      log.info("received block!!!!!!!!")
       blockchain forward blk
     }
 
     case msg: MessagePayload => {
-      log.info("received: " + msg.getClass().getName())
+      //log.info("received: " + msg.getClass().getName())
       blockchain forward msg
     }
 
     case other => {
-      log.info("Bode got other: " + other)
+      log.info("Node got other: " + other)
     }
   }
 

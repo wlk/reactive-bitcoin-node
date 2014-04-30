@@ -1,22 +1,25 @@
 package com.oohish.chain
 
-import scala.concurrent.Future
-import scala.util.Success
-import scala.util.Try
-
-import com.oohish.peermessages.Block
 import com.oohish.peermessages.GetHeaders
 import com.oohish.peermessages.Headers
 import com.oohish.peermessages.Verack
 import com.oohish.structures.uint32_t
 import com.oohish.wire.BTCConnection.Outgoing
 import com.oohish.wire.NetworkParameters
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.pattern.pipe
 import reactivemongo.api.MongoConnection
+import com.oohish.peermessages.GetBlocks
+import com.oohish.peermessages.Inv
+import com.oohish.peermessages.Block
+import akka.actor.ActorRef
+import com.oohish.structures.InvVect
+import com.oohish.structures.InvType
+import scala.util.Success
+import com.oohish.peermessages.GetData
+import scala.concurrent.Await
 
 object FullBlockChain {
 
@@ -25,6 +28,8 @@ object FullBlockChain {
     conn: Option[MongoConnection]) =
     Props(classOf[FullBlockChain], networkParams, conn)
 
+  case object Initialized
+
 }
 
 class FullBlockChain(
@@ -32,114 +37,92 @@ class FullBlockChain(
   conn: Option[MongoConnection]) extends Actor with ActorLogging {
 
   import context.dispatcher
+  import FullBlockChain.Initialized
 
   // initialize the block store.
   val store: BlockStore = new MongoBlockStore(conn)
-  addBlock(networkParams.genesisBlock.toHeader)
+  val blockChain = new BlockChain(store)
+  val futureInitialized = blockChain.addBlock(networkParams.genesisBlock, true)
+  futureInitialized.onComplete { case _ => context.parent ! Initialized }
 
-  def receive = {
+  def receive = listening()
+
+  def listening(): Receive = {
 
     case Verack() => {
       log.info("FullBlockChain received Verack")
+      val s = sender
+      log.info("Becoming syncing")
+      context.become(syncing(s))
+
       val futureBL = Chain.blockLocator(store)
       val blockLocator = futureBL.map { bl =>
         Outgoing(
-          GetHeaders(uint32_t(60002), bl, Chain.emptyHashStop))
+          GetBlocks(uint32_t(60002), bl, Chain.emptyHashStop))
       }
       blockLocator.pipeTo(sender)
     }
 
-    case Headers(h) => {
-      val newHeaders = h.seq
-      log.info("FullBlockChain received Headers with seq length: " + newHeaders.length)
-
-      log.debug("calling addBlocks")
-      val futureAdded = addBlocks(h)
-
-      // if new headers received, ask for more.
-      if (h.seq.length > 0) {
-        val futureBL = for {
-          added <- futureAdded
-          bl <- Chain.blockLocator(store)
-        } yield Outgoing(
-          GetHeaders(uint32_t(60002), bl, Chain.emptyHashStop))
-        futureBL.pipeTo(sender)
-      }
+    case b: Block => {
+      val futureAdded = blockChain.addBlock(b)
     }
 
   }
 
-  def addGenesis(block: Block) = {
+  def syncing(peer: ActorRef): Receive = {
 
-  }
-
-  /*
-   * Add a new block to the block store.
-   */
-  def addBlock(b: Block): Future[Try[Unit]] = {
-    log.info("adding block")
-    for {
-      maybeChainHead <- {
-        log.info("maybeChainHead")
-        store.getChainHead
-      }
-      maybePrevBlock <- {
-        log.info("maybePrevBlock")
-        store.get(b.prev_block)
-      }
-      maybeStoredBlock <- {
-        log.info("maybeStoredBlock")
-        maybeStoreBlock(maybePrevBlock, b)
-      }
-      updatedChainHead <- {
-        log.info("updatedChainHead")
-        maybeUpdateChainHead(maybeStoredBlock, maybeChainHead)
-      }
-    } yield Try(maybeStoredBlock.get)
-  }
-
-  def maybeStoreBlock(maybePrevBlock: Option[StoredBlock], block: Block): Future[Option[StoredBlock]] = {
-    val x = maybePrevBlock.map { prevBlock =>
-      val sb = StoredBlock(block, prevBlock.height + 1)
-      log.debug("stored block: " + sb)
-      store.put(sb).map(_ => Some(sb))
-    }.getOrElse {
-      val sb = StoredBlock(block, 0)
-      log.debug("stored block: " + sb)
-      store.put(sb).map(_ => Some(sb))
-    }
-    x.recover { case _ => None }
-  }
-
-  def maybeUpdateChainHead(maybeStoredBlock: Option[StoredBlock], maybeChainHead: Option[StoredBlock]): Future[Boolean] = {
-    maybeStoredBlock.map { storedBlock =>
-      maybeChainHead.map { chainHead =>
-        if (storedBlock.height > chainHead.height) {
-          store.setChainHead(storedBlock).map(_ => true)
-        } else {
-          Future(false)
-        }
-      }.getOrElse(store.setChainHead(storedBlock).map(_ => true))
-    }.getOrElse(Future(false))
-  }
-
-  /*
-   * Add a list of blocks
-   */
-  def addBlocks(blocks: List[Block]) = {
-    def addBlocksHelper(acc: Future[Try[Unit]], blks: List[Block]): Future[Try[Unit]] = {
-      blks match {
-        case Nil => acc
-        case h :: t => {
-          addBlock(h).flatMap { res =>
-            addBlocksHelper(Future(res), t)
+    case Inv(vectors) => {
+      //log.info("FullBlockChain received Inv")
+      val s = sender
+      if (sender == peer) {
+        if (vectors.forall(_.t.name == "MSG_BLOCK")) {
+          if (vectors.isEmpty) {
+            log.info("Finished syncing. Becoming listening.")
+            context.become(listening())
+          } else {
+            log.info("Becoming downloading with invs: " + vectors.length)
+            context.become(downloading(s, vectors))
+            sender ! Outgoing(GetData(vectors))
           }
         }
       }
     }
 
-    log.info("calling addBlocksHelper")
-    addBlocksHelper(Future(Success()), blocks)
+  }
+
+  def downloading(peer: ActorRef, invs: List[InvVect]): Receive = {
+
+    case b: Block => {
+      import scala.concurrent.duration._
+      import scala.language.postfixOps
+
+      val s = sender
+
+      if (sender == peer) {
+
+        log.info("received block: " + b.hash.s)
+        val futureAdded = blockChain.addBlock(b)
+        val newInvs = invs.filter(inv => inv.hash != b.hash)
+
+        // ugly, but necessary.
+        Await.result(futureAdded, 10 seconds)
+
+        if (newInvs.isEmpty) {
+          log.info("Becoming syncing again-------------------------------------")
+          context.become(syncing(peer))
+          val futureBL = Chain.blockLocator(store)
+          val blockLocator = futureBL.map { bl =>
+            Outgoing(
+              GetBlocks(uint32_t(60002), bl, Chain.emptyHashStop))
+          }
+          blockLocator.pipeTo(peer)
+        } else {
+          log.info("Becoming downloading with invs: " + newInvs.length)
+          context.become(downloading(peer, newInvs))
+        }
+      }
+    }
+
   }
 
 }

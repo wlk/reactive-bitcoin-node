@@ -1,9 +1,8 @@
 package com.oohish.chain
 
-import scala.concurrent.Future
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
+import scala.language.postfixOps
 
 import com.oohish.peermessages.Block
 import com.oohish.peermessages.GetHeaders
@@ -15,6 +14,7 @@ import com.oohish.wire.NetworkParameters
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
+import akka.actor.ActorRef
 import akka.actor.Props
 import akka.pattern.pipe
 
@@ -29,94 +29,72 @@ class SPVBlockChain(networkParams: NetworkParameters) extends Actor with ActorLo
 
   import context.dispatcher
 
+  // initialize the block store.
   val store: BlockStore = new MemoryBlockStore()
-  val genesis = networkParams.genesisBlock.toHeader
-  val sb = StoredBlock(genesis, 0)
-  store.put(sb)
-  store.setChainHead(sb)
+  val blockChain = new BlockChain(store)
+  val futureInitialized = blockChain.addBlock(networkParams.genesisBlock, true)
 
-  def receive = {
+  def receive = listening()
+
+  def listening(): Receive = {
 
     case Verack() => {
-      log.info("SPV blockchain received Verack")
+      log.info("FullBlockChain received Verack")
+      val s = sender
+      log.info("Becoming syncing")
+      context.become(syncing(s))
+
       val futureBL = Chain.blockLocator(store)
-      val blockLocator = futureBL.map { bl =>
+      val futureGetHeaders = futureBL.map { bl =>
         Outgoing(
           GetHeaders(uint32_t(60002), bl, Chain.emptyHashStop))
       }
-      blockLocator.pipeTo(sender)
+      futureGetHeaders.pipeTo(sender)
     }
+
+    case b: Block => {
+      val futureAdded = blockChain.addBlock(b.toHeader)
+    }
+
+  }
+
+  def syncing(peer: ActorRef): Receive = {
 
     case Headers(h) => {
-      val newHeaders = h.seq
-      log.info("SPV blockchain received Headers with seq length: " + newHeaders.length)
+      import scala.concurrent.duration._
+      import scala.language.postfixOps
 
-      log.debug("calling addBlocks")
-      val futureAdded = addBlocks(h)
+      if (sender == peer) {
+        log.info("SPV blockchain received Headers with seq length: " + h.length)
+        val futureAdded = blockChain.addBlocks(h)
 
-      // if new headers received, ask for more.
-      if (h.seq.length > 0) {
-        val futureBL = for {
-          added <- futureAdded
-          bl <- Chain.blockLocator(store)
-        } yield Outgoing(
-          GetHeaders(uint32_t(60002), bl, Chain.emptyHashStop))
-        futureBL.pipeTo(sender)
-      }
-    }
+        // ugly, but necessary.
+        Await.result(futureAdded, 10 seconds)
 
-    case blk: Block => {
-      addBlock(blk.toHeader)
-    }
+        // if new headers received, ask for more.
+        if (h.isEmpty) {
+          log.info("Finished syncing. Becoming listening.")
+          context.become(listening())
 
-  }
+          val futureBL = for {
+            bl <- Chain.blockLocator(store)
+          } yield Outgoing(
+            GetHeaders(uint32_t(60002), bl, Chain.emptyHashStop))
+          futureBL.pipeTo(sender)
+        } else {
+          log.info("Becoming syncing again-------------------------------------")
+          context.become(syncing(peer))
 
-  /*
-   * Try to add a new block to the block store.
-   */
-  def addBlock(b: Block): Future[Try[Unit]] = {
-    log.debug("adding block: " + b)
-    for {
-      maybePrevBlock <- store.get(b.prev_block)
-      chainHead <- store.getChainHead
-      inserted <- {
-        val tryPrev = Try { maybePrevBlock.get }
-        tryPrev match {
-          case Success(prevBlock) => {
-            val sb = StoredBlock(b, prevBlock.height + 1)
-            log.debug("stored block: " + sb)
-            val ret = store.put(sb).map(u => Success(u))
-            if (sb.height > chainHead.get.height) {
-              store.setChainHead(sb)
-              log.info("chain height: " + sb.height + ", last existing block hash: " + sb.block.hash)
-            }
-            ret
+          val futureBL = Chain.blockLocator(store)
+          val futureGetHeaders = futureBL.map { bl =>
+            Outgoing(
+              GetHeaders(uint32_t(60002), bl, Chain.emptyHashStop))
           }
-          case Failure(e) => {
-            Future(Failure(e))
-          }
-        }
-      }
-    } yield inserted
-  }
-
-  /*
-   * Add a list of blocks
-   */
-  def addBlocks(blocks: List[Block]) = {
-    def addBlocksHelper(acc: Future[Try[Unit]], blks: List[Block]): Future[Try[Unit]] = {
-      blks match {
-        case Nil => acc
-        case h :: t => {
-          addBlock(h).flatMap { res =>
-            addBlocksHelper(Future(res), t)
-          }
+          futureGetHeaders.pipeTo(sender)
         }
       }
     }
 
-    log.debug("calling addBlocksHelper")
-    addBlocksHelper(Future(Success()), blocks)
   }
 
 }
