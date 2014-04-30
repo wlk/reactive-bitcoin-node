@@ -4,15 +4,13 @@ bitcoin-akka-node
 
 Requirements
 --------------
-- 64-bit installation of MongoDb
+- 64-bit installation of MongoDB
 - sbt
 
 How to run
 --------------
 
 - Enter
-'''
-sbt run
-'''
+  sbt run
 
 - select FullNode or SPVNode
