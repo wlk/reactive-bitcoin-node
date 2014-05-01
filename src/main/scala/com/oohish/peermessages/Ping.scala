@@ -9,17 +9,17 @@ object Ping extends MessagePayloadReader[Ping] {
 
   def decode(it: ByteIterator) = {
     Ping(
-      uint64_t.decode(it))
+      uint64_t.decode(it).n)
   }
 
 }
 
 case class Ping(
-  nonce: uint64_t) extends MessagePayload {
+  nonce: BigInt) extends MessagePayload {
 
   def encode: ByteString = {
     val bb = ByteString.newBuilder
-    bb ++= nonce.encode
+    bb ++= uint64_t(nonce).encode
     bb.result
   }
 

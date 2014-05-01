@@ -1,26 +1,28 @@
 package com.oohish.wire
 
+import java.net.InetAddress
+import java.net.InetSocketAddress
+
+import scala.math.BigInt.int2bigInt
+import scala.math.BigInt.long2bigInt
+import scala.util.Random
+
+import org.joda.time.DateTime
+
 import com.oohish.peermessages.MessagePayload
 import com.oohish.peermessages.Verack
 import com.oohish.peermessages.Version
-import com.oohish.structures.int64_t
+import com.oohish.structures.IP
+import com.oohish.structures.NetworkAddress
+import com.oohish.structures.Port
 import com.oohish.wire.PeerManager.PeerConnected
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.actor.actorRef2Scala
-import com.oohish.structures.int32_t
-import org.joda.time.DateTime
-import com.oohish.structures.VarStr
-import com.oohish.structures.NetworkAddress
-import com.oohish.structures.uint64_t
-import com.oohish.structures.IP
-import com.oohish.structures.Port
-import scala.util.Random
-import java.net.InetSocketAddress
-import java.net.InetAddress
 
 object BTCConnection {
   def props(peer: Peer, networkParams: NetworkParameters, node: ActorRef, manager: ActorRef) =
@@ -34,28 +36,29 @@ object BTCConnection {
   def version(networkParams: NetworkParameters, peer: Peer) = Version(
     versionNum(networkParams),
     Node.services,
-    int64_t(DateTime.now().getMillis()),
+    DateTime.now().getMillis(),
     peerNetworkAddress(peer),
     myNetworkAddress,
     genNonce,
-    VarStr("/Satoshi:0.7.2/"),
-    int32_t(1))
+    "/Satoshi:0.7.2/",
+    1)
 
-  def versionNum(networkParams: NetworkParameters): int32_t =
-    int32_t(networkParams.PROTOCOL_VERSION.toInt)
+  def versionNum(networkParams: NetworkParameters): Int =
+    networkParams.PROTOCOL_VERSION.toInt
 
   def peerNetworkAddress(peer: Peer) = {
     NetworkAddress(
-      uint64_t(BigInt(1)),
+      1,
       IP(peer.address.getAddress().getHostAddress()),
       Port(peer.port))
   }
 
   def myNetworkAddress = peerNetworkAddress(selfPeer)
 
-  def genNonce(): uint64_t = {
-    val n = new Random().nextLong
-    uint64_t(uint64_t.asBigInt(n))
+  def genNonce(): BigInt = {
+    val bytes: Array[Byte] = Array.fill(8)(0)
+    Random.nextBytes(bytes)
+    BigInt(0.toByte +: bytes)
   }
 
   val selfPeer = Peer(new InetSocketAddress(InetAddress.getLocalHost(), 8333))
@@ -71,7 +74,7 @@ class BTCConnection(peer: Peer, networkParams: NetworkParameters, node: ActorRef
 
   def receive = connecting(false, None)
 
-  def connecting(verackReceived: Boolean, versionReceived: Option[int64_t]): Receive = {
+  def connecting(verackReceived: Boolean, versionReceived: Option[Long]): Receive = {
 
     case _: Verack => {
       if (versionReceived.isDefined) {
@@ -101,8 +104,8 @@ class BTCConnection(peer: Peer, networkParams: NetworkParameters, node: ActorRef
 
   }
 
-  def finishHandshake(time: int64_t): Unit = {
-    manager ! PeerConnected(peer, time.n)
+  def finishHandshake(time: Long): Unit = {
+    manager ! PeerConnected(peer, time)
     node ! Verack()
     log.info("becoming connected")
     context.become(connected)

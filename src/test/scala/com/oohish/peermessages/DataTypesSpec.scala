@@ -1,6 +1,7 @@
 package com.oohish.peermessages
 
 import scala.collection.parallel.traversable2ops
+import scala.math.BigInt.int2bigInt
 
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
@@ -44,9 +45,10 @@ class DataTypesSpec extends FlatSpec with Matchers {
 
   }
 
-  "A services number" should "have the right size" in {
+  val services = uint64_t(Node.services)
 
-    val services = Node.services
+  "A services number" should "serialize to the right size" in {
+
     val bytes = services.encode
 
     bytes.length should be(8)
@@ -55,7 +57,6 @@ class DataTypesSpec extends FlatSpec with Matchers {
 
   it should "have the right hex string" in {
 
-    val services = Node.services
     val bytes = services.encode
 
     val byteArray = bytes.compact.toParArray.toArray
@@ -65,6 +66,17 @@ class DataTypesSpec extends FlatSpec with Matchers {
     val expected = "01 00 00 00 00 00 00 00".replace(" ", "").toLowerCase()
 
     hexString should be(expected)
+
+  }
+
+  it should "deserialize back to itself" in {
+
+    val bytes = services.encode
+
+    val it = bytes.iterator
+    val finalServices = uint64_t.decode(it)
+
+    finalServices should be(services)
 
   }
 
@@ -96,7 +108,7 @@ class DataTypesSpec extends FlatSpec with Matchers {
   "An addr" should "have the right size" in {
 
     val addr = NetworkAddress(
-      uint64_t(BigInt(1)),
+      1,
       IP("10.0.0.1"),
       Port(8333))
     val bytes = addr.encode
@@ -120,9 +132,10 @@ class DataTypesSpec extends FlatSpec with Matchers {
 
   }
 
+  val nonce = uint64_t(BTCConnection.genNonce)
+
   "A nonce" should "have the right size" in {
 
-    val nonce = BTCConnection.genNonce
     val bytes = nonce.encode
 
     bytes.length should be(8)
@@ -131,7 +144,6 @@ class DataTypesSpec extends FlatSpec with Matchers {
 
   it should "deserialize back to itself" in {
 
-    val nonce = BTCConnection.genNonce
     val bytes = nonce.encode
 
     val it = bytes.iterator

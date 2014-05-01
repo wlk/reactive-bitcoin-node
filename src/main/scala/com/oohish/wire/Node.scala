@@ -14,7 +14,6 @@ import com.oohish.peermessages.GetData
 import com.oohish.peermessages.Inv
 import com.oohish.peermessages.MessagePayload
 import com.oohish.peermessages.Tx
-import com.oohish.structures.uint64_t
 import com.oohish.wire.BTCConnection.Outgoing
 
 import PeerManager.Discovered
@@ -32,7 +31,7 @@ object Node {
     conn: Option[MongoConnection] = None) =
     Props(classOf[Node], networkParams, spv, conn)
 
-  def services = uint64_t(BigInt(1))
+  def services = 1
 
   case class Incoming(peer: Peer, msg: MessagePayload)
   //case class Outgoing(peer: Peer, msg: MessagePayload)

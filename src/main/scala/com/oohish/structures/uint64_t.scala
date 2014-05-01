@@ -1,5 +1,8 @@
 package com.oohish.structures
 
+import scala.math.BigInt.int2bigInt
+import scala.math.BigInt.long2bigInt
+
 import akka.util.ByteIterator
 import akka.util.ByteString
 
@@ -17,20 +20,20 @@ object uint64_t extends StructureReader[uint64_t] {
   def asBigInt(unsignedLong: Long): BigInt =
     (BigInt(unsignedLong >>> 1) << 1) + (unsignedLong & 1)
 
-  def asLong(n: BigInt): Long = {
-    val smallestBit = (n & 1).toLong
-    ((n >> 1).toLong << 1) | smallestBit
-  }
-
 }
 
 case class uint64_t(n: BigInt) extends Structure {
 
   def encode: ByteString = {
     val bb = ByteString.newBuilder
-    val longN = uint64_t.asLong(n)
+    val longN = asLong(n)
     bb.putLong(longN)
     bb.result
+  }
+
+  def asLong(n: BigInt): Long = {
+    val smallestBit = (n & 1).toLong
+    ((n >> 1).toLong << 1) | smallestBit
   }
 
 }
