@@ -18,8 +18,8 @@ object Block extends MessagePayloadReader[Block] {
   def decode(it: ByteIterator) = {
     Block(
       uint32_t.decode(it),
-      char32.decode(it),
-      char32.decode(it),
+      char32.decode(it).s,
+      char32.decode(it).s,
       uint32_t.decode(it),
       uint32_t.decode(it),
       uint32_t.decode(it),
@@ -30,8 +30,8 @@ object Block extends MessagePayloadReader[Block] {
 
 case class Block(
   version: uint32_t,
-  prev_block: char32,
-  merkle_root: char32,
+  prev_block: String,
+  merkle_root: String,
   timestamp: uint32_t,
   bits: uint32_t,
   nonce: uint32_t,
@@ -40,8 +40,8 @@ case class Block(
   def encode: ByteString = {
     val bb = ByteString.newBuilder
     bb ++= version.encode
-    bb ++= prev_block.encode
-    bb ++= merkle_root.encode
+    bb ++= char32(prev_block).encode
+    bb ++= char32(merkle_root).encode
     bb ++= timestamp.encode
     bb ++= bits.encode
     bb ++= nonce.encode
@@ -59,13 +59,13 @@ case class Block(
   /**
    * Calculate the hash of a block.
    */
-  def hash(): char32 = {
+  def hash(): String = {
     val bh = toHeader()
 
     val bb = ByteString.newBuilder
     bb ++= bh.version.encode
-    bb ++= bh.prev_block.encode
-    bb ++= bh.merkle_root.encode
+    bb ++= char32(bh.prev_block).encode
+    bb ++= char32(bh.merkle_root).encode
     bb ++= bh.timestamp.encode
     bb ++= bh.bits.encode
     bb ++= bh.nonce.encode
@@ -75,7 +75,7 @@ case class Block(
     val headerBytes: Array[Byte] = hashByteString.compact.toParArray.toArray
     val hash1 = messageDigest.digest(headerBytes)
     val hash2 = messageDigest.digest(hash1)
-    char32(HexBytesUtil.bytes2hex(hash2.reverse))
+    HexBytesUtil.bytes2hex(hash2.reverse)
   }
 
 }

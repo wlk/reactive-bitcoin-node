@@ -1,16 +1,14 @@
 package com.oohish.chain
 
-import collection.mutable.Stack
-import org.scalatest._
-import akka.util.ByteStringBuilder
-import com.oohish.util.HexBytesUtil
-import com.oohish.structures.uint32_t
-import com.oohish.structures.char32
-import com.oohish.structures.VarInt
-import com.oohish.wire.MainNetParams
+import scala.collection.parallel.traversable2ops
+
+import org.scalatest.FlatSpec
+import org.scalatest.Matchers
+
 import com.oohish.peermessages.Block
-import com.oohish.structures.VarStruct
-import com.oohish.peermessages.Tx
+import com.oohish.structures.uint32_t
+import com.oohish.util.HexBytesUtil
+import com.oohish.wire.MainNetParams
 
 class BlockSpec extends FlatSpec with Matchers {
 
@@ -19,8 +17,8 @@ class BlockSpec extends FlatSpec with Matchers {
     val bh = {
       Block(
         uint32_t(1), //version
-        char32("6fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000"), //prev block
-        char32("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"), //merkle root
+        "6fe28c0ab6f1b372c1a6a246ae63f74f931e8365e15a089c68d6190000000000", //prev block
+        "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b", //merkle root
         uint32_t(1231006505), //timestamp
         uint32_t(486604799), //bits
         uint32_t(2083236893), //nonce
@@ -70,15 +68,13 @@ class BlockSpec extends FlatSpec with Matchers {
 
   it should "have the right hash" in {
 
-    val expectedGenesisHashString = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
+    val expectedGenesisHash = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
 
     val genesis = MainNetParams.genesisBlock.toHeader
 
     val genesisHash = genesis.hash
 
-    val genesisHashString = genesisHash.s
-
-    genesisHashString should be(expectedGenesisHashString)
+    genesisHash should be(expectedGenesisHash)
 
   }
 

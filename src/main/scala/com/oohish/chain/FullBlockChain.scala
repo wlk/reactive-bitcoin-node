@@ -100,7 +100,7 @@ class FullBlockChain(
 
       if (sender == peer) {
 
-        log.info("received block: " + b.hash.s)
+        log.info("received block: " + b.hash)
         val futureAdded = blockChain.addBlock(b)
         val newInvs = invs.filter(inv => inv.hash != b.hash)
 

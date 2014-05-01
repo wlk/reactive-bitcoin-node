@@ -1,16 +1,14 @@
 package com.oohish.wire
 
 import scala.math.BigInt.int2bigInt
+
 import com.oohish.peermessages.Block
-import com.oohish.structures.VarStruct
-import com.oohish.structures.char32
-import com.oohish.structures.uint32_t
-import com.oohish.util.HexBytesUtil
 import com.oohish.peermessages.Tx
-import com.oohish.structures.TxIn
 import com.oohish.structures.OutPoint
+import com.oohish.structures.TxIn
 import com.oohish.structures.TxOut
 import com.oohish.structures.int64_t
+import com.oohish.structures.uint32_t
 
 /*
  * Taken from bitcoinj's NetworkParameters
@@ -38,8 +36,8 @@ object MainNetParams extends NetworkParameters {
   def genesisBlock: Block =
     Block(
       uint32_t(1), //version
-      char32("0000000000000000000000000000000000000000000000000000000000000000"), //prev block
-      char32("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"), //merkle root
+      "0000000000000000000000000000000000000000000000000000000000000000", //prev block
+      "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b", //merkle root
       uint32_t(1231006505), //timestamp
       uint32_t(486604799), //bits
       uint32_t(2083236893), //nonce
@@ -49,7 +47,7 @@ object MainNetParams extends NetworkParameters {
           List(
             TxIn(
               OutPoint(
-                char32("0000000000000000000000000000000000000000000000000000000000000000"), //prev block
+                "0000000000000000000000000000000000000000000000000000000000000000", //prev block
                 uint32_t(4294967295L) //n
                 ),
               "04ffff001d0104455468652054696d65732030332f4a616e2f32303039204368616e63656c6c6f72206f6e206272696e6b206f66207365636f6e64206261696c6f757420666f722062616e6b73", // txins
@@ -79,8 +77,8 @@ object TestNet3Params extends NetworkParameters {
   def genesisBlock: Block =
     Block(
       uint32_t(1), //version
-      char32("0000000000000000000000000000000000000000000000000000000000000000"), //prev block
-      char32("4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"), //merkle root
+      "0000000000000000000000000000000000000000000000000000000000000000", //prev block
+      "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b", //merkle root
       uint32_t(1296688602), //timestamp
       uint32_t(486604799), //bits
       uint32_t(414098458), //nonce

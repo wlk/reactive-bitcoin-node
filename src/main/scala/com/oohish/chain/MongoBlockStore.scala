@@ -4,7 +4,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 import com.oohish.peermessages.Block
-import com.oohish.structures.char32
 
 import play.api.libs.functional.syntax.functionalCanBuildApplicative
 import play.api.libs.functional.syntax.toFunctionalBuilderOps
@@ -52,14 +51,13 @@ class MongoBlockStore(
     } yield a
   }
 
-  def get(hash: char32): Future[Option[StoredBlock]] = {
+  def get(hash: String): Future[Option[StoredBlock]] = {
     import play.api.libs.json._
 
     import JsonFormats.storedBlockReads
     val reads = storedBlockReads
 
-    val h = JsonFormats.char32Format.writes(hash)
-    collection.find(Json.obj("_id" -> h)).one
+    collection.find(Json.obj("_id" -> hash)).one
   }
 
   def getChainHead(): Future[Option[StoredBlock]] = {
@@ -73,7 +71,6 @@ class MongoBlockStore(
 
   def setChainHead(cHead: StoredBlock): Future[Unit] = {
     import JsonFormats.storedBlockWrites
-    import JsonFormats.char32Format
     val writes = storedBlockWrites
 
     for {
@@ -98,7 +95,6 @@ object JsonFormats {
 
   // JSON formats
   implicit val uint32_tFormat = Json.format[uint32_t]
-  implicit val char32Format = Json.format[char32]
   implicit val outPointFormat = Json.format[OutPoint]
   implicit val txInFormat = Json.format[TxIn]
   implicit val int64_tFormat = Json.format[int64_t]

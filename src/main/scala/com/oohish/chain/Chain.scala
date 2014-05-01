@@ -2,10 +2,6 @@ package com.oohish.chain
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
-import com.oohish.structures.char32
-import scala.util.Try
-import scala.util.Success
-import com.oohish.peermessages.Block
 
 object Chain {
 
@@ -48,12 +44,12 @@ object Chain {
   /*
    * return a block locator for the block store.
    */
-  def blockLocator(store: BlockStore)(implicit ec: ExecutionContext): Future[List[char32]] = {
+  def blockLocator(store: BlockStore)(implicit ec: ExecutionContext): Future[List[String]] = {
     store.getChainHead.flatMap { maybeSb =>
       val maxHeight = maybeSb.map(_.height).getOrElse(0)
       val locatorIndices = Chain.blockLocatorIndices(maxHeight + 1)
 
-      def blockLocatorHelper(acc: Future[List[char32]], maybeCur: Option[StoredBlock]): Future[List[char32]] = {
+      def blockLocatorHelper(acc: Future[List[String]], maybeCur: Option[StoredBlock]): Future[List[String]] = {
         maybeCur.map { cur =>
           val futurePrev = prevStoredBlock(store, cur)
           futurePrev.flatMap { maybePrev =>
@@ -75,6 +71,6 @@ object Chain {
 
   }
 
-  val emptyHashStop = char32("0000000000000000000000000000000000000000000000000000000000000000")
+  val emptyHashStop = "0000000000000000000000000000000000000000000000000000000000000000"
 
 }

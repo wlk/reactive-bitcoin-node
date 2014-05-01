@@ -1,11 +1,10 @@
 package com.oohish.pool
 
 import com.oohish.peermessages.Tx
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
-import com.oohish.structures.char32
-import com.oohish.util.HexBytesUtil
 
 object MemoryPool {
   def props() =
@@ -28,7 +27,7 @@ object MemoryPool {
 
   def nonCoinbase(tx: Tx): Boolean = {
     tx.tx_in.seq.forall { txIn =>
-      !(txIn.previous_output.hash == char32("0000000000000000000000000000000000000000000000000000000000000000") &&
+      !(txIn.previous_output.hash == "0000000000000000000000000000000000000000000000000000000000000000" &&
         txIn.previous_output.index.n == Integer.MAX_VALUE)
     }
   }

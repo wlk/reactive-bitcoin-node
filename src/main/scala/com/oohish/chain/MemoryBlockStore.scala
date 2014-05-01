@@ -4,12 +4,9 @@ import scala.collection.mutable.HashMap
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
-import com.oohish.peermessages.Block
-import com.oohish.structures.char32
-
 class MemoryBlockStore extends BlockStore {
 
-  val blockMap: HashMap[char32, StoredBlock] = HashMap.empty[char32, StoredBlock]
+  val blockMap: HashMap[String, StoredBlock] = HashMap.empty[String, StoredBlock]
 
   var chainHead: Option[StoredBlock] = None
 
@@ -19,7 +16,7 @@ class MemoryBlockStore extends BlockStore {
       ()
     }
 
-  def get(hash: char32): Future[Option[StoredBlock]] =
+  def get(hash: String): Future[Option[StoredBlock]] =
     Future(blockMap.get(hash))
 
   def getChainHead(): Future[Option[StoredBlock]] =
