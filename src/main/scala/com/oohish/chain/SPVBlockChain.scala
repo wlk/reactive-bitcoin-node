@@ -47,7 +47,7 @@ class SPVBlockChain(networkParams: NetworkParameters) extends Actor with ActorLo
       val futureBL = Chain.blockLocator(store)
       val futureGetHeaders = futureBL.map { bl =>
         Outgoing(
-          GetHeaders(uint32_t(60002), bl, Chain.emptyHashStop))
+          GetHeaders(networkParams.PROTOCOL_VERSION, bl, Chain.emptyHashStop))
       }
       futureGetHeaders.pipeTo(sender)
     }
@@ -79,7 +79,7 @@ class SPVBlockChain(networkParams: NetworkParameters) extends Actor with ActorLo
           val futureBL = for {
             bl <- Chain.blockLocator(store)
           } yield Outgoing(
-            GetHeaders(uint32_t(60002), bl, Chain.emptyHashStop))
+            GetHeaders(networkParams.PROTOCOL_VERSION, bl, Chain.emptyHashStop))
           futureBL.pipeTo(sender)
         } else {
           log.info("Becoming syncing again-------------------------------------")

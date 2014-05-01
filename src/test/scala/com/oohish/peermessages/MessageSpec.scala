@@ -2,12 +2,10 @@ package com.oohish.peermessages
 
 import scala.Array.canBuildFrom
 import scala.collection.parallel.traversable2ops
-
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
-
 import com.oohish.structures.IP
 import com.oohish.structures.NetworkAddress
 import com.oohish.structures.Port
@@ -20,16 +18,31 @@ import com.oohish.wire.MainNetParams
 import com.oohish.wire.MessageTypeStage
 import com.oohish.wire.Node
 import com.oohish.wire.peermessagestage
-
 import akka.io.PipelineContext
 import akka.io.PipelineFactory
 import akka.util.ByteString
+import com.oohish.wire.BTCConnection
+import com.oohish.structures.uint32_t
 
 class peermessagespec extends FlatSpec with Matchers {
 
+  val params = MainNetParams
+
+  def version = Version(
+    int32_t(60002),
+    Node.services,
+    int64_t(DateTime.parse("18/12/2012 10:12:33",
+      DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss")).getMillis() / 1000),
+    NetworkAddress(Node.services, IP("0.0.0.0"), Port(0)),
+    NetworkAddress(Node.services, IP("0.0.0.0"), Port(0)),
+    uint64_t(BigInt(Array(0x3B, 0x2E, 0xB3, 0x5D, 0x8C, 0xE6, 0x17, 0x65).map(_.toByte).reverse)),
+    VarStr("/Satoshi:0.7.2/"),
+    int32_t(212672))
+
+  val verack = new Verack()
+
   "A verack" should "have empty payload" in {
 
-    val verack = new Verack()
     val verackBytes = verack.encode
 
     verackBytes should be(ByteString())
@@ -38,8 +51,6 @@ class peermessagespec extends FlatSpec with Matchers {
   }
 
   it should "serialize to a bytestring with the right length" in {
-
-    val verack = new Verack()
 
     var bytes: ByteString = ByteString.empty
 
@@ -58,16 +69,6 @@ class peermessagespec extends FlatSpec with Matchers {
 
   "A version" should "have the right payload size" in {
 
-    def version = Version(
-      Node.versionNum,
-      Node.services,
-      int64_t(DateTime.now().getMillis()),
-      NetworkAddress(Node.services, IP("0.0.0.0"), Port(0)),
-      NetworkAddress(Node.services, IP("0.0.0.0"), Port(0)),
-      Node.genNonce,
-      VarStr("/Satoshi:0.7.2/"),
-      int32_t(1))
-
     val versionBytes = version.encode
 
     versionBytes.length should be(100)
@@ -75,17 +76,6 @@ class peermessagespec extends FlatSpec with Matchers {
   }
 
   it should "serialize to a bytestring with the right length" in {
-
-    def version = Version(
-      Node.versionNum,
-      Node.services,
-      int64_t(DateTime.parse("18/12/2012 10:12:33",
-        DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss")).getMillis() / 1000),
-      NetworkAddress(Node.services, IP("0.0.0.0"), Port(0)),
-      NetworkAddress(Node.services, IP("0.0.0.0"), Port(0)),
-      Node.genNonce,
-      VarStr("/Satoshi:0.7.2/"),
-      int32_t(1))
 
     var bytes: ByteString = ByteString.empty
 
@@ -103,17 +93,6 @@ class peermessagespec extends FlatSpec with Matchers {
   }
 
   it should "serialize to a bytestring with the right hexstring" in {
-
-    def version = Version(
-      Node.versionNum,
-      Node.services,
-      int64_t(DateTime.parse("18/12/2012 10:12:33",
-        DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss")).getMillis() / 1000),
-      NetworkAddress(Node.services, IP("0.0.0.0"), Port(0)),
-      NetworkAddress(Node.services, IP("0.0.0.0"), Port(0)),
-      uint64_t(BigInt(Array(0x3B, 0x2E, 0xB3, 0x5D, 0x8C, 0xE6, 0x17, 0x65).map(_.toByte).reverse)),
-      VarStr("/Satoshi:0.7.2/"),
-      int32_t(212672))
 
     var bytes: ByteString = ByteString.empty
 
@@ -139,13 +118,13 @@ class peermessagespec extends FlatSpec with Matchers {
   it should "deserialize back to its original value" in {
 
     val version = Version(
-      Node.versionNum,
+      BTCConnection.versionNum(params),
       Node.services,
       int64_t(DateTime.parse("18/12/2012 10:12:33",
         DateTimeFormat.forPattern("dd/MM/yyyy HH:mm:ss")).getMillis() / 1000),
       NetworkAddress(Node.services, IP("106.69.141.207"), Port(8333)),
       NetworkAddress(Node.services, IP("127.0.0.1"), Port(8333)),
-      Node.genNonce,
+      BTCConnection.genNonce,
       VarStr("/Satoshi:0.7.2/"),
       int32_t(1))
 

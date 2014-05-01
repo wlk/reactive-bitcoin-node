@@ -23,7 +23,7 @@ trait NetworkParameters {
   def packetMagic: Long
   def port: Int
   def proofOfWorkLimit: BigInt
-  def PROTOCOL_VERSION: Int
+  def PROTOCOL_VERSION: uint32_t = uint32_t(70001)
   def targetTimespan: Int
   def dnsSeeds: List[String]
 
@@ -64,7 +64,6 @@ object MainNetParams extends NetworkParameters {
   def packetMagic: Long = 0xD9B4BEF9
   def port: Int = 8333
   def proofOfWorkLimit: BigInt = 0 //TODO
-  def PROTOCOL_VERSION: Int = 0 //TODO
   def targetTimespan: Int = 0 //TODO
   def dnsSeeds: List[String] = List(
     "seed.bitcoin.sipa.be",
@@ -90,7 +89,6 @@ object TestNet3Params extends NetworkParameters {
   def packetMagic: Long = 0x0709110B
   def port: Int = 18333
   def proofOfWorkLimit: BigInt = 0 //TODO
-  def PROTOCOL_VERSION: Int = 0 //TODO
   def targetTimespan: Int = 0 //TODO
   def dnsSeeds: List[String] = List(
     "bitcoin.petertodd.org",

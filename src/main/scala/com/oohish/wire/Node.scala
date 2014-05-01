@@ -1,40 +1,29 @@
 package com.oohish.wire
 
 import java.net.InetAddress
-
 import java.net.InetSocketAddress
+
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-import scala.util.Random
-import org.joda.time.DateTime
+
+import com.oohish.chain.FullBlockChain
 import com.oohish.chain.SPVBlockChain
 import com.oohish.peermessages.Addr
+import com.oohish.peermessages.Block
 import com.oohish.peermessages.GetData
 import com.oohish.peermessages.Inv
 import com.oohish.peermessages.MessagePayload
 import com.oohish.peermessages.Tx
-import com.oohish.peermessages.Verack
-import com.oohish.peermessages.Version
-import com.oohish.structures.IP
-import com.oohish.structures.InvVect
-import com.oohish.structures.NetworkAddress
-import com.oohish.structures.Port
-import com.oohish.structures.VarStr
-import com.oohish.structures.VarStruct
-import com.oohish.structures.int32_t
-import com.oohish.structures.int64_t
 import com.oohish.structures.uint64_t
 import com.oohish.wire.BTCConnection.Outgoing
+
 import PeerManager.Discovered
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.util.Timeout
-import com.oohish.chain.FullBlockChain
-import com.oohish.peermessages.Block
-
-import reactivemongo.api._
+import reactivemongo.api.MongoConnection
 
 object Node {
   def props(
@@ -42,36 +31,6 @@ object Node {
     spv: Boolean = false,
     conn: Option[MongoConnection] = None) =
     Props(classOf[Node], networkParams, spv, conn)
-
-  val selfPeer = Peer(new InetSocketAddress(InetAddress.getLocalHost(), 8333))
-
-  def verack = Verack()
-
-  def version(peer: Peer) = Version(
-    Node.versionNum,
-    Node.services,
-    int64_t(DateTime.now().getMillis()),
-    peerNetworkAddress(peer),
-    myNetworkAddress,
-    genNonce,
-    VarStr("/Satoshi:0.7.2/"),
-    int32_t(1))
-
-  def peerNetworkAddress(peer: Peer) = {
-    NetworkAddress(
-      uint64_t(BigInt(1)),
-      IP(peer.address.getAddress().getHostAddress()),
-      Port(peer.port))
-  }
-
-  def myNetworkAddress = peerNetworkAddress(selfPeer)
-
-  def genNonce(): uint64_t = {
-    val n = new Random().nextLong
-    uint64_t(uint64_t.asBigInt(n))
-  }
-
-  def versionNum = int32_t(60002)
 
   def services = uint64_t(BigInt(1))
 

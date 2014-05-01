@@ -24,7 +24,7 @@ class TCPConnection(networkParams: NetworkParameters, peer: Peer, node: ActorRef
 
   val ctx = new PipelineContext {}
 
-  val btcConnection = context.actorOf(BTCConnection.props(peer, node, manager))
+  val btcConnection = context.actorOf(BTCConnection.props(peer, networkParams, node, manager))
   context.watch(btcConnection)
 
   val pipeline =
