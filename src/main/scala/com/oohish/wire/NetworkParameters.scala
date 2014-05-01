@@ -57,7 +57,7 @@ object MainNetParams extends NetworkParameters {
           0 //lockTime
           )))
   def interval: Int = INTERVAL
-  def packetMagic: Long = 0xD9B4BEF9
+  def packetMagic: Long = 0xD9B4BEF9L
   def port: Int = 8333
   def proofOfWorkLimit: BigInt = 0 //TODO
   def targetTimespan: Int = 0 //TODO
@@ -82,7 +82,7 @@ object TestNet3Params extends NetworkParameters {
       414098458, //nonce
       List())
   def interval: Int = INTERVAL
-  def packetMagic: Long = 0x0709110B
+  def packetMagic: Long = 0x0709110BL
   def port: Int = 18333
   def proofOfWorkLimit: BigInt = 0 //TODO
   def targetTimespan: Int = 0 //TODO

@@ -3,8 +3,8 @@ package com.oohish.wire
 import java.net.InetAddress
 import java.net.InetSocketAddress
 
+import scala.Array.canBuildFrom
 import scala.math.BigInt.int2bigInt
-import scala.math.BigInt.long2bigInt
 import scala.util.Random
 
 import org.joda.time.DateTime

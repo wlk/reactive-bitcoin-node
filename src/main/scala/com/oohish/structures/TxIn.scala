@@ -11,7 +11,7 @@ object TxIn extends StructureReader[TxIn] {
   def decode(it: ByteIterator): TxIn = {
     TxIn(
       OutPoint.decode(it),
-      VarStr.decode(it).s,
+      Script.decode(it).s,
       uint32_t.decode(it).n)
   }
 }
@@ -24,7 +24,7 @@ case class TxIn(
   def encode: ByteString = {
     val bb = ByteString.newBuilder
     bb ++= previous_output.encode
-    bb ++= VarStr(sig_script).encode
+    bb ++= Script(sig_script).encode
     bb ++= uint32_t(sequence).encode
     bb.result
   }

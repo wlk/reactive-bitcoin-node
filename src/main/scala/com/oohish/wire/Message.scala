@@ -39,14 +39,15 @@ object Message {
   /*
        * Calculates the checksum of the payload.
        */
-  def checksum(data: ByteString): Int = {
+  def checksum(data: ByteString): Long = {
     val payloadBytes = Array.fill(data.length)(0x0.toByte)
     data.iterator.getBytes(payloadBytes)
     val messageDigest = MessageDigest.getInstance("SHA-256")
     val hash1 = messageDigest.digest(payloadBytes)
     val hash2 = messageDigest.digest(hash1)
-    val byteBuffer = ByteBuffer.wrap(hash2.slice(0, 4)).order(ByteOrder.LITTLE_ENDIAN)
-    byteBuffer.getInt()
+    val padding: Array[Byte] = Array.fill(4)(0)
+    val byteBuffer = ByteBuffer.wrap(hash2.slice(0, 4) ++ padding).order(ByteOrder.LITTLE_ENDIAN)
+    byteBuffer.getLong()
   }
 
 }

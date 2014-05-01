@@ -1,8 +1,6 @@
 package com.oohish.wire
 
-import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.security.MessageDigest
 
 import scala.annotation.tailrec
 
