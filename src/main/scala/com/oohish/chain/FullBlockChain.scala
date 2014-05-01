@@ -58,7 +58,7 @@ class FullBlockChain(
       val futureBL = Chain.blockLocator(store)
       val blockLocator = futureBL.map { bl =>
         Outgoing(
-          GetBlocks(uint32_t(60002), bl, Chain.emptyHashStop))
+          GetBlocks(networkParams.PROTOCOL_VERSION, bl, Chain.emptyHashStop))
       }
       blockLocator.pipeTo(sender)
     }
@@ -113,7 +113,7 @@ class FullBlockChain(
           val futureBL = Chain.blockLocator(store)
           val blockLocator = futureBL.map { bl =>
             Outgoing(
-              GetBlocks(uint32_t(60002), bl, Chain.emptyHashStop))
+              GetBlocks(networkParams.PROTOCOL_VERSION, bl, Chain.emptyHashStop))
           }
           blockLocator.pipeTo(peer)
         } else {
