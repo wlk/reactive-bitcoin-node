@@ -12,19 +12,19 @@ object TimeNetworkAddress extends StructureReader[TimeNetworkAddress] {
 
   def decode(it: ByteIterator) = {
     TimeNetworkAddress(
-      uint32_t.decode(it),
+      uint32_t.decode(it).n,
       NetworkAddress.decode(it))
   }
 
 }
 
 case class TimeNetworkAddress(
-  time: uint32_t,
+  time: Long,
   addr: NetworkAddress) extends Structure {
 
   def encode: ByteString = {
     val bb = ByteString.newBuilder
-    bb ++= time.encode
+    bb ++= uint32_t(time).encode
     bb ++= addr.encode
     bb.result
   }

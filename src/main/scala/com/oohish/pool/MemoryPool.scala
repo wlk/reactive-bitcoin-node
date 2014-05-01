@@ -19,7 +19,7 @@ object MemoryPool {
   }
 
   def legalMoneyRange(tx: Tx): Boolean = {
-    val outVals = tx.tx_out.seq.map(_.value.n)
+    val outVals = tx.tx_out.seq.map(_.value)
     val sm = outVals.sum
     outVals.forall(outVal => outVal >= MIN_OUT_VALUE && outVal <= Max_OUT_VALUE) &&
       (sm >= MIN_OUT_VALUE && sm <= Max_OUT_VALUE)
@@ -28,13 +28,13 @@ object MemoryPool {
   def nonCoinbase(tx: Tx): Boolean = {
     tx.tx_in.seq.forall { txIn =>
       !(txIn.previous_output.hash == "0000000000000000000000000000000000000000000000000000000000000000" &&
-        txIn.previous_output.index.n == Integer.MAX_VALUE)
+        txIn.previous_output.index == Integer.MAX_VALUE)
     }
   }
 
   // Check that nLockTime <= INT_MAX[1], size in bytes >= 100[2], and sig opcount <= 2[3]
   def validNLockTime(tx: Tx): Boolean = {
-    tx.lock_time.n <= Integer.MAX_VALUE &&
+    tx.lock_time <= Integer.MAX_VALUE &&
       tx.encode.size >= 100 &&
       true
   }

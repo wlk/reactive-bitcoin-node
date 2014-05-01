@@ -13,26 +13,26 @@ object Tx extends MessagePayloadReader[Tx] {
 
   def decode(it: ByteIterator) = {
     Tx(
-      uint32_t.decode(it),
+      uint32_t.decode(it).n,
       new VarStructReader(TxIn).decode(it).seq,
       new VarStructReader(TxOut).decode(it).seq,
-      uint32_t.decode(it))
+      uint32_t.decode(it).n)
   }
 
 }
 
 case class Tx(
-  version: uint32_t,
+  version: Long,
   tx_in: List[TxIn],
   tx_out: List[TxOut],
-  lock_time: uint32_t) extends MessagePayload {
+  lock_time: Long) extends MessagePayload {
 
   def encode: ByteString = {
     val bb = ByteString.newBuilder
-    bb ++= version.encode
+    bb ++= uint32_t(version).encode
     bb ++= VarStruct(tx_in).encode
     bb ++= VarStruct(tx_out).encode
-    bb ++= lock_time.encode
+    bb ++= uint32_t(lock_time).encode
     bb.result
   }
 

@@ -2,10 +2,12 @@ package com.oohish.peermessages
 
 import scala.Array.canBuildFrom
 import scala.collection.parallel.traversable2ops
+
 import org.joda.time.DateTime
 import org.joda.time.format.DateTimeFormat
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
+
 import com.oohish.structures.IP
 import com.oohish.structures.NetworkAddress
 import com.oohish.structures.Port
@@ -14,15 +16,15 @@ import com.oohish.structures.int32_t
 import com.oohish.structures.int64_t
 import com.oohish.structures.uint64_t
 import com.oohish.util.HexBytesUtil
+import com.oohish.wire.BTCConnection
 import com.oohish.wire.MainNetParams
 import com.oohish.wire.MessageTypeStage
 import com.oohish.wire.Node
 import com.oohish.wire.peermessagestage
+
 import akka.io.PipelineContext
 import akka.io.PipelineFactory
 import akka.util.ByteString
-import com.oohish.wire.BTCConnection
-import com.oohish.structures.uint32_t
 
 class peermessagespec extends FlatSpec with Matchers {
 

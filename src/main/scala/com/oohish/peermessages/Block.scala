@@ -17,34 +17,34 @@ object Block extends MessagePayloadReader[Block] {
 
   def decode(it: ByteIterator) = {
     Block(
-      uint32_t.decode(it),
+      uint32_t.decode(it).n,
       char32.decode(it).s,
       char32.decode(it).s,
-      uint32_t.decode(it),
-      uint32_t.decode(it),
-      uint32_t.decode(it),
+      uint32_t.decode(it).n,
+      uint32_t.decode(it).n,
+      uint32_t.decode(it).n,
       new VarStructReader(Tx).decode(it).seq)
   }
 
 }
 
 case class Block(
-  version: uint32_t,
+  version: Long,
   prev_block: String,
   merkle_root: String,
-  timestamp: uint32_t,
-  bits: uint32_t,
-  nonce: uint32_t,
+  timestamp: Long,
+  bits: Long,
+  nonce: Long,
   txns: List[Tx]) extends MessagePayload {
 
   def encode: ByteString = {
     val bb = ByteString.newBuilder
-    bb ++= version.encode
+    bb ++= uint32_t(version).encode
     bb ++= char32(prev_block).encode
     bb ++= char32(merkle_root).encode
-    bb ++= timestamp.encode
-    bb ++= bits.encode
-    bb ++= nonce.encode
+    bb ++= uint32_t(timestamp).encode
+    bb ++= uint32_t(bits).encode
+    bb ++= uint32_t(nonce).encode
     bb ++= VarStruct(txns).encode
     bb.result
   }
@@ -63,12 +63,12 @@ case class Block(
     val bh = toHeader()
 
     val bb = ByteString.newBuilder
-    bb ++= bh.version.encode
+    bb ++= uint32_t(bh.version).encode
     bb ++= char32(bh.prev_block).encode
     bb ++= char32(bh.merkle_root).encode
-    bb ++= bh.timestamp.encode
-    bb ++= bh.bits.encode
-    bb ++= bh.nonce.encode
+    bb ++= uint32_t(bh.timestamp).encode
+    bb ++= uint32_t(bh.bits).encode
+    bb ++= uint32_t(bh.nonce).encode
     val hashByteString = bb.result
 
     val messageDigest = MessageDigest.getInstance("SHA-256")

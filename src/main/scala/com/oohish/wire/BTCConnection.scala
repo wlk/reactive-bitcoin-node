@@ -42,7 +42,7 @@ object BTCConnection {
     int32_t(1))
 
   def versionNum(networkParams: NetworkParameters): int32_t =
-    int32_t(networkParams.PROTOCOL_VERSION.n.toInt)
+    int32_t(networkParams.PROTOCOL_VERSION.toInt)
 
   def peerNetworkAddress(peer: Peer) = {
     NetworkAddress(

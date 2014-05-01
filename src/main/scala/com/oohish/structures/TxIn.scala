@@ -12,20 +12,20 @@ object TxIn extends StructureReader[TxIn] {
     TxIn(
       OutPoint.decode(it),
       VarStr.decode(it).s,
-      uint32_t.decode(it))
+      uint32_t.decode(it).n)
   }
 }
 
 case class TxIn(
   previous_output: OutPoint,
   sig_script: String,
-  sequence: uint32_t) extends Structure {
+  sequence: Long) extends Structure {
 
   def encode: ByteString = {
     val bb = ByteString.newBuilder
     bb ++= previous_output.encode
     bb ++= VarStr(sig_script).encode
-    bb ++= sequence.encode
+    bb ++= uint32_t(sequence).encode
     bb.result
   }
 

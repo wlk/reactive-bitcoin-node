@@ -7,7 +7,6 @@ import com.oohish.peermessages.Block
 
 import play.api.libs.functional.syntax.functionalCanBuildApplicative
 import play.api.libs.functional.syntax.toFunctionalBuilderOps
-import play.api.libs.functional.syntax.toInvariantFunctorOps
 import play.api.libs.json.JsValue
 import play.api.libs.json.Json
 import play.api.libs.json.Json.toJsFieldJsValueWrapper
@@ -94,10 +93,8 @@ object JsonFormats {
   import com.oohish.structures._
 
   // JSON formats
-  implicit val uint32_tFormat = Json.format[uint32_t]
   implicit val outPointFormat = Json.format[OutPoint]
   implicit val txInFormat = Json.format[TxIn]
-  implicit val int64_tFormat = Json.format[int64_t]
   implicit val txOutFormat = Json.format[TxOut]
   implicit val txFormat = Json.format[Tx]
   implicit val blockFormat = Json.format[Block]

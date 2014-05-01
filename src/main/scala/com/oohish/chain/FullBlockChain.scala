@@ -1,25 +1,25 @@
 package com.oohish.chain
 
-import com.oohish.peermessages.GetHeaders
-import com.oohish.peermessages.Headers
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
+import scala.language.postfixOps
+
+import com.oohish.peermessages.Block
+import com.oohish.peermessages.GetBlocks
+import com.oohish.peermessages.GetData
+import com.oohish.peermessages.Inv
 import com.oohish.peermessages.Verack
-import com.oohish.structures.uint32_t
+import com.oohish.structures.InvVect
 import com.oohish.wire.BTCConnection.Outgoing
 import com.oohish.wire.NetworkParameters
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
+import akka.actor.ActorRef
 import akka.actor.Props
+import akka.actor.actorRef2Scala
 import akka.pattern.pipe
 import reactivemongo.api.MongoConnection
-import com.oohish.peermessages.GetBlocks
-import com.oohish.peermessages.Inv
-import com.oohish.peermessages.Block
-import akka.actor.ActorRef
-import com.oohish.structures.InvVect
-import com.oohish.structures.InvType
-import scala.util.Success
-import com.oohish.peermessages.GetData
-import scala.concurrent.Await
 
 object FullBlockChain {
 

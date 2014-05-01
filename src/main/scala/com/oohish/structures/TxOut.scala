@@ -10,16 +10,16 @@ object TxOut extends StructureReader[TxOut] {
 
   def decode(it: ByteIterator): TxOut = {
     TxOut(
-      int64_t.decode(it),
+      int64_t.decode(it).n,
       VarStr.decode(it).s)
   }
 }
 
-case class TxOut(value: int64_t, pk_script: String) extends Structure {
+case class TxOut(value: Long, pk_script: String) extends Structure {
 
   def encode: ByteString = {
     val bb = ByteString.newBuilder
-    bb ++= value.encode
+    bb ++= int64_t(value).encode
     bb ++= VarStr(pk_script).encode
     bb.result
   }

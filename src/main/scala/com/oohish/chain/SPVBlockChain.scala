@@ -8,7 +8,6 @@ import com.oohish.peermessages.Block
 import com.oohish.peermessages.GetHeaders
 import com.oohish.peermessages.Headers
 import com.oohish.peermessages.Verack
-import com.oohish.structures.uint32_t
 import com.oohish.wire.BTCConnection.Outgoing
 import com.oohish.wire.NetworkParameters
 
