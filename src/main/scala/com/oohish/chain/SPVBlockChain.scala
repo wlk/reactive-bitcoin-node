@@ -84,7 +84,7 @@ class SPVBlockChain(networkParams: NetworkParameters) extends Actor with ActorLo
           log.info("Becoming syncing again-------------------------------------")
           context.become(syncing(peer))
 
-          val futureBL = Chain.blockLocator(store)
+          val futureBL = Chain.shortBlockLocator(store)
           val futureGetHeaders = futureBL.map { bl =>
             Outgoing(
               GetHeaders(networkParams.PROTOCOL_VERSION, bl, Chain.emptyHashStop))

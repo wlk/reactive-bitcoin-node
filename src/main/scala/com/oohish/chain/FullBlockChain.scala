@@ -110,7 +110,7 @@ class FullBlockChain(
         if (newInvs.isEmpty) {
           log.info("Becoming syncing again-------------------------------------")
           context.become(syncing(peer))
-          val futureBL = Chain.blockLocator(store)
+          val futureBL = Chain.shortBlockLocator(store)
           val blockLocator = futureBL.map { bl =>
             Outgoing(
               GetBlocks(networkParams.PROTOCOL_VERSION, bl, Chain.emptyHashStop))

@@ -71,6 +71,20 @@ object Chain {
 
   }
 
+  /*
+   * return a shortened block locator for the block store.
+   */
+  def shortBlockLocator(store: BlockStore)(implicit ec: ExecutionContext): Future[List[String]] = {
+    store.getChainHead.flatMap { maybeSb =>
+      store.getChainHead.map { maybeChainHead =>
+        maybeChainHead.map {
+          chainHead =>
+            List(chainHead.block.hash)
+        }.getOrElse(List())
+      }
+    }
+  }
+
   val emptyHashStop = "0000000000000000000000000000000000000000000000000000000000000000"
 
 }
