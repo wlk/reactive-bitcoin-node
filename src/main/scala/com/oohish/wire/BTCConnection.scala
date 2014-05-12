@@ -74,11 +74,12 @@ class BTCConnection(peer: Peer, networkParams: NetworkParameters, node: ActorRef
 
   def receive = connecting(false, None)
 
-  def connecting(verackReceived: Boolean, versionReceived: Option[Long]): Receive = {
+  def connecting(verackReceived: Boolean, versionReceived: Option[Version]): Receive = {
 
     case _: Verack => {
       if (versionReceived.isDefined) {
-        finishHandshake(versionReceived.get)
+        val version = versionReceived.get
+        finishHandshake(version.version, version.timestamp)
       } else {
         context.become(connecting(true, None))
       }
@@ -87,10 +88,10 @@ class BTCConnection(peer: Peer, networkParams: NetworkParameters, node: ActorRef
     case m: Version => {
       context.parent ! BTCConnection.verack
       if (verackReceived) {
-        finishHandshake(m.timestamp)
+        finishHandshake(m.version, m.timestamp)
       } else {
         context.parent ! BTCConnection.version(networkParams, peer)
-        context.become(connecting(false, Some(m.timestamp)))
+        context.become(connecting(false, Some(m)))
       }
     }
 
@@ -104,14 +105,16 @@ class BTCConnection(peer: Peer, networkParams: NetworkParameters, node: ActorRef
 
   }
 
-  def finishHandshake(time: Long): Unit = {
+  def finishHandshake(version: Int, time: Long): Unit = {
     manager ! PeerConnected(peer, time)
     node ! Verack()
-    log.info("becoming connected")
-    context.become(connected)
+    // take the minimum of the client version and the connected peer's version.
+    val negotiatedVersion = Math.min(networkParams.PROTOCOL_VERSION, version).toInt
+    log.info("becoming connected with protocol version {}", negotiatedVersion)
+    context.become(connected(negotiatedVersion))
   }
 
-  def connected(): Receive = {
+  def connected(version: Int): Receive = {
 
     case Outgoing(m) => {
       log.debug("outgoing message: " + m)
