@@ -5,12 +5,6 @@ import java.net.InetSocketAddress
 import scala.Array.canBuildFrom
 import scala.math.BigInt.int2bigInt
 import scala.util.Random
-import com.oohish.peermessages.MessagePayload
-import com.oohish.peermessages.Verack
-import com.oohish.peermessages.Version
-import com.oohish.structures.IP
-import com.oohish.structures.NetworkAddress
-import com.oohish.structures.Port
 import com.oohish.wire.PeerManager.PeerConnected
 import akka.actor.Actor
 import akka.actor.ActorLogging
@@ -18,38 +12,41 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.actor.actorRef2Scala
+import com.oohish.bitcoinscodec.structures.Message._
+import com.oohish.bitcoinscodec.messages._
+import com.oohish.bitcoinscodec.structures._
 
 object BTCConnection {
   def props(peer: Peer, networkParams: NetworkParameters, node: ActorRef, manager: ActorRef) =
     Props(classOf[BTCConnection], peer, networkParams, node, manager)
 
   case class ConnectTimeout()
-  case class Outgoing(m: MessagePayload)
+  case class Outgoing(m: Message)
 
   def verack = Verack()
 
   def version(networkParams: NetworkParameters, peer: Peer) = Version(
-    versionNum(networkParams),
+    1, //versionNum(networkParams),
     Node.services,
-    //DateTime.now().getMillis(),
-    0L,
+    123456L, //DateTime.now().getMillis(),
     peerNetworkAddress(peer),
     myNetworkAddress,
     genNonce,
     "/Satoshi:0.7.2/",
-    1)
+    1,
+    None)
 
   def versionNum(networkParams: NetworkParameters): Int =
     networkParams.PROTOCOL_VERSION.toInt
 
-  def peerNetworkAddress(peer: Peer) = {
+  def peerNetworkAddress(peer: Peer): NetworkAddress = {
     NetworkAddress(
       1,
-      IP(peer.address.getAddress().getHostAddress()),
+      Left(IPV4(peer.address.getAddress().getHostAddress())),
       Port(peer.port))
   }
 
-  def myNetworkAddress = peerNetworkAddress(selfPeer)
+  def myNetworkAddress: NetworkAddress = peerNetworkAddress(selfPeer)
 
   def genNonce(): BigInt = {
     val bytes: Array[Byte] = Array.fill(8)(0)
@@ -117,7 +114,7 @@ class BTCConnection(peer: Peer, networkParams: NetworkParameters, node: ActorRef
       context.parent ! m
     }
 
-    case m: MessagePayload => {
+    case m: Message => {
       node ! m
     }
 

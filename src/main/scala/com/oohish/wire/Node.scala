@@ -2,25 +2,20 @@ package com.oohish.wire
 
 import java.net.InetAddress
 import java.net.InetSocketAddress
-
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-
-import com.oohish.chain.SPVBlockChain
-import com.oohish.peermessages.Addr
-import com.oohish.peermessages.Block
-import com.oohish.peermessages.GetData
-import com.oohish.peermessages.Inv
-import com.oohish.peermessages.MessagePayload
-import com.oohish.peermessages.Tx
+import com.oohish.bitcoinscodec.structures.Message._
+import com.oohish.bitcoinscodec.messages._
 import com.oohish.wire.BTCConnection.Outgoing
-
 import PeerManager.Discovered
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.util.Timeout
+import scodec.bits.ByteVector
+
+import com.oohish.bitcoinscodec.structures.InvVect._
 
 object Node {
   def props(
@@ -28,9 +23,9 @@ object Node {
     spv: Boolean = false) =
     Props(classOf[Node], networkParams, spv)
 
-  def services = 1
+  def services = BigInt(1)
 
-  case class Incoming(peer: Peer, msg: MessagePayload)
+  case class Incoming(peer: Peer, msg: Message)
   //case class Outgoing(peer: Peer, msg: MessagePayload)
 
 }
@@ -39,25 +34,26 @@ class Node(
   networkParams: NetworkParameters,
   spv: Boolean) extends Actor with ActorLogging {
   import Node._
-  import com.oohish.peermessages.Addr
   import PeerManager._
 
   implicit val timeout = Timeout(5 seconds)
   import context.dispatcher
 
   //start the blockchain
+  /*
   val blockchain =
     context.actorOf(SPVBlockChain.props(networkParams))
+   */
 
   // start the peer manager
   val peerManager = context.actorOf(PeerManager.props(self, networkParams))
 
   def receive = {
 
-    case Addr(addresses) => {
-      val peers = addresses.map { tNetAddr =>
-        val addr = InetAddress.getByAddress(tNetAddr.addr.ip.ip.toArray)
-        val port = tNetAddr.addr.port.n.toInt
+    case Addr(timeaddrs) => {
+      val peers = timeaddrs.map { timeaddr =>
+        val addr = InetAddress.getByAddress(timeaddr._2.address.left.get.value.toArray)
+        val port = timeaddr._2.port.value
         Peer(new InetSocketAddress(addr, port))
       }
       peerManager ! Discovered(peers)
@@ -65,7 +61,7 @@ class Node(
 
     case Inv(vectors) => {
       val txVectors = vectors.filter { inv =>
-        inv.t.name == "MSG_TX"
+        inv.inv_type == MSG_TX
       }
 
       /*
@@ -77,7 +73,7 @@ class Node(
       sender ! Outgoing(GetData(txVectors))
       //sender ! Outgoing(GetData(blockVectors))
 
-      blockchain forward Inv(vectors)
+      //blockchain forward Inv(vectors)
     }
 
     case tx: Tx => {
@@ -96,12 +92,12 @@ class Node(
     }
 
     case blk: Block => {
-      blockchain forward blk
+      //blockchain forward blk
     }
 
-    case msg: MessagePayload => {
+    case msg: Message => {
       //log.info("received: " + msg.getClass().getName())
-      blockchain forward msg
+      //blockchain forward msg
     }
 
     case other => {

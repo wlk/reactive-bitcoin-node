@@ -1,12 +1,7 @@
 package com.oohish.wire
 
 import scala.math.BigInt.int2bigInt
-
-import com.oohish.peermessages.Block
-import com.oohish.peermessages.Tx
-import com.oohish.structures.OutPoint
-import com.oohish.structures.TxIn
-import com.oohish.structures.TxOut
+import com.oohish.bitcoinscodec.messages._
 
 /*
  * Taken from bitcoinj's NetworkParameters
@@ -28,6 +23,7 @@ trait NetworkParameters {
   val INTERVAL: Int = TARGET_TIMESPAN / TARGET_SPACING;
 }
 
+/*
 object MainNetParams extends NetworkParameters {
 
   def addressHeader: Byte = 0
@@ -68,7 +64,11 @@ object MainNetParams extends NetworkParameters {
     "bitseed.xf2.org")
 
 }
+* 
+*/
 
+
+/*
 object TestNet3Params extends NetworkParameters {
 
   def addressHeader: Byte = 0
@@ -91,3 +91,5 @@ object TestNet3Params extends NetworkParameters {
     "testnet-seed.bitcoin.petertodd.org")
 
 }
+
+*/

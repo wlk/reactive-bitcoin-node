@@ -10,7 +10,7 @@ import akka.io.Tcp.CommandFailed
 import akka.io.Tcp.ConnectionClosed
 import akka.io.Tcp.Received
 import akka.io.Tcp.Write
-import com.oohish.peermessages.MessagePayload
+import com.oohish.bitcoinscodec.structures.Message._
 
 object TCPConnection {
   def props(networkParams: NetworkParameters, peer: Peer, node: ActorRef, manager: ActorRef, connection: ActorRef) =
@@ -33,7 +33,7 @@ class TCPConnection(networkParams: NetworkParameters, peer: Peer, node: ActorRef
 */
 
   def receive = {
-    case msg: MessagePayload =>
+    case msg: Message =>
       log.debug("sending message: " + msg)
     //pipeline.injectCommand(msg)
     case CommandFailed(w: Write) =>
