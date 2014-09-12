@@ -17,7 +17,5 @@ libraryDependencies ++= Seq(
     "joda-time" % "joda-time" % "2.3",
     "org.joda" % "joda-convert" % "1.5",
     "org.scalatest" % "scalatest_2.10" % "2.0" % "test",
-    "org.reactivemongo" %% "reactivemongo" % "0.10.0",
-    "com.typesafe.play" %% "play" % "2.2.2",
-    "org.reactivemongo" %% "play2-reactivemongo" % "0.10.2"
+    "org.reactivemongo" %% "reactivemongo" % "0.10.0"
 )

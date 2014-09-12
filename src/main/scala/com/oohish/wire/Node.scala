@@ -6,7 +6,6 @@ import java.net.InetSocketAddress
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
-import com.oohish.chain.FullBlockChain
 import com.oohish.chain.SPVBlockChain
 import com.oohish.peermessages.Addr
 import com.oohish.peermessages.Block
@@ -51,11 +50,7 @@ class Node(
 
   //start the blockchain
   val blockchain =
-    if (spv) {
-      context.actorOf(SPVBlockChain.props(networkParams))
-    } else {
-      context.actorOf(FullBlockChain.props(networkParams, conn))
-    }
+    context.actorOf(SPVBlockChain.props(networkParams))
 
   // start the peer manager
   val peerManager = context.actorOf(PeerManager.props(self, networkParams))
