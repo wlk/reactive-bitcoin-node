@@ -21,14 +21,12 @@ import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.util.Timeout
-import reactivemongo.api.MongoConnection
 
 object Node {
   def props(
     networkParams: NetworkParameters,
-    spv: Boolean = false,
-    conn: Option[MongoConnection] = None) =
-    Props(classOf[Node], networkParams, spv, conn)
+    spv: Boolean = false) =
+    Props(classOf[Node], networkParams, spv)
 
   def services = 1
 
@@ -39,8 +37,7 @@ object Node {
 
 class Node(
   networkParams: NetworkParameters,
-  spv: Boolean,
-  conn: Option[MongoConnection]) extends Actor with ActorLogging {
+  spv: Boolean) extends Actor with ActorLogging {
   import Node._
   import com.oohish.peermessages.Addr
   import PeerManager._

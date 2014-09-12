@@ -14,8 +14,5 @@ resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/release
  
 libraryDependencies ++= Seq(
     "com.typesafe.akka" %% "akka-actor" % "2.2.4",
-    "joda-time" % "joda-time" % "2.3",
-    "org.joda" % "joda-convert" % "1.5",
-    "org.scalatest" % "scalatest_2.10" % "2.0" % "test",
-    "org.reactivemongo" %% "reactivemongo" % "0.10.0"
+    "joda-time" % "joda-time" % "2.3"
 )
