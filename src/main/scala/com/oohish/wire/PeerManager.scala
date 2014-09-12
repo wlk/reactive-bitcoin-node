@@ -9,8 +9,6 @@ import scala.language.postfixOps
 import scala.util.Random
 import scala.util.Try
 
-import org.joda.time.DateTime
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -88,7 +86,8 @@ class PeerManager(node: ActorRef, networkParams: NetworkParameters) extends Acto
       val ref = sender
       context.watch(ref)
       log.info("peer connected: " + peer + " with actorRef: " + ref)
-      val offset = t - DateTime.now().getMillis() / 1000
+      //val offset = t - DateTime.now().getMillis() / 1000
+      val offset = t - 0L / 1000
       connectedPeers += (ref -> (peer, offset))
     }
 

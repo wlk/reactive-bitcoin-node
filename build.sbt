@@ -4,7 +4,7 @@ organization := "oohish.com"
 
 version := "1.0.1-SNAPSHOT"
 
-scalaVersion := "2.10.3"
+scalaVersion := "2.11.2"
 
 scalacOptions += "-feature"
 
@@ -13,6 +13,5 @@ scalacOptions += "-deprecation"
 resolvers += "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/"
  
 libraryDependencies ++= Seq(
-    "com.typesafe.akka" %% "akka-actor" % "2.2.4",
-    "joda-time" % "joda-time" % "2.3"
+    "com.typesafe.akka" %% "akka-actor" % "2.3.6"
 )

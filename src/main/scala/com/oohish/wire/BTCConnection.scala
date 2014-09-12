@@ -2,13 +2,9 @@ package com.oohish.wire
 
 import java.net.InetAddress
 import java.net.InetSocketAddress
-
 import scala.Array.canBuildFrom
 import scala.math.BigInt.int2bigInt
 import scala.util.Random
-
-import org.joda.time.DateTime
-
 import com.oohish.peermessages.MessagePayload
 import com.oohish.peermessages.Verack
 import com.oohish.peermessages.Version
@@ -16,7 +12,6 @@ import com.oohish.structures.IP
 import com.oohish.structures.NetworkAddress
 import com.oohish.structures.Port
 import com.oohish.wire.PeerManager.PeerConnected
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -36,7 +31,8 @@ object BTCConnection {
   def version(networkParams: NetworkParameters, peer: Peer) = Version(
     versionNum(networkParams),
     Node.services,
-    DateTime.now().getMillis(),
+    //DateTime.now().getMillis(),
+    0L,
     peerNetworkAddress(peer),
     myNetworkAddress,
     genNonce,

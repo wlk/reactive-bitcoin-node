@@ -2,8 +2,6 @@ package com.oohish.peermessages
 
 import java.security.MessageDigest
 
-import scala.collection.parallel.traversable2ops
-
 import com.oohish.structures.VarStruct
 import com.oohish.structures.VarStructReader
 import com.oohish.structures.char32

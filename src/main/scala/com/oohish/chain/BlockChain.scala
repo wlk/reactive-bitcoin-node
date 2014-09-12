@@ -70,7 +70,7 @@ class BlockChain(store: BlockStore)(implicit ec: ExecutionContext) {
       }
     }
 
-    addBlocksHelper(Future(Success()), blocks)
+    addBlocksHelper(Future(Success(())), blocks)
   }
 
   /*
