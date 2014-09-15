@@ -35,7 +35,7 @@ class Client(peer: Peer, networkParams: NetworkParameters, node: ActorRef) exten
       log.debug("connected...............................")
       //node ! c
       val connection = sender
-      val handler = context.actorOf(TCPConnection.props(networkParams, peer, node, context.parent, connection))
+      val handler = context.actorOf(TCPConnection.props(peer, node, context.parent, connection))
       connection ! Register(handler)
       context.watch(handler)
 

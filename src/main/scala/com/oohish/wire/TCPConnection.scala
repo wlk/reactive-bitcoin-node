@@ -13,17 +13,14 @@ import akka.io.Tcp.Write
 import com.oohish.bitcoinscodec.structures.Message._
 
 object TCPConnection {
-  def props(networkParams: NetworkParameters, peer: Peer, node: ActorRef, manager: ActorRef, connection: ActorRef) =
-    Props(classOf[TCPConnection], networkParams, peer, node, manager, connection)
+  def props(peer: Peer, node: ActorRef, manager: ActorRef, connection: ActorRef) =
+    Props(classOf[TCPConnection], peer, node, manager, connection)
 }
 
-class TCPConnection(networkParams: NetworkParameters, peer: Peer, node: ActorRef, manager: ActorRef, connection: ActorRef) extends Actor with ActorLogging {
+class TCPConnection(peer: Peer, node: ActorRef, manager: ActorRef, connection: ActorRef) extends Actor with ActorLogging {
   import akka.actor.Terminated
 
   //val ctx = new PipelineContext {}
-
-  val btcConnection = context.actorOf(BTCConnection.props(peer, networkParams, node, manager))
-  context.watch(btcConnection)
 
   /*
   val pipeline =
