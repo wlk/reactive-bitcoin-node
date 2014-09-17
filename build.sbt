@@ -20,7 +20,7 @@ resolvers += "krasserm at bintray" at "http://dl.bintray.com/krasserm/maven"
  
 libraryDependencies ++= Seq(
     "com.typesafe.akka" %% "akka-actor" % "2.3.6",
-    "com.oohish" %% "bitcoin-scodec" % "0.1.3",
+    "com.oohish" %% "bitcoin-scodec" % "0.1.4",
     "org.typelevel" %% "scodec-stream" % "0.1.0",
     "com.github.krasserm" %% "streamz-akka-stream" % "0.1",
     "com.typesafe.akka" %% "akka-stream-experimental" % "0.6",
