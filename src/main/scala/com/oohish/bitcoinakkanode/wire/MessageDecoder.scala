@@ -24,7 +24,7 @@ class MessageDecoder(magic: Long) extends Actor with ActorLogging {
   def receive = {
     case Tcp.Received(data) => {
       val bytes = BitVector(data)
-      Message.codec(0L).decode(bytes)
+      Message.codec(magic).decode(bytes)
         .foreach {
           case (b, m) =>
             buf = b
