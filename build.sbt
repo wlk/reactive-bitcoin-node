@@ -23,5 +23,7 @@ libraryDependencies ++= Seq(
     "com.oohish" %% "bitcoin-scodec" % "0.1.3",
     "org.typelevel" %% "scodec-stream" % "0.1.0",
     "com.github.krasserm" %% "streamz-akka-stream" % "0.1",
-    "com.typesafe.akka" %% "akka-stream-experimental" % "0.6"
+    "com.typesafe.akka" %% "akka-stream-experimental" % "0.6",
+    "joda-time" % "joda-time" % "2.4",
+    "org.joda" % "joda-convert" % "1.4"
 )

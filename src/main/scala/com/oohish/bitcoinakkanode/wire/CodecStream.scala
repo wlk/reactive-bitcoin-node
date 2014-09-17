@@ -6,7 +6,7 @@ import scalaz.concurrent.Task
 import com.oohish.bitcoinscodec.structures.Message
 import com.oohish.bitcoinscodec.structures.Message.Message
 
-class CodecStream {
+object CodecStream {
 
   // decoder and encoder
   val d: StreamDecoder[Message] = decode.many(Message.codec(0L))
