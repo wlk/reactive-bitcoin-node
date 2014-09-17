@@ -19,14 +19,14 @@ import com.oohish.bitcoinakkanode.wire.MessageDecoder.DecodedMessage
 import com.oohish.bitcoinakkanode.wire.MessageEncoder.EncodedMessage
 
 object TCPConnection {
-  def props(manager: ActorRef, connection: ActorRef) =
-    Props(classOf[TCPConnection], manager, connection)
+  def props(manager: ActorRef, connection: ActorRef, magic: Long) =
+    Props(classOf[TCPConnection], manager, connection, magic)
 
   case class OutgoingMessage(msg: Message)
   case class OutgoingBytes(bytes: ByteString)
 }
 
-class TCPConnection(manager: ActorRef, connection: ActorRef) extends Actor with ActorLogging {
+class TCPConnection(manager: ActorRef, connection: ActorRef, magic: Long) extends Actor with ActorLogging {
   import TCPConnection._
   import akka.actor.Terminated
 
@@ -35,8 +35,8 @@ class TCPConnection(manager: ActorRef, connection: ActorRef) extends Actor with 
   val btcConnection = context.actorOf(BTCConnection.props(context.parent))
   context.watch(btcConnection)
 
-  val decoder = context.actorOf(MessageDecoder.props(0L))
-  val encoder = context.actorOf(MessageEncoder.props(0L))
+  val decoder = context.actorOf(MessageDecoder.props(magic))
+  val encoder = context.actorOf(MessageEncoder.props(magic))
 
   def receive = {
     case OutgoingMessage(msg) =>

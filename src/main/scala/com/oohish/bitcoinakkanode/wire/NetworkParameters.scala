@@ -19,7 +19,7 @@ trait NetworkParameters {
   def packetMagic: Long
   def port: Int
   def proofOfWorkLimit: BigInt
-  def PROTOCOL_VERSION: Long = 70001
+  def PROTOCOL_VERSION: Int = 70001
   def targetTimespan: Int
   def dnsSeeds: List[String]
 

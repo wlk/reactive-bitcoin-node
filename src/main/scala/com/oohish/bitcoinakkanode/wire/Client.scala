@@ -26,13 +26,13 @@ object Client {
   DateTime.now().getMillis()
 
   def version(peer: InetSocketAddress, networkParams: NetworkParameters) = Version(
-    60002,
+    networkParams.PROTOCOL_VERSION,
     BigInt(1),
-    DateTime.now().getMillis(),
+    DateTime.now().getMillis() / 1000,
     NetworkAddress(BigInt(1), Util.networkAddress(peer), Port(peer.getPort())),
     NetworkAddress(BigInt(1), Util.networkAddress(
       new InetSocketAddress(InetAddress.getLocalHost(),
-        networkParams.port)), Port(peer.getPort())),
+        networkParams.port)), Port(networkParams.port)),
     Util.genNonce,
     "/Satoshi:0.7.2/",
     1,
@@ -52,15 +52,13 @@ class Client(peer: InetSocketAddress, networkParams: NetworkParameters) extends 
 
   def receive = {
     case CommandFailed(_: Connect) =>
-      log.debug("connect failed.........................")
-      //node ! "connect failed"
+      log.info("connect failed.")
       context stop self
 
     case c @ Connected(remote, local) =>
-      log.info("connected...............................")
-      //node ! c
+      log.info("connected to {} from {}", remote, local)
       val connection = sender
-      val handler = context.actorOf(TCPConnection.props(context.parent, connection))
+      val handler = context.actorOf(TCPConnection.props(context.parent, connection, networkParams.packetMagic))
       connection ! Register(handler)
       context.watch(handler)
       handler ! OutgoingMessage(version(peer, networkParams))
