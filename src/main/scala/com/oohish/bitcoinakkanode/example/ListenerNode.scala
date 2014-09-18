@@ -1,6 +1,5 @@
 package com.oohish.bitcoinakkanode.example
 
-import com.oohish.wire.Node
 import akka.actor.ActorSystem
 import com.oohish.bitcoinakkanode.wire.PeerManager
 import com.oohish.bitcoinakkanode.wire.MainNetParams
