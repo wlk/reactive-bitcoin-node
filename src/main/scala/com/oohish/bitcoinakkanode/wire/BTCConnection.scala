@@ -11,20 +11,75 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.actor.actorRef2Scala
+import com.oohish.bitcoinscodec.structures.Message.Message
 
 object BTCConnection {
-  def props(manager: ActorRef) =
-    Props(classOf[BTCConnection], manager)
+  def props(
+    manager: ActorRef,
+    remote: InetSocketAddress,
+    local: InetSocketAddress,
+    networkParams: NetworkParameters) =
+    Props(classOf[BTCConnection], manager, remote, local, networkParams)
+
+  case class ConnectTimeout()
+  case class Outgoing(m: Message)
 }
 
-class BTCConnection(manager: ActorRef) extends Actor with ActorLogging {
+class BTCConnection(
+  manager: ActorRef,
+  remote: InetSocketAddress,
+  local: InetSocketAddress,
+  networkParams: NetworkParameters) extends Actor with ActorLogging {
   import BTCConnection._
   import com.oohish.bitcoinscodec.structures.Message._
+  import com.oohish.bitcoinscodec.messages._
 
-  def receive = {
-    case msg: Message => {
-      sender ! msg
-    }
+  def receive = connecting(false, None)
+
+  def connecting(verackReceived: Boolean, versionReceived: Option[Version]): Receive = {
+    case v: Version =>
+      log.info("btc connection received version")
+      context.parent ! Verack()
+      if (verackReceived) {
+        finishHandshake(v, v.timestamp)
+      } else {
+        context.parent ! Client.version(remote, local, networkParams)
+        context.become(connecting(false, Some(v)))
+      }
+    case _: Verack =>
+      log.info("btc connection received verack")
+      if (versionReceived.isDefined) {
+        val v = versionReceived.get
+        finishHandshake(v, v.timestamp)
+      } else {
+        context.become(connecting(true, None))
+      }
+    case m: ConnectTimeout =>
+      log.info("btc connection received connect timeout")
+      context.stop(self)
+    case other =>
+      log.debug("BTCConnection got other: " + other)
+  }
+
+  def finishHandshake(version: Version, time: Long): Unit = {
+    log.info("peer connected: {}", remote)
+    //manager ! PeerConnected(peer, time)
+    // take the minimum of the client version and the connected peer's version.
+    val negotiatedVersion = Math.min(networkParams.PROTOCOL_VERSION, version.version).toInt
+    log.info("becoming connected with protocol version {}", negotiatedVersion)
+    context.become(connected(negotiatedVersion))
+  }
+
+  def connected(version: Int): Receive = {
+    case Outgoing(m) =>
+      log.debug("btc connection received outgoing message: " + m)
+      context.parent ! m
+    case m: Message =>
+      manager ! m
+    case Terminated(ref) =>
+      context.stop(self)
+    case other =>
+      log.warning("BTCConnection got other: " + other)
   }
 
 }

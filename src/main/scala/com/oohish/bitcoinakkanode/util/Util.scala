@@ -5,6 +5,9 @@ import java.net.InetSocketAddress
 import com.oohish.bitcoinscodec.structures.IPV6
 import com.oohish.bitcoinscodec.structures.IPV4
 import scodec.bits.ByteVector
+import com.oohish.bitcoinscodec.structures.NetworkAddress
+import java.net.InetAddress
+import com.oohish.bitcoinscodec.structures.Port
 
 object Util {
 
@@ -14,8 +17,17 @@ object Util {
     BigInt(0.toByte +: bytes)
   }
 
-  def networkAddress(peer: InetSocketAddress): Either[IPV4, IPV6] = {
-    val bytes = ByteVector(peer.getAddress().getAddress())
+  def networkAddress(
+    services: BigInt,
+    socketAddr: InetSocketAddress): NetworkAddress = {
+    NetworkAddress(
+      services,
+      ip(socketAddr.getAddress()),
+      Port(socketAddr.getPort()))
+  }
+
+  def ip(addr: InetAddress): Either[IPV4, IPV6] = {
+    val bytes = ByteVector(addr.getAddress())
     if (bytes.length == 4)
       Left(IPV4(bytes))
     else

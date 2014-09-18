@@ -17,54 +17,65 @@ import akka.io.Tcp
 import akka.util.ByteString
 import com.oohish.bitcoinakkanode.wire.MessageDecoder.DecodedMessage
 import com.oohish.bitcoinakkanode.wire.MessageEncoder.EncodedMessage
+import java.net.InetSocketAddress
 
 object TCPConnection {
-  def props(manager: ActorRef, connection: ActorRef, magic: Long) =
-    Props(classOf[TCPConnection], manager, connection, magic)
+  def props(
+    manager: ActorRef,
+    connection: ActorRef,
+    remote: InetSocketAddress,
+    local: InetSocketAddress,
+    networkParams: NetworkParameters) =
+    Props(classOf[TCPConnection], manager, connection, remote, local, networkParams)
 
   case class OutgoingMessage(msg: Message)
   case class OutgoingBytes(bytes: ByteString)
 }
 
-class TCPConnection(manager: ActorRef, connection: ActorRef, magic: Long) extends Actor with ActorLogging {
+class TCPConnection(
+  manager: ActorRef,
+  connection: ActorRef,
+  remote: InetSocketAddress,
+  local: InetSocketAddress,
+  networkParams: NetworkParameters) extends Actor with ActorLogging {
   import TCPConnection._
   import akka.actor.Terminated
 
   log.info("TCPConnection started...")
 
-  val btcConnection = context.actorOf(BTCConnection.props(context.parent))
+  val btcConnection = context.actorOf(BTCConnection.props(
+    context.parent, remote, local, networkParams))
   context.watch(btcConnection)
 
-  val decoder = context.actorOf(MessageDecoder.props(magic))
-  val encoder = context.actorOf(MessageEncoder.props(magic))
+  val decoder = context.actorOf(MessageDecoder.props(networkParams.packetMagic))
+  val encoder = context.actorOf(MessageEncoder.props(networkParams.packetMagic))
 
   def receive = {
     case OutgoingMessage(msg) =>
-      log.info("received outgoing message: " + msg)
+      log.debug("received outgoing message: " + msg)
       encoder ! msg
     case EncodedMessage(b) =>
-      log.info("received encoded message: " + b)
-      log.info("received encoded message w/ length: " + b.length)
+      log.debug("received encoded message: " + b)
       connection ! Tcp.Write(b)
     case DecodedMessage(msg) =>
-      log.info("received decoded message: " + msg)
+      log.debug("received decoded message: " + msg)
       btcConnection ! msg
     case Tcp.Received(data) =>
-      log.info("received tcp bytes: " + data)
+      log.debug("received tcp bytes: " + data)
       decoder ! Tcp.Received(data)
     case Tcp.CommandFailed(w: Tcp.Write) =>
-      log.info("write failed")
+      log.debug("write failed")
     case Terminated(btcConnection) =>
-      log.info("btc connection closed")
+      log.debug("btc connection closed")
       connection ! Tcp.Close
     case "close" =>
-      log.info("closing connection")
+      log.debug("closing connection")
       connection ! Tcp.Close
     case _: Tcp.ConnectionClosed =>
-      log.info("connection closed")
+      log.debug("connection closed")
       context stop self
     case other =>
-      log.info("received other: " + other)
+      log.debug("received other: " + other)
   }
 
 }
