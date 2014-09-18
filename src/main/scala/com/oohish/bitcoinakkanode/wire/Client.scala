@@ -6,18 +6,13 @@ import scala.BigInt
 import org.joda.time.DateTime
 import com.oohish.bitcoinakkanode.util.Util
 import com.oohish.bitcoinscodec.messages.Version
-import com.oohish.bitcoinscodec.structures.NetworkAddress
-import com.oohish.bitcoinscodec.structures.Port
+import com.oohish.bitcoinscodec.structures._
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.io.IO
 import akka.io.Tcp
-import akka.io.Tcp.CommandFailed
-import akka.io.Tcp.Connect
-import akka.io.Tcp.Connected
-import akka.io.Tcp.Register
 
 object Client {
   def props(
@@ -37,7 +32,7 @@ object Client {
     Util.genNonce,
     "/Satoshi:0.7.2/",
     1,
-    None)
+    true)
 
 }
 
@@ -50,23 +45,20 @@ class Client(
   import com.oohish.bitcoinakkanode.wire.TCPConnection._
   import context.system
 
-  log.info("connecting to " + peer)
+  log.debug("connecting to " + peer)
   IO(Tcp) ! Connect(peer)
 
   def receive = {
     case CommandFailed(_: Connect) =>
-      log.info("connect failed.")
+      log.debug("connect failed.")
       context stop self
-
     case c @ Connected(remote, local) =>
-      log.info("connected to {} from {}", remote, local)
+      log.debug("connected to {} from {}", remote, local)
       val connection = sender
       val handler = context.actorOf(TCPConnection.props(
         context.parent, connection, remote, local, networkParams))
       connection ! Register(handler)
       context.watch(handler)
       handler ! OutgoingMessage(version(remote, local, networkParams))
-
-    case unknown => log.warning(s"$unknown")
   }
 }

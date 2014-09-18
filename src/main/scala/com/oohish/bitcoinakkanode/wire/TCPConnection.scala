@@ -41,8 +41,6 @@ class TCPConnection(
   import TCPConnection._
   import akka.actor.Terminated
 
-  log.info("TCPConnection started...")
-
   val btcConnection = context.actorOf(BTCConnection.props(
     context.parent, remote, local, networkParams))
   context.watch(btcConnection)
@@ -55,13 +53,13 @@ class TCPConnection(
       log.debug("received outgoing message: " + msg)
       encoder ! msg
     case EncodedMessage(b) =>
-      log.debug("received encoded message: " + b)
+      log.debug("received encoded message: " + ByteVector(b))
       connection ! Tcp.Write(b)
     case DecodedMessage(msg) =>
       log.debug("received decoded message: " + msg)
       btcConnection ! msg
     case Tcp.Received(data) =>
-      log.debug("received tcp bytes: " + data)
+      log.debug("received tcp bytes: " + ByteVector(data))
       decoder ! Tcp.Received(data)
     case Tcp.CommandFailed(w: Tcp.Write) =>
       log.debug("write failed")
@@ -74,8 +72,6 @@ class TCPConnection(
     case _: Tcp.ConnectionClosed =>
       log.debug("connection closed")
       context stop self
-    case other =>
-      log.debug("received other: " + other)
   }
 
 }
