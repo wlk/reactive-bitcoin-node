@@ -1,23 +1,20 @@
 package com.oohish.bitcoinakkanode.wire
 
+import java.net.InetSocketAddress
+
+import com.oohish.bitcoinakkanode.wire.MessageDecoder.DecodedMessage
+import com.oohish.bitcoinakkanode.wire.MessageEncoder.EncodedMessage
+import com.oohish.bitcoinscodec.structures.Message.Message
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.Props
+import akka.actor.Terminated
 import akka.actor.actorRef2Scala
-import com.oohish.bitcoinscodec.structures.Message._
-import java.io.ByteArrayInputStream
-import scodec.bits.BitVector
-import scodec.stream.{ decode, StreamDecoder }
-import scalaz.stream.io
-import scalaz.stream.Sink
-import scalaz.concurrent.Task
-import scodec.bits.ByteVector
 import akka.io.Tcp
 import akka.util.ByteString
-import com.oohish.bitcoinakkanode.wire.MessageDecoder.DecodedMessage
-import com.oohish.bitcoinakkanode.wire.MessageEncoder.EncodedMessage
-import java.net.InetSocketAddress
+import scodec.bits.ByteVector
 
 object TCPConnection {
   def props(
