@@ -1,3 +1,6 @@
+import scoverage.ScoverageSbtPlugin.instrumentSettings
+import org.scoverage.coveralls.CoverallsPlugin.coverallsSettings
+
 name := "bitcoin-akka-node"
 
 organization := "oohish.com"
@@ -5,6 +8,8 @@ organization := "oohish.com"
 version := "1.0.1-SNAPSHOT"
 
 scalaVersion := "2.11.2"
+
+licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 
 scalacOptions += "-feature"
 
@@ -24,3 +29,9 @@ libraryDependencies ++= Seq(
     "joda-time" % "joda-time" % "2.4",
     "org.joda" % "joda-convert" % "1.4"
 )
+
+instrumentSettings
+
+coverallsSettings
+
+seq(bintrayPublishSettings:_*)
