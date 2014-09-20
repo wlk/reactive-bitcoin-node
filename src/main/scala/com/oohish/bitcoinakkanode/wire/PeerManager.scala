@@ -2,11 +2,9 @@ package com.oohish.bitcoinakkanode.wire
 
 import java.net.InetAddress
 import java.net.InetSocketAddress
-
 import scala.Array.canBuildFrom
 import scala.language.postfixOps
 import scala.util.Try
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
@@ -24,15 +22,15 @@ object PeerManager {
 }
 
 class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogging {
-
-  log.info("starting peer manager.........")
+  import com.oohish.bitcoinscodec.structures.Message._
 
   def dnsPeers = PeerManager.seedPeers(networkParams)
-
   val pc = context.actorOf(Client.props(dnsPeers.head, networkParams))
 
   def receive = {
-    case _ => {}
+    case msg: Message =>
+      log.info("peer manager received {} from {}", msg.getClass(), sender)
+      context.parent ! msg
   }
 
 }

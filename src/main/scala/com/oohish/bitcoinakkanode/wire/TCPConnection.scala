@@ -42,7 +42,7 @@ class TCPConnection(
   import akka.actor.Terminated
 
   val btcConnection = context.actorOf(BTCConnection.props(
-    context.parent, remote, local, networkParams))
+    manager, remote, local, networkParams))
   context.watch(btcConnection)
 
   val decoder = context.actorOf(MessageDecoder.props(networkParams.packetMagic))
