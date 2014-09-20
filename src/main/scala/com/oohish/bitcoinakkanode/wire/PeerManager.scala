@@ -29,7 +29,7 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
 
   def receive = {
     case msg: Message =>
-      log.info("peer manager received {} from {}", msg.getClass(), sender)
+      log.debug("peer manager received {} from {}", msg.getClass(), sender)
       context.parent ! msg
   }
 

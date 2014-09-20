@@ -72,7 +72,7 @@ class BTCConnection(
       log.debug("btc connection received outgoing message: " + m)
       context.parent ! m
     case m: Message =>
-      log.info("received message: {}", m)
+      log.debug("received message: {}", m)
       manager ! m
     case Terminated(ref) =>
       context.stop(self)
