@@ -42,8 +42,8 @@ class TCPConnection(
     manager, remote, local, networkParams))
   context.watch(btcConnection)
 
-  val decoder = context.actorOf(MessageDecoder.props(networkParams.packetMagic))
-  val encoder = context.actorOf(MessageEncoder.props(networkParams.packetMagic))
+  val decoder = context.actorOf(MessageDecoder.props(networkParams.packetMagic), name = "messageDecoder")
+  val encoder = context.actorOf(MessageEncoder.props(networkParams.packetMagic), name = "messageEncoder")
 
   def receive = {
     case OutgoingMessage(msg) =>

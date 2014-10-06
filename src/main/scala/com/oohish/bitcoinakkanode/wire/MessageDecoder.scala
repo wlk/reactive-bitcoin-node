@@ -54,7 +54,7 @@ class MessageDecoder(magic: Long) extends Actor with ActorLogging {
 
       x.foreach {
         case (c, l, ch, p) =>
-          val pd = context.actorOf(PayloadDecoder.props(c, l, ch))
+          val pd = context.actorOf(PayloadDecoder.props(c, l, ch), name = "payloadDecoder")
           context.become(decoding(pd))
           context.watch(pd)
           pd ! PayloadDecoder.RawBytes(p.toByteVector)
