@@ -54,11 +54,9 @@ class MessageDecoder(magic: Long) extends Actor with ActorLogging {
 
       x.foreach {
         case (c, l, ch, p) =>
-          log.info("creating pd")
           val pd = context.actorOf(PayloadDecoder.props(c, l, ch))
           context.become(decoding(pd))
           context.watch(pd)
-          log.info("sending raw bytes")
           pd ! PayloadDecoder.RawBytes(p.toByteVector)
       }
     }
@@ -69,10 +67,8 @@ class MessageDecoder(magic: Long) extends Actor with ActorLogging {
       val bits = BitVector(data)
       payloadDecoder ! PayloadDecoder.RawBytes(bits.toByteVector)
     case DecodedMessage(msg) =>
-      log.info("received decoded message: " + msg)
       context.parent ! DecodedMessage(msg)
     case Terminated(ref) =>
-      log.info("changing state to ready")
       context.become(ready)
   }
 }
