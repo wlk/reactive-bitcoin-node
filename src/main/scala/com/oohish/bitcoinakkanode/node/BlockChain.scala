@@ -9,13 +9,11 @@ import com.oohish.bitcoinscodec.structures.Hash
 import com.oohish.bitcoinakkanode.util.Util
 
 object BlockChain {
-  def props(networkParams: NetworkParameters) =
-    Props(classOf[BlockChain], networkParams)
-
-  case class StoredBlock(b: Block, height: Long)
+  case class StoredBlock(block: Block, hash: Hash, height: Int, parent: Option[StoredBlock])
   case class GetHeight()
-  case class GetHeightResponse(height: Long)
-
+  case class GetBlockLocator()
+  case class GetBlockLocatorResponse(bl: List[Hash])
+  case class GetHeightResponse(height: Int)
 }
 
 trait BlockChain extends Actor with ActorLogging {
@@ -23,14 +21,16 @@ trait BlockChain extends Actor with ActorLogging {
   import scodec.bits.BitVector
   import com.oohish.bitcoinscodec.structures.BlockHeader
 
-  val genesis: Block
-  val g = StoredBlock(genesis, 1)
+  def genesis: Block
+  val g = StoredBlock(genesis, blockHash(genesis), 0, None)
   var blocks: Map[Hash, StoredBlock] = Map.empty
-  var chainHead = StoredBlock(genesis, 1)
+  var chainHead = g
 
   def receive = {
     case GetHeight() =>
       sender ! GetHeightResponse(chainHead.height)
+    case GetBlockLocator() =>
+      sender ! GetBlockLocatorResponse(blockLocator(chainHead.height))
   }
 
   def isValidBlock(b: Block): Boolean
@@ -38,6 +38,38 @@ trait BlockChain extends Actor with ActorLogging {
   def blockHash(b: Block): Hash = {
     val bytes = BlockHeader.codec.encode(b.block_header)
       .getOrElse(BitVector.empty).toByteArray
-    Util.blockHash(bytes)
+    Util.hash(bytes)
   }
+
+  private def blockLocatorIndices(topDepth: Int): Vector[Int] = {
+    // Start at max_depth
+    var indices = Vector.empty[Int]
+    // Push last 10 indices first
+    var (step, start) = (1, 0)
+    var i = topDepth
+    while (i > 0) {
+      if (start >= 10)
+        step *= 2
+      indices :+= i
+      i -= step
+      start += 1
+    }
+    indices :+= 0
+    indices
+  }
+
+  def blockLocator(topDepth: Int): List[Hash] = {
+    val indices = blockLocatorIndices(topDepth).toSet
+    var hashes = List.empty[Hash]
+    var cur: Option[StoredBlock] = Some(chainHead)
+    while (cur.isDefined) {
+      val sb = cur.get
+      if (indices contains sb.height) {
+        hashes ::= sb.hash
+      }
+      cur = sb.parent
+    }
+    hashes
+  }
+
 }

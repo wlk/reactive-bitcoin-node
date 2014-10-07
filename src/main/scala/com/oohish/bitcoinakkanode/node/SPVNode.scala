@@ -13,7 +13,10 @@ object SPVNode {
 
 class SPVNode(networkParams: NetworkParameters) extends Actor with ActorLogging {
 
+  val blockchain = context.actorOf(SPVBlockChain.props(networkParams))
   val pm = context.actorOf(PeerManager.props(networkParams))
+
+  blockchain ! BlockChain.GetBlockLocator()
 
   def receive = {
     case other => println(other)

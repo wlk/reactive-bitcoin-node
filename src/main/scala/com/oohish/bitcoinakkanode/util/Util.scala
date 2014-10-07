@@ -15,7 +15,7 @@ object Util {
     BigInt(0.toByte +: bytes)
   }
 
-  def blockHash(bytes: Array[Byte]): Hash = {
+  def hash(bytes: Array[Byte]): Hash = {
     val messageDigest = MessageDigest.getInstance("SHA-256")
     val hash1 = messageDigest.digest(bytes)
     val hash2 = messageDigest.digest(hash1)
