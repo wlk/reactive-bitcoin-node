@@ -8,6 +8,7 @@ import scala.util.Try
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
+import akka.actor.ActorRef
 
 object PeerManager {
   def props(networkParams: NetworkParameters) =
@@ -19,6 +20,7 @@ object PeerManager {
       .getOrElse(Array())
   } yield new InetSocketAddress(address, networkParams.port)
 
+  case class PeerConnected(ref: ActorRef)
 }
 
 class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogging {
@@ -31,6 +33,8 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
     case msg: Message =>
       log.debug("peer manager received {} from {}", msg.getClass(), sender)
       context.parent ! msg
+    case PeerManager.PeerConnected(ref) =>
+      context.parent ! PeerManager.PeerConnected(ref)
   }
 
 }

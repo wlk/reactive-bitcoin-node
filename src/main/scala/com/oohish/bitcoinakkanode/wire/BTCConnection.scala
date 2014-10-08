@@ -65,11 +65,12 @@ class BTCConnection(
     val negotiatedVersion = Math.min(networkParams.PROTOCOL_VERSION, version.version).toInt
     log.info("peer connected: {} with version {}", remote, negotiatedVersion)
     context.become(connected(negotiatedVersion))
+    manager ! PeerManager.PeerConnected(self)
   }
 
   def connected(version: Int): Receive = {
     case Outgoing(m) =>
-      log.debug("btc connection received outgoing message: " + m)
+      log.info("btc connection sending message: " + m)
       context.parent ! m
     case m: Message =>
       log.debug("received message: {}", m)
