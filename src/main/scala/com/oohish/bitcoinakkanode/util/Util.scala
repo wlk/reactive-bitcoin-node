@@ -19,7 +19,7 @@ object Util {
     val messageDigest = MessageDigest.getInstance("SHA-256")
     val hash1 = messageDigest.digest(bytes)
     val hash2 = messageDigest.digest(hash1)
-    Hash(ByteVector(hash2))
+    Hash(ByteVector(hash2).reverse)
   }
 
 }
