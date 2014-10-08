@@ -31,6 +31,7 @@ class PayloadDecoder(
   def receive = {
     case PayloadDecoder.RawBytes(data) => {
       buf ++= data
+      log.info("buf size: {} out of {}", buf.length, length)
       if (buf.length >= length) {
         val payloadBytes = buf.take(length.toInt)
         if (Message.checksum(payloadBytes) == chksum) {
@@ -38,14 +39,17 @@ class PayloadDecoder(
         } else {
           log.info("bad checksum")
         }
+        log.info("stopping payload decoder")
         context.stop(self)
       }
     }
   }
 
   def decodePayload(bytes: ByteVector): Unit = {
+    log.info("trying to decode payload...")
     codec.decode(bytes.toBitVector).foreach {
       case (bits, msg) =>
+        log.info("decoded payload: {}", msg)
         context.parent ! MessageDecoder.DecodedMessage(msg)
     }
   }

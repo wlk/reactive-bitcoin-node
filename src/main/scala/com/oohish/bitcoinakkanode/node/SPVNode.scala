@@ -36,7 +36,7 @@ class SPVNode(networkParams: NetworkParameters) extends Actor with ActorLogging 
         .pipeTo(ref)
     case BlockChain.GetBlockLocatorResponse(bl) =>
       pm ! GetHeaders(1, bl)
-    case other => println(other)
+    case other => println(other + "-------------------------------------------------------")
   }
 
 }
