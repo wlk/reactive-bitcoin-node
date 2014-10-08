@@ -47,7 +47,10 @@ class PayloadDecoder(
 
   def decodePayload(bytes: ByteVector): Unit = {
     log.info("trying to decode payload...")
-    codec.decode(bytes.toBitVector).foreach {
+    log.info("first three bytes: {}", bytes.take(3))
+    val x = codec.decode(bytes.toBitVector)
+    log.info("decoded to: {}", x)
+    x.foreach {
       case (bits, msg) =>
         log.info("decoded payload: {}", msg)
         context.parent ! MessageDecoder.DecodedMessage(msg)
