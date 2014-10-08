@@ -32,7 +32,7 @@ class SPVNode(networkParams: NetworkParameters) extends Actor with ActorLogging 
       log.info("spv node notified peer connected")
       (blockchain ? BlockChain.GetBlockLocator())
         .mapTo[GetBlockLocatorResponse]
-        .map(blr => BTCConnection.Outgoing(GetHeaders(1, blr.bl)))
+        .map(blr => BTCConnection.Outgoing(GetHeaders(networkParams.PROTOCOL_VERSION, blr.bl)))
         .pipeTo(ref)
     case BlockChain.GetBlockLocatorResponse(bl) =>
       pm ! GetHeaders(1, bl)

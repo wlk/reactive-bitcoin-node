@@ -71,7 +71,7 @@ class BTCConnection(
   def connected(version: Int): Receive = {
     case Outgoing(m) =>
       log.info("btc connection sending message: " + m)
-      context.parent ! m
+      context.parent ! TCPConnection.OutgoingMessage(m)
     case m: Message =>
       log.debug("received message: {}", m)
       manager ! m
