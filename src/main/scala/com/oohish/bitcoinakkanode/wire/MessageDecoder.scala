@@ -16,6 +16,7 @@ import akka.actor.ActorRef
 import scodec.Codec
 import akka.actor.Terminated
 import akka.util.ByteString
+import com.oohish.bitcoinscodec.messages.Headers
 
 object MessageDecoder {
   def props(magic: Long) =
@@ -92,6 +93,7 @@ class MessageDecoder(magic: Long) extends Actor with ActorLogging {
     buf: ByteVector): scalaz.\/[String, (BitVector, Message)] = {
     if (Message.checksum(buf) == chksum) {
       log.info("chksum good, decoding payload with length {}", length)
+      log.info("is codec a Headers codec?: {}", Headers.codec == codec)
       codec.decode(buf.toBitVector)
     } else {
       -\/(("checksum did not match."))

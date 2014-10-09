@@ -38,7 +38,7 @@ class BTCConnection(
 
   def connecting(verackReceived: Boolean, versionReceived: Option[Version]): Receive = {
     case v: Version =>
-      log.debug("btc connection received version")
+      log.info("btc connection received version")
       context.parent ! Verack()
       if (verackReceived) {
         finishHandshake(v, v.timestamp)
@@ -47,7 +47,7 @@ class BTCConnection(
         context.become(connecting(false, Some(v)))
       }
     case _: Verack =>
-      log.debug("btc connection received verack")
+      log.info("btc connection received verack")
       if (versionReceived.isDefined) {
         val v = versionReceived.get
         finishHandshake(v, v.timestamp)
@@ -55,7 +55,7 @@ class BTCConnection(
         context.become(connecting(true, None))
       }
     case m: ConnectTimeout =>
-      log.debug("btc connection received connect timeout")
+      log.info("btc connection received connect timeout")
       context.stop(self)
   }
 
