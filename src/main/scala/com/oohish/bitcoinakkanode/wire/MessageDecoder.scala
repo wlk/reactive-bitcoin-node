@@ -51,7 +51,9 @@ class MessageDecoder(magic: Long) extends Actor with ActorLogging {
       log.info("buf length: {}", newBuff.length)
       if (newBuff.length >= length) {
         val (payloadBytes, rest) = newBuff.splitAt(length.toInt)
-        decodePayload(codec, length, chksum, newBuff).foreach {
+        val x = decodePayload(codec, length, chksum, newBuff)
+        log.info("decodePayload result: {}", x)
+        x.foreach {
           case (rest, msg) =>
             context.parent ! MessageDecoder.DecodedMessage(msg)
         }
@@ -88,10 +90,9 @@ class MessageDecoder(magic: Long) extends Actor with ActorLogging {
     length: Long,
     chksum: Long,
     buf: ByteVector): scalaz.\/[String, (BitVector, Message)] = {
-    val payloadBytes = buf.take(length.toInt)
-    if (Message.checksum(payloadBytes) == chksum) {
+    if (Message.checksum(buf) == chksum) {
       log.info("chksum good, decoding payload with length {}", length)
-      codec.decode(payloadBytes.toBitVector)
+      codec.decode(buf.toBitVector)
     } else {
       -\/(("checksum did not match."))
     }
