@@ -24,7 +24,6 @@ class MessageEncoder(magic: Long) extends Actor with ActorLogging {
       Message.codec(magic).encode(msg)
         .foreach { b =>
           val bytes = ByteString.fromByteBuffer(b.toByteBuffer)
-          log.info("outgoing bytes: {}", b.toByteVector)
           context.parent ! EncodedMessage(bytes)
         }
     }

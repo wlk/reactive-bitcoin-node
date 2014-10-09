@@ -15,6 +15,7 @@ import scodec.codecs._
 import akka.actor.ActorRef
 import scodec.Codec
 import akka.actor.Terminated
+import akka.util.ByteString
 
 object MessageDecoder {
   def props(magic: Long) =
@@ -27,49 +28,73 @@ object MessageDecoder {
 class MessageDecoder(magic: Long) extends Actor with ActorLogging {
   import MessageDecoder._
 
-  def receive = ready
+  def receive = ready(ByteVector.empty)
 
-  def ready: Actor.Receive = {
+  def ready(buf: ByteVector): Actor.Receive = {
     case Tcp.Received(data) => {
-      log.info("decoding bytes: {}", ByteVector(data))
-      val bits = BitVector(data)
-
-      val x = for {
-        m <- uint32L.decode(bits) match {
-          case \/-((rem, mg)) =>
-            if (mg == magic)
-              \/-((rem, mg))
-            else
-              -\/(("magic did not match."))
-          case -\/(err) => -\/(err)
-        }
-        (mrem, _) = m
-        c <- payloadCodec.decode(mrem)
-        (crem, command) = c
-        l <- uint32L.decode(crem)
-        (lrem, length) = l
-        ch <- uint32L.decode(lrem)
-        (chrem, chksum) = ch
-        (payload, rest) = chrem.splitAt(length * 8)
-      } yield (command, length, chksum, payload)
-
-      x.foreach {
+      decodeCommand(ByteVector(data)).foreach {
         case (c, l, ch, p) =>
-          val pd = context.actorOf(PayloadDecoder.props(c, l, ch), name = "payloadDecoder")
-          context.become(decoding(pd))
-          context.watch(pd)
-          pd ! PayloadDecoder.RawBytes(p.toByteVector)
+          log.info("becoming decoding with length {}", l)
+          context.become(decoding(c, l, ch, ByteVector.empty))
+          self ! Tcp.Received(ByteString(p.toByteBuffer))
       }
     }
   }
 
-  def decoding(payloadDecoder: ActorRef): Actor.Receive = {
+  def decoding(
+    codec: Codec[_ <: Message],
+    length: Long,
+    chksum: Long,
+    buf: ByteVector): Actor.Receive = {
     case Tcp.Received(data) =>
-      val bits = BitVector(data)
-      payloadDecoder ! PayloadDecoder.RawBytes(bits.toByteVector)
-    case DecodedMessage(msg) =>
-      context.parent ! DecodedMessage(msg)
-    case Terminated(ref) =>
-      context.become(ready)
+      val newBuff = buf ++ ByteVector(data)
+      log.info("buf length: {}", newBuff.length)
+      if (newBuff.length >= length) {
+        val (payloadBytes, rest) = newBuff.splitAt(length.toInt)
+        decodePayload(codec, length, chksum, newBuff).foreach {
+          case (rest, msg) =>
+            context.parent ! MessageDecoder.DecodedMessage(msg)
+        }
+        log.info("becoming ready")
+        context.become(ready(rest))
+      } else {
+        context.become(decoding(codec, length, chksum, newBuff))
+      }
   }
+
+  def decodeCommand(bits: ByteVector) = {
+    for {
+      m <- uint32L.decode(bits.toBitVector) match {
+        case \/-((rem, mg)) =>
+          if (mg == magic)
+            \/-((rem, mg))
+          else
+            -\/(("magic did not match."))
+        case -\/(err) => -\/(err)
+      }
+      (mrem, _) = m
+      c <- payloadCodec.decode(mrem)
+      (crem, command) = c
+      l <- uint32L.decode(crem)
+      (lrem, length) = l
+      ch <- uint32L.decode(lrem)
+      (chrem, chksum) = ch
+      (payload, rest) = chrem.splitAt(length * 8)
+    } yield (command, length, chksum, payload)
+  }
+
+  def decodePayload(
+    codec: Codec[_ <: Message],
+    length: Long,
+    chksum: Long,
+    buf: ByteVector): scalaz.\/[String, (BitVector, Message)] = {
+    val payloadBytes = buf.take(length.toInt)
+    if (Message.checksum(payloadBytes) == chksum) {
+      log.info("chksum good, decoding payload with length {}", length)
+      codec.decode(payloadBytes.toBitVector)
+    } else {
+      -\/(("checksum did not match."))
+    }
+  }
+
 }

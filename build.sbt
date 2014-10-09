@@ -27,7 +27,8 @@ libraryDependencies ++= Seq(
     "com.oohish" %% "bitcoin-scodec" % "0.1.12",
     "org.typelevel" %% "scodec-stream" % "0.1.0",
     "joda-time" % "joda-time" % "2.4",
-    "org.joda" % "joda-convert" % "1.4"
+    "org.joda" % "joda-convert" % "1.4",
+    "com.github.scala-incubator.io" %% "scala-io-core" % "0.4.3"
 )
 
 instrumentSettings
