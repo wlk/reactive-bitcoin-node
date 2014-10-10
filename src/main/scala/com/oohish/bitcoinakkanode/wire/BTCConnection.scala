@@ -12,6 +12,8 @@ import akka.actor.Props
 import akka.actor.Terminated
 import akka.actor.actorRef2Scala
 import com.oohish.bitcoinscodec.structures.Message.Message
+import scala.language.postfixOps
+import scala.concurrent.duration._
 
 object BTCConnection {
   def props(
@@ -33,6 +35,10 @@ class BTCConnection(
   import BTCConnection._
   import com.oohish.bitcoinscodec.structures.Message._
   import com.oohish.bitcoinscodec.messages._
+  import context._
+
+  override def preStart() =
+    system.scheduler.scheduleOnce(5 seconds, self, ConnectTimeout())
 
   def receive = connecting(false, None)
 
