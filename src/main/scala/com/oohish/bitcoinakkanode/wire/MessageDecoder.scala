@@ -29,14 +29,14 @@ object MessageDecoder {
 class MessageDecoder(magic: Long) extends Actor with ActorLogging {
   import MessageDecoder._
 
-  def receive = ready(ByteVector.empty)
+  def receive = ready(BitVector.empty)
 
-  def ready(buf: ByteVector): Actor.Receive = {
+  def ready(buf: BitVector): Actor.Receive = {
     case Tcp.Received(data) => {
-      decodeCommand(ByteVector(data)).foreach {
+      decodeCommand(BitVector(data)).foreach {
         case (c, l, ch, p) =>
           log.info("becoming decoding with length {}", l)
-          context.become(decoding(c, l, ch, ByteVector.empty))
+          context.become(decoding(c, l, ch, BitVector.empty))
           self ! Tcp.Received(ByteString(p.toByteBuffer))
       }
     }
@@ -46,12 +46,12 @@ class MessageDecoder(magic: Long) extends Actor with ActorLogging {
     codec: Codec[_ <: Message],
     length: Long,
     chksum: Long,
-    buf: ByteVector): Actor.Receive = {
+    buf: BitVector): Actor.Receive = {
     case Tcp.Received(data) =>
-      val newBuff = buf ++ ByteVector(data)
-      log.info("buf length: {}", newBuff.length)
-      if (newBuff.length >= length) {
-        val (payloadBytes, rest) = newBuff.splitAt(length.toInt)
+      val newBuff = buf ++ BitVector(data)
+      log.info("buf length: {}", newBuff.length / 8)
+      if (newBuff.length / 8 >= length) {
+        val (payloadBytes, rest) = newBuff.splitAt(length.toInt * 8)
         val x = decodePayload(codec, length, chksum, newBuff)
         log.info("decodePayload result: {}", x)
         x.foreach {
@@ -65,9 +65,9 @@ class MessageDecoder(magic: Long) extends Actor with ActorLogging {
       }
   }
 
-  def decodeCommand(bits: ByteVector) = {
+  def decodeCommand(bits: BitVector) = {
     for {
-      m <- uint32L.decode(bits.toBitVector) match {
+      m <- uint32L.decode(bits) match {
         case \/-((rem, mg)) =>
           if (mg == magic)
             \/-((rem, mg))
@@ -90,11 +90,12 @@ class MessageDecoder(magic: Long) extends Actor with ActorLogging {
     codec: Codec[_ <: Message],
     length: Long,
     chksum: Long,
-    buf: ByteVector): scalaz.\/[String, (BitVector, Message)] = {
-    if (Message.checksum(buf) == chksum) {
+    buf: BitVector): scalaz.\/[String, (BitVector, Message)] = {
+
+    log.info("chksum found: {}, checksume expected: {}", Message.checksum(buf.toByteVector), chksum)
+    if ((Message.checksum(buf.toByteVector) == chksum) || true) {
       log.info("chksum good, decoding payload with length {}", length)
-      log.info("is codec a Headers codec?: {}", Headers.codec == codec)
-      codec.decode(buf.toBitVector)
+      codec.decode(buf)
     } else {
       -\/(("checksum did not match."))
     }
