@@ -12,6 +12,7 @@ object BlockChain {
   case class StoredBlock(block: Block, hash: Hash, height: Int, parent: Option[StoredBlock])
   case class GetHeight()
   case class GetBlockLocator()
+  case class PutBlock(b: Block)
   case class GetBlockLocatorResponse(bl: List[Hash])
   case class GetHeightResponse(height: Int)
 }
@@ -31,9 +32,28 @@ trait BlockChain extends Actor with ActorLogging {
       sender ! GetHeightResponse(chainHead.height)
     case GetBlockLocator() =>
       sender ! GetBlockLocatorResponse(blockLocator(chainHead.height))
+    case PutBlock(b) =>
+      trySaveBlock(b)
   }
 
   def isValidBlock(b: Block): Boolean
+
+  def trySaveBlock(b: Block) = {
+    log.debug("trying to save block.")
+    if (isValidBlock(b)) {
+      saveBlock(b)
+    }
+  }
+
+  def saveBlock(b: Block) = {
+    val hash = blockHash(b)
+    val prev = blocks.get(b.block_header.prev_block)
+    val prevHeight = prev.map(_.height).getOrElse(0)
+    val sb = StoredBlock(b, hash, prevHeight + 1, prev)
+    blocks += hash -> sb
+    if (sb.height > chainHead.height) chainHead = sb
+    log.info("saved block height: {}, chainHead height: {}", sb.height, chainHead.height)
+  }
 
   def blockHash(b: Block): Hash = {
     val bytes = BlockHeader.codec.encode(b.block_header)
@@ -69,7 +89,7 @@ trait BlockChain extends Actor with ActorLogging {
       }
       cur = sb.parent
     }
-    hashes
+    hashes.reverse
   }
 
 }

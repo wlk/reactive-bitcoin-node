@@ -9,6 +9,7 @@ import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.actor.ActorRef
+import com.oohish.bitcoinscodec.structures.Message.Message
 
 object PeerManager {
   def props(networkParams: NetworkParameters) =
@@ -21,6 +22,9 @@ object PeerManager {
   } yield new InetSocketAddress(address, networkParams.port)
 
   case class PeerConnected(ref: ActorRef)
+  case class ReceivedMessage(msg: Message, from: ActorRef)
+  case class UnicastMessage(msg: Message, to: ActorRef)
+  case class BroadCastMessage(msg: Message, exclude: List[ActorRef])
 }
 
 class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogging {
@@ -30,9 +34,12 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
   val pc = context.actorOf(Client.props(dnsPeers.head, networkParams))
 
   def receive = {
-    case msg: Message =>
-      log.debug("peer manager received {} from {}", msg.getClass(), sender)
-      context.parent ! msg
+    case BTCConnection.Incoming(msg) =>
+      log.info("peer manager received {} from {}", msg.getClass(), sender)
+      context.parent ! PeerManager.ReceivedMessage(msg, sender)
+    case PeerManager.UnicastMessage(msg, to) =>
+      log.debug("peer manager sending {} to {}", msg.getClass(), to)
+      to ! BTCConnection.Outgoing(msg)
     case PeerManager.PeerConnected(ref) =>
       context.parent ! PeerManager.PeerConnected(ref)
   }

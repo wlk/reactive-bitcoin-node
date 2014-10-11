@@ -35,7 +35,7 @@ class MessageDecoder(magic: Long) extends Actor with ActorLogging {
     case Tcp.Received(data) => {
       decodeCommand(BitVector(data)).foreach {
         case (c, l, ch, p) =>
-          log.info("becoming decoding with length {}", l)
+          log.debug("becoming decoding with length {}", l)
           context.become(decoding(c, l, ch, BitVector.empty))
           self ! Tcp.Received(ByteString(p.toByteBuffer))
       }
@@ -49,16 +49,16 @@ class MessageDecoder(magic: Long) extends Actor with ActorLogging {
     buf: BitVector): Actor.Receive = {
     case Tcp.Received(data) =>
       val newBuff = buf ++ BitVector(data)
-      log.info("buf length: {}", newBuff.length / 8)
+      log.debug("buf length: {}", newBuff.length / 8)
       if (newBuff.length / 8 >= length) {
         val (payloadBytes, rest) = newBuff.splitAt(length.toInt * 8)
         val x = decodePayload(codec, length, chksum, newBuff)
-        log.info("decodePayload result: {}", x)
+        log.debug("decodePayload result: {}", x)
         x.foreach {
           case (rest, msg) =>
             context.parent ! MessageDecoder.DecodedMessage(msg)
         }
-        log.info("becoming ready")
+        log.debug("becoming ready")
         context.become(ready(rest))
       } else {
         context.become(decoding(codec, length, chksum, newBuff))
@@ -92,9 +92,9 @@ class MessageDecoder(magic: Long) extends Actor with ActorLogging {
     chksum: Long,
     buf: BitVector): scalaz.\/[String, (BitVector, Message)] = {
 
-    log.info("chksum found: {}, checksume expected: {}", Message.checksum(buf.toByteVector), chksum)
+    log.debug("chksum found: {}, checksume expected: {}", Message.checksum(buf.toByteVector), chksum)
     if ((Message.checksum(buf.toByteVector) == chksum) || true) {
-      log.info("chksum good, decoding payload with length {}", length)
+      log.debug("chksum good, decoding payload with length {}", length)
       codec.decode(buf)
     } else {
       -\/(("checksum did not match."))

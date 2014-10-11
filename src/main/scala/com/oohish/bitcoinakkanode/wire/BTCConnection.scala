@@ -25,6 +25,7 @@ object BTCConnection {
 
   case class ConnectTimeout()
   case class Outgoing(m: Message)
+  case class Incoming(m: Message)
 }
 
 class BTCConnection(
@@ -66,8 +67,6 @@ class BTCConnection(
   }
 
   def finishHandshake(version: Version, time: Long): Unit = {
-    //manager ! PeerConnected(peer, time)
-    // take the minimum of the client version and the connected peer's version.
     val negotiatedVersion = Math.min(networkParams.PROTOCOL_VERSION, version.version).toInt
     log.info("peer connected: {} with version {}", remote, negotiatedVersion)
     context.become(connected(negotiatedVersion))
@@ -76,11 +75,9 @@ class BTCConnection(
 
   def connected(version: Int): Receive = {
     case Outgoing(m) =>
-      log.info("btc connection sending message: " + m)
       context.parent ! TCPConnection.OutgoingMessage(m)
-    case m: Message =>
-      log.debug("received message: {}", m)
-      manager ! m
+    case msg: Message =>
+      manager ! BTCConnection.Incoming(msg)
     case Terminated(ref) =>
       context.stop(self)
   }
