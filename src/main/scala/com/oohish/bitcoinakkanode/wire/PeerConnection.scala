@@ -45,7 +45,6 @@ class PeerConnection(
 
   def connecting(verackReceived: Boolean, versionReceived: Option[Version]): Receive = {
     case v: Version =>
-      log.info("btc connection received version")
       context.parent ! Verack()
       if (verackReceived) {
         finishHandshake(v, v.timestamp)
@@ -54,7 +53,6 @@ class PeerConnection(
         context.become(connecting(false, Some(v)))
       }
     case _: Verack =>
-      log.info("btc connection received verack")
       if (versionReceived.isDefined) {
         val v = versionReceived.get
         finishHandshake(v, v.timestamp)
@@ -62,7 +60,6 @@ class PeerConnection(
         context.become(connecting(true, None))
       }
     case m: ConnectTimeout =>
-      log.info("btc connection received connect timeout")
       context.stop(self)
   }
 
