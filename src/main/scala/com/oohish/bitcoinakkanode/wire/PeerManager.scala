@@ -34,12 +34,12 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
   val pc = context.actorOf(Client.props(dnsPeers.head, networkParams))
 
   def receive = {
-    case BTCConnection.Incoming(msg) =>
+    case PeerConnection.Incoming(msg) =>
       log.info("peer manager received {} from {}", msg.getClass(), sender)
       context.parent ! PeerManager.ReceivedMessage(msg, sender)
     case PeerManager.UnicastMessage(msg, to) =>
       log.debug("peer manager sending {} to {}", msg.getClass(), to)
-      to ! BTCConnection.Outgoing(msg)
+      to ! PeerConnection.Outgoing(msg)
     case PeerManager.PeerConnected(ref) =>
       context.parent ! PeerManager.PeerConnected(ref)
   }

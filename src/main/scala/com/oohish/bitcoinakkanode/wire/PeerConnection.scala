@@ -15,25 +15,25 @@ import com.oohish.bitcoinscodec.structures.Message.Message
 import scala.language.postfixOps
 import scala.concurrent.duration._
 
-object BTCConnection {
+object PeerConnection {
   def props(
     manager: ActorRef,
     remote: InetSocketAddress,
     local: InetSocketAddress,
     networkParams: NetworkParameters) =
-    Props(classOf[BTCConnection], manager, remote, local, networkParams)
+    Props(classOf[PeerConnection], manager, remote, local, networkParams)
 
   case class ConnectTimeout()
   case class Outgoing(m: Message)
   case class Incoming(m: Message)
 }
 
-class BTCConnection(
+class PeerConnection(
   manager: ActorRef,
   remote: InetSocketAddress,
   local: InetSocketAddress,
   networkParams: NetworkParameters) extends Actor with ActorLogging {
-  import BTCConnection._
+  import PeerConnection._
   import com.oohish.bitcoinscodec.structures.Message._
   import com.oohish.bitcoinscodec.messages._
   import context._
@@ -77,7 +77,7 @@ class BTCConnection(
     case Outgoing(m) =>
       context.parent ! TCPConnection.OutgoingMessage(m)
     case msg: Message =>
-      manager ! BTCConnection.Incoming(msg)
+      manager ! PeerConnection.Incoming(msg)
     case Terminated(ref) =>
       context.stop(self)
   }

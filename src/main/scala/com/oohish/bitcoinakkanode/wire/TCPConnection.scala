@@ -38,9 +38,9 @@ class TCPConnection(
   import TCPConnection._
   import akka.actor.Terminated
 
-  val btcConnection = context.actorOf(BTCConnection.props(
+  val pc = context.actorOf(PeerConnection.props(
     manager, remote, local, networkParams))
-  context.watch(btcConnection)
+  context.watch(pc)
 
   val decoder = context.actorOf(MessageDecoder.props(networkParams.packetMagic), name = "messageDecoder")
   val encoder = context.actorOf(MessageEncoder.props(networkParams.packetMagic), name = "messageEncoder")
@@ -54,13 +54,13 @@ class TCPConnection(
       connection ! Tcp.Write(b)
     case DecodedMessage(msg) =>
       log.debug("received decoded message: " + msg)
-      btcConnection ! msg
+      pc ! msg
     case Tcp.Received(data) =>
       log.debug("received tcp bytes: " + ByteVector(data))
       decoder ! Tcp.Received(data)
     case Tcp.CommandFailed(w: Tcp.Write) =>
       log.debug("write failed")
-    case Terminated(btcConnection) =>
+    case Terminated(pc) =>
       log.debug("btc connection closed")
       connection ! Tcp.Close
     case "close" =>

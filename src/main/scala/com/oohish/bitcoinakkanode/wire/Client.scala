@@ -42,7 +42,7 @@ class Client(
 
   import Tcp._
   import Client._
-  import com.oohish.bitcoinakkanode.wire.TCPConnection._
+  import TCPConnection._
   import context.system
 
   log.debug("connecting to " + peer)
