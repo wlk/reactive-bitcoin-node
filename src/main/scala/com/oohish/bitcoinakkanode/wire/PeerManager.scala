@@ -39,7 +39,7 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
   def dnsPeers = PeerManager.seedPeers(networkParams)
 
   var peers = Set.empty[InetSocketAddress]
-  var connections = Map.empty[InetSocketAddress, ActorRef]
+  var connections = Map.empty[ActorRef, InetSocketAddress]
   val peerLimit = 10
 
   override def preStart() = {
@@ -50,26 +50,22 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
   def receive = {
     case Connect() =>
       if (connections.size < peerLimit) {
-        log.info("trying to connect....")
-        val candidates = peers.filter(!connections.contains(_))
-        log.info("num candidates: {}", candidates.size)
+        val candidates = peers.filter(addr => !connections.values.exists(_ == addr))
         util.Random.shuffle(candidates.toVector).take(1).foreach(connectToPeer)
       }
     case PeerConnection.Incoming(msg) =>
-      log.info("peer manager received {} from {}", msg.getClass(), sender)
       msgReceive(sender)(msg)
     case PeerManager.UnicastMessage(msg, to) =>
-      log.debug("peer manager sending {} to {}", msg.getClass(), to)
       to ! PeerConnection.Outgoing(msg)
     case PeerManager.BroadCastMessage(msg, exclude) =>
-      for (connection <- connections.values if !(exclude contains connection)) {
-        log.debug("peer manager sending {} to {}", msg.getClass(), connection)
+      for (connection <- connections.keys if !(exclude contains connection))
         connection ! PeerConnection.Outgoing(msg)
-      }
     case PeerManager.PeerConnected(ref, addr) =>
-      connections += addr -> ref
-      log.info("peer connected. num connections: {}", connections.size)
+      connections += ref -> addr
+      context.watch(ref)
       context.parent ! PeerManager.PeerConnected(ref, addr)
+    case akka.actor.Terminated(ref) =>
+      connections -= ref
   }
 
   def msgReceive(from: ActorRef): PartialFunction[Message, Unit] = {
@@ -77,10 +73,8 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
       sender ! PeerConnection.Outgoing(
         Pong(nonce))
     case Addr(addrs) =>
-      log.info("addr list size: {}", addrs.size)
       for ((time, addr) <- addrs) peers += addr.address
     case other =>
-      log.debug("node received other message: {}", other.getClass())
       context.parent ! PeerManager.ReceivedMessage(other, sender)
   }
 
