@@ -30,7 +30,7 @@ class SPVNode(networkParams: NetworkParameters) extends Actor with ActorLogging 
   val pm = context.actorOf(PeerManager.props(networkParams))
 
   def receive = {
-    case PeerManager.PeerConnected(ref) =>
+    case PeerManager.PeerConnected(ref, addr) =>
       pm ! PeerManager.UnicastMessage(GetAddr(), ref)
       sendBlockLocator(ref)
     case BlockChain.GetBlockLocatorResponse(bl) =>

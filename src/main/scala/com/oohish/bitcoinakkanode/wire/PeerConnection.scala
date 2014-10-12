@@ -70,7 +70,7 @@ class PeerConnection(
     val negotiatedVersion = Math.min(networkParams.PROTOCOL_VERSION, version.version).toInt
     log.info("peer connected: {} with version {}", remote, negotiatedVersion)
     context.become(connected(negotiatedVersion))
-    manager ! PeerManager.PeerConnected(self)
+    manager ! PeerManager.PeerConnected(self, remote)
   }
 
   def connected(version: Int): Receive = {
