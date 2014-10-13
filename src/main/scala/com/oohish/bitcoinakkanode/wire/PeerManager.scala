@@ -9,7 +9,7 @@ import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.actor.ActorRef
-import com.oohish.bitcoinscodec.structures.Message.Message
+import com.oohish.bitcoinscodec.structures.Message
 import com.oohish.bitcoinscodec.messages._
 
 object PeerManager {
@@ -61,6 +61,7 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
       for (connection <- connections.keys if !(exclude contains connection))
         connection ! PeerConnection.Outgoing(msg)
     case PeerManager.PeerConnected(ref, addr) =>
+      log.info("peer connected: {}", addr)
       connections += ref -> addr
       context.watch(ref)
       context.parent ! PeerManager.PeerConnected(ref, addr)

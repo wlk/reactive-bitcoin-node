@@ -19,9 +19,11 @@ object MessageEncoder {
 class MessageEncoder(magic: Long) extends Actor with ActorLogging {
   import MessageEncoder._
 
+  val version = 1
+
   def receive = {
     case msg: Message => {
-      Message.codec(magic).encode(msg)
+      Message.codec(magic, version).encode(msg)
         .foreach { b =>
           val bytes = ByteString(b.toByteBuffer)
           context.parent ! EncodedMessage(bytes)

@@ -4,7 +4,7 @@ import java.net.InetSocketAddress
 
 import com.oohish.bitcoinakkanode.wire.MessageDecoder.DecodedMessage
 import com.oohish.bitcoinakkanode.wire.MessageEncoder.EncodedMessage
-import com.oohish.bitcoinscodec.structures.Message.Message
+import com.oohish.bitcoinscodec.structures.Message
 
 import akka.actor.Actor
 import akka.actor.ActorLogging

@@ -11,7 +11,7 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.actor.actorRef2Scala
-import com.oohish.bitcoinscodec.structures.Message.Message
+import com.oohish.bitcoinscodec.structures.Message
 import scala.language.postfixOps
 import scala.concurrent.duration._
 
@@ -65,7 +65,6 @@ class PeerConnection(
 
   def finishHandshake(version: Version, time: Long): Unit = {
     val negotiatedVersion = Math.min(networkParams.PROTOCOL_VERSION, version.version).toInt
-    log.info("peer connected: {} with version {}", remote, negotiatedVersion)
     context.become(connected(negotiatedVersion))
     manager ! PeerManager.PeerConnected(self, remote)
   }

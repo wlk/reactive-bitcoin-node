@@ -15,7 +15,7 @@ import akka.util.Timeout
 import com.oohish.bitcoinscodec.messages.GetAddr
 import com.oohish.bitcoinscodec.messages.Headers
 import akka.actor.ActorRef
-import com.oohish.bitcoinscodec.structures.Message.Message
+import com.oohish.bitcoinscodec.structures.Message
 
 object SPVNode {
   def props(networkParams: NetworkParameters) =
