@@ -1,22 +1,31 @@
 package com.oohish.bitcoinakkanode.node
 
-import akka.actor.Actor
-import akka.actor.ActorLogging
-import akka.actor.Props
+import scala.concurrent.duration.DurationInt
+import scala.language.postfixOps
+
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
-import com.oohish.bitcoinakkanode.wire.PeerManager
+import com.oohish.bitcoinscodec.structures.Message
+
+import akka.actor.ActorRef
+import akka.actor.Props
+import akka.util.Timeout
 
 object ListenerNode {
   def props(networkParams: NetworkParameters) =
     Props(classOf[ListenerNode], networkParams)
 }
 
-class ListenerNode(networkParams: NetworkParameters) extends Actor with ActorLogging {
+class ListenerNode(np: NetworkParameters) extends Node {
 
-  val pm = context.actorOf(PeerManager.props(networkParams))
+  def networkParams = np
 
-  def receive = {
-    case other => println(other)
+  lazy val blockchain = context.actorOf(ListenerBlockChain.props(networkParams))
+
+  def blockDownload(ref: ActorRef) = {}
+
+  def msgReceive(from: ActorRef): PartialFunction[Message, Unit] = {
+    case other =>
+      log.debug("node received other message: {}", other.getClass())
   }
 
 }

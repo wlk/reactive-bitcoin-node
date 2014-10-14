@@ -14,7 +14,7 @@ object BlockChain {
   case class GetBlockLocator()
   case class PutBlock(b: Block)
   case class GetBlockLocatorResponse(bl: List[Hash])
-  case class GetHeightResponse(height: Int)
+  case class GetChainHead()
 }
 
 trait BlockChain extends Actor with ActorLogging {
@@ -29,7 +29,9 @@ trait BlockChain extends Actor with ActorLogging {
 
   def receive = {
     case GetHeight() =>
-      sender ! GetHeightResponse(chainHead.height)
+      sender ! chainHead.height
+    case GetChainHead() =>
+      sender ! chainHead
     case GetBlockLocator() =>
       log.info("blockchain height: {}", chainHead.height)
       sender ! GetBlockLocatorResponse(blockLocator(chainHead.height))

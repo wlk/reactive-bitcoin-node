@@ -1,18 +1,41 @@
 package com.oohish.bitcoinakkanode.node
 
 import scala.language.postfixOps
-
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerManager
 import com.oohish.bitcoinscodec.messages.GetAddr
 import com.oohish.bitcoinscodec.structures.Message
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.actorRef2Scala
+import com.oohish.bitcoinscodec.structures.Hash
+import scala.concurrent.duration.DurationInt
+import scala.language.postfixOps
+
+object Node {
+
+  sealed trait APICommand
+  case class GetBestBlockHash() extends APICommand
+  case class GetBlock(hash: Hash) extends APICommand
+  case class GetBlockCount() extends APICommand
+
+  sealed trait APICommandResponse
+  case class BestBlockHash(hash: Hash) extends APICommand
+  case class Block(hash: Hash) extends APICommand
+  case class BlockCount() extends APICommand
+
+}
 
 trait Node extends Actor with ActorLogging {
+  import com.oohish.bitcoinakkanode.node.Node._
+  import akka.actor.actorRef2Scala
+  import akka.pattern.ask
+  import akka.pattern.pipe
+  import akka.util.Timeout
+  import context.dispatcher
+
+  implicit val timeout = Timeout(5 seconds)
 
   def networkParams: NetworkParameters
 
@@ -25,10 +48,19 @@ trait Node extends Actor with ActorLogging {
       blockDownload(ref)
     case PeerManager.ReceivedMessage(msg, from) =>
       msgReceive(from)(msg)
+    case cmd: APICommand =>
+      commandReceive(cmd)
   }
 
   def blockDownload(ref: ActorRef): Unit
 
   def msgReceive(from: ActorRef): PartialFunction[Message, Unit]
+
+  def commandReceive: PartialFunction[APICommand, Unit] = {
+    case GetBestBlockHash() =>
+      (blockchain ? BlockChain.GetHeight())
+        .mapTo[Int]
+        .pipeTo(sender)
+  }
 
 }

@@ -1,6 +1,5 @@
 package com.oohish.bitcoinakkanode.node
 
-import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
 import com.oohish.bitcoinakkanode.node.BlockChain.GetBlockLocatorResponse
@@ -15,7 +14,6 @@ import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.pattern.pipe
-import akka.util.Timeout
 
 object SPVNode {
   def props(networkParams: NetworkParameters) =
@@ -24,7 +22,6 @@ object SPVNode {
 
 class SPVNode(np: NetworkParameters) extends Node {
   import context.dispatcher
-  implicit val timeout = Timeout(5 seconds)
 
   def networkParams = np
   lazy val blockchain = context.actorOf(SPVBlockChain.props(networkParams))

@@ -9,7 +9,6 @@ object RunListenerNode extends App {
 
   val system = ActorSystem("node")
 
-  // start the peer manager
-  val pm = system.actorOf(ListenerNode.props(MainNetParams))
+  val node = system.actorOf(ListenerNode.props(MainNetParams))
 
 }

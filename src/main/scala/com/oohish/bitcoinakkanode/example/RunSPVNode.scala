@@ -9,7 +9,6 @@ object RunSPVNode extends App {
 
   val system = ActorSystem("node")
 
-  // start the peer manager
-  val pm = system.actorOf(SPVNode.props(MainNetParams))
+  val node = system.actorOf(SPVNode.props(MainNetParams))
 
 }

@@ -66,6 +66,7 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
       context.watch(ref)
       context.parent ! PeerManager.PeerConnected(ref, addr)
     case akka.actor.Terminated(ref) =>
+      log.info("peer disconnected: {}", connections(ref))
       connections -= ref
   }
 
