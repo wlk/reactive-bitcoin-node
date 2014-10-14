@@ -58,8 +58,14 @@ trait Node extends Actor with ActorLogging {
 
   def commandReceive: PartialFunction[APICommand, Unit] = {
     case GetBestBlockHash() =>
-      (blockchain ? BlockChain.GetHeight())
-        .mapTo[Int]
+      (blockchain ? BlockChain.GetChainHead())
+        .mapTo[BlockChain.StoredBlock]
+        .map(_.height)
+        .pipeTo(sender)
+    case GetBlockCount() =>
+      (blockchain ? BlockChain.GetChainHead())
+        .mapTo[BlockChain.StoredBlock]
+        .map(_.hash)
         .pipeTo(sender)
   }
 

@@ -28,8 +28,6 @@ trait BlockChain extends Actor with ActorLogging {
   var chainHead = g
 
   def receive = {
-    case GetHeight() =>
-      sender ! chainHead.height
     case GetChainHead() =>
       sender ! chainHead
     case GetBlockLocator() =>
