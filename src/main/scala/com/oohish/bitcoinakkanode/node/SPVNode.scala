@@ -33,8 +33,6 @@ class SPVNode(networkParams: NetworkParameters) extends Actor with ActorLogging 
     case PeerManager.PeerConnected(ref, addr) =>
       pm ! PeerManager.UnicastMessage(GetAddr(), ref)
       sendBlockLocator(ref)
-    case BlockChain.GetBlockLocatorResponse(bl) =>
-      pm ! GetHeaders(1, bl)
     case PeerManager.ReceivedMessage(msg, from) =>
       msgReceive(from)(msg)
   }
