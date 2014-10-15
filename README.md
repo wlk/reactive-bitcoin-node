@@ -4,6 +4,7 @@ bitcoin-akka-node
 [![Coverage Status](https://img.shields.io/coveralls/yzernik/bitcoin-akka-node.svg)](https://coveralls.io/r/yzernik/bitcoin-akka-node?branch=master)
 [![tip for next commit](https://tip4commit.com/projects/1006.svg)](https://tip4commit.com/github/yzernik/bitcoin-akka-node)
 
+### Disclaimer: This is experimental software. Do not use it to store money.
 
 Requirements
 --------------
@@ -11,7 +12,12 @@ Requirements
 
 How to run
 --------------
+start the program
+```
+sbt run
+```
 
-- sbt run
-
-- select SPVNode
+get help
+```
+bitcoin-akka-node> help
+```
