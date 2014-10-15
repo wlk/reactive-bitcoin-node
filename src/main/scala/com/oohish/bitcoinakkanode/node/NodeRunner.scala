@@ -20,6 +20,7 @@ object NodeRunner extends App {
   val node = system.actorOf(SPVNode.props(MainNetParams))
   implicit val timeout = Timeout(5 seconds)
   import system.dispatcher
+  import scala.util.control.Exception._
 
   var exiting: Boolean = false
   do {
@@ -34,6 +35,16 @@ object NodeRunner extends App {
         case "getblockcount" =>
           val f = (node ? GetBlockCount())
           println(Await.result(f, 5 seconds))
+        case "getblockhash" =>
+          if (args.length >= 2) {
+            for {
+              index <- catching(classOf[NumberFormatException]) opt args(1).toInt
+            } {
+              val f = (node ? GetBlockHash(index))
+                .mapTo[Option[Hash]]
+              println(Await.result(f, 5 seconds).getOrElse("Not found"))
+            }
+          }
         case "getconnectioncount" =>
           val f = (node ? GetConnectionCount())
           println(Await.result(f, 5 seconds))
@@ -43,6 +54,8 @@ object NodeRunner extends App {
           """|These commands are available in this shell:
              |  getbestblockhash         Returns the hash of the best (tip) block in the longest block chain.
              |  getblockcount            Returns the number of blocks in the longest block chain.
+             |  getblockhash             Returns hash of block in best-block-chain at <index>; index 0 is the genesis block.
+             |  getconnectioncount       Returns the number of connections to other nodes.
              |  exit | quit              Exit this shell.
              |  help                     Display this help.""".stripMargin)
 

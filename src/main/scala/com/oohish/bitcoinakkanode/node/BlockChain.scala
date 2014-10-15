@@ -10,11 +10,11 @@ import com.oohish.bitcoinakkanode.util.Util
 
 object BlockChain {
   case class StoredBlock(block: Block, hash: Hash, height: Int, parent: Option[StoredBlock])
-  case class GetHeight()
   case class GetBlockLocator()
   case class PutBlock(b: Block)
   case class GetBlockLocatorResponse(bl: List[Hash])
   case class GetChainHead()
+  case class GetBlockByIndex(index: Int)
 }
 
 trait BlockChain extends Actor with ActorLogging {
@@ -30,6 +30,8 @@ trait BlockChain extends Actor with ActorLogging {
   def receive = {
     case GetChainHead() =>
       sender ! chainHead
+    case GetBlockByIndex(index) =>
+      sender ! getBlockByIndex(index)
     case GetBlockLocator() =>
       log.debug("blockchain height: {}", chainHead.height)
       sender ! GetBlockLocatorResponse(blockLocator(chainHead.height))
@@ -91,6 +93,14 @@ trait BlockChain extends Actor with ActorLogging {
       cur = sb.parent
     }
     hashes.reverse
+  }
+
+  private def getBlockByIndex(index: Int): Option[StoredBlock] = {
+    var cur: StoredBlock = chainHead
+    while (cur.height > index && cur.parent.isDefined) {
+      cur = cur.parent.get
+    }
+    if (cur.height == index) Some(cur) else None
   }
 
 }
