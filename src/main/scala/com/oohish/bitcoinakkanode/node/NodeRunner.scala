@@ -3,14 +3,13 @@ package com.oohish.bitcoinakkanode.node
 import scala.concurrent.duration.DurationInt
 import scala.io.StdIn
 import scala.language.postfixOps
-import com.oohish.bitcoinakkanode.node.Node.GetBestBlockHash
+import com.oohish.bitcoinakkanode.node.Node._
 import com.oohish.bitcoinakkanode.wire.MainNetParams
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
 import com.oohish.bitcoinscodec.structures.Hash
 import scala.concurrent.Await
-import com.oohish.bitcoinakkanode.node.Node.GetBlockCount
 
 object NodeRunner extends App {
 
@@ -34,6 +33,9 @@ object NodeRunner extends App {
           println(Await.result(f, 5 seconds))
         case "getblockcount" =>
           val f = (node ? GetBlockCount())
+          println(Await.result(f, 5 seconds))
+        case "getconnectioncount" =>
+          val f = (node ? GetConnectionCount())
           println(Await.result(f, 5 seconds))
         case "exit" => exiting = true
         case "quit" => exiting = true

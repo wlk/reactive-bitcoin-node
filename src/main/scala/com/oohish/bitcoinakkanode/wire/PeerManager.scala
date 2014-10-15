@@ -27,6 +27,7 @@ object PeerManager {
   case class ReceivedMessage(msg: Message, from: ActorRef)
   case class UnicastMessage(msg: Message, to: ActorRef)
   case class BroadCastMessage(msg: Message, exclude: List[ActorRef])
+  case class GetNumConnections()
 }
 
 class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogging {
@@ -34,7 +35,7 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
   import context._
   import scala.language.postfixOps
   import scala.concurrent.duration._
-  import PeerManager.Connect
+  import PeerManager._
 
   def dnsPeers = PeerManager.seedPeers(networkParams)
 
@@ -68,6 +69,8 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
     case akka.actor.Terminated(ref) =>
       log.debug("peer disconnected: {}", connections(ref))
       connections -= ref
+    case GetNumConnections() =>
+      sender ! connections.size
   }
 
   def msgReceive(from: ActorRef): PartialFunction[Message, Unit] = {

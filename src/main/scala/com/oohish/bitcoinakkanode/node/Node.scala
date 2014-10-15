@@ -19,6 +19,7 @@ object Node {
   case class GetBestBlockHash() extends APICommand
   case class GetBlock(hash: Hash) extends APICommand
   case class GetBlockCount() extends APICommand
+  case class GetConnectionCount() extends APICommand
 
   sealed trait APICommandResponse
 }
@@ -62,6 +63,9 @@ trait Node extends Actor with ActorLogging {
       (blockchain ? BlockChain.GetChainHead())
         .mapTo[BlockChain.StoredBlock]
         .map(_.height)
+        .pipeTo(sender)
+    case GetConnectionCount() =>
+      (pm ? PeerManager.GetNumConnections())
         .pipeTo(sender)
   }
 
