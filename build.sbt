@@ -28,8 +28,7 @@ libraryDependencies ++= Seq(
     "org.typelevel" %% "scodec-stream" % "0.1.0",
     "joda-time" % "joda-time" % "2.4",
     "org.joda" % "joda-convert" % "1.4",
-    "com.github.scala-incubator.io" %% "scala-io-core" % "0.4.3",
-    "org.scala-sbt" % "command" % "0.13.5"
+    "com.github.scala-incubator.io" %% "scala-io-core" % "0.4.3"
 )
 
 instrumentSettings

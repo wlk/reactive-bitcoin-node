@@ -21,10 +21,6 @@ object Node {
   case class GetBlockCount() extends APICommand
 
   sealed trait APICommandResponse
-  case class BestBlockHash(hash: Hash) extends APICommand
-  case class Block(hash: Hash) extends APICommand
-  case class BlockCount() extends APICommand
-
 }
 
 trait Node extends Actor with ActorLogging {
@@ -60,12 +56,12 @@ trait Node extends Actor with ActorLogging {
     case GetBestBlockHash() =>
       (blockchain ? BlockChain.GetChainHead())
         .mapTo[BlockChain.StoredBlock]
-        .map(_.height)
+        .map(_.hash)
         .pipeTo(sender)
     case GetBlockCount() =>
       (blockchain ? BlockChain.GetChainHead())
         .mapTo[BlockChain.StoredBlock]
-        .map(_.hash)
+        .map(_.height)
         .pipeTo(sender)
   }
 

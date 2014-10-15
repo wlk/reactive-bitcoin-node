@@ -27,7 +27,7 @@ class SPVNode(np: NetworkParameters) extends Node {
   lazy val blockchain = context.actorOf(SPVBlockChain.props(networkParams))
 
   def blockDownload(ref: ActorRef) = {
-    log.info("sending block locator")
+    log.debug("sending block locator")
     (blockchain ? BlockChain.GetBlockLocator())
       .mapTo[GetBlockLocatorResponse]
       .map(blr =>
@@ -38,7 +38,7 @@ class SPVNode(np: NetworkParameters) extends Node {
 
   def msgReceive(from: ActorRef): PartialFunction[Message, Unit] = {
     case Headers(headers) =>
-      log.info("headers size: {}", headers.size)
+      log.debug("headers size: {}", headers.size)
       headers.foreach {
         blockchain ! BlockChain.PutBlock(_)
       }

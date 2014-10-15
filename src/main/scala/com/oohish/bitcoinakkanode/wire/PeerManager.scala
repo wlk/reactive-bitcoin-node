@@ -61,12 +61,12 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
       for (connection <- connections.keys if !(exclude contains connection))
         connection ! PeerConnection.Outgoing(msg)
     case PeerManager.PeerConnected(ref, addr) =>
-      log.info("peer connected: {}", addr)
+      log.debug("peer connected: {}", addr)
       connections += ref -> addr
       context.watch(ref)
       context.parent ! PeerManager.PeerConnected(ref, addr)
     case akka.actor.Terminated(ref) =>
-      log.info("peer disconnected: {}", connections(ref))
+      log.debug("peer disconnected: {}", connections(ref))
       connections -= ref
   }
 
@@ -81,7 +81,7 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
   }
 
   def connectToPeer(address: InetSocketAddress) = {
-    log.info("connecting to: {}", address)
+    log.debug("connecting to: {}", address)
     context.actorOf(Client.props(address, networkParams))
   }
 

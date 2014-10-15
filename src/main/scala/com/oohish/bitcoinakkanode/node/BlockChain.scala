@@ -31,7 +31,7 @@ trait BlockChain extends Actor with ActorLogging {
     case GetChainHead() =>
       sender ! chainHead
     case GetBlockLocator() =>
-      log.info("blockchain height: {}", chainHead.height)
+      log.debug("blockchain height: {}", chainHead.height)
       sender ! GetBlockLocatorResponse(blockLocator(chainHead.height))
     case PutBlock(b) =>
       trySaveBlock(b)
