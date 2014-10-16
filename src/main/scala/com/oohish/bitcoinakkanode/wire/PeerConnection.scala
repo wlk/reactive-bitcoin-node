@@ -14,6 +14,7 @@ import akka.actor.actorRef2Scala
 import com.oohish.bitcoinscodec.structures.Message
 import scala.language.postfixOps
 import scala.concurrent.duration._
+import akka.actor.Cancellable
 
 object PeerConnection {
   def props(
@@ -38,8 +39,12 @@ class PeerConnection(
   import com.oohish.bitcoinscodec.messages._
   import context._
 
+  private var timeoutReminder: Cancellable = _
+
   override def preStart() =
-    system.scheduler.scheduleOnce(5 seconds, self, ConnectTimeout())
+    timeoutReminder = system.scheduler.scheduleOnce(5 seconds, self, ConnectTimeout())
+
+  override def postStop(): Unit = timeoutReminder.cancel()
 
   def receive = connecting(false, None)
 

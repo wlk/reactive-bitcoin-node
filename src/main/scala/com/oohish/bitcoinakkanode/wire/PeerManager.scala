@@ -46,7 +46,7 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
 
   override def preStart() = {
     for (p <- dnsPeers) peers += p
-    system.scheduler.schedule(0 seconds, 2 seconds, self, Connect())
+    system.scheduler.schedule(0 seconds, 1 second, self, Connect())
   }
 
   def receive = {
