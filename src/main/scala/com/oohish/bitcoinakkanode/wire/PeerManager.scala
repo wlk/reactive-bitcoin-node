@@ -28,6 +28,7 @@ object PeerManager {
   case class UnicastMessage(msg: Message, to: ActorRef)
   case class BroadCastMessage(msg: Message, exclude: List[ActorRef])
   case class GetNumConnections()
+  case class GetConnections()
 }
 
 class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogging {
@@ -45,7 +46,7 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
 
   override def preStart() = {
     for (p <- dnsPeers) peers += p
-    system.scheduler.schedule(0 seconds, 5 seconds, self, Connect())
+    system.scheduler.schedule(0 seconds, 2 seconds, self, Connect())
   }
 
   def receive = {
@@ -71,6 +72,8 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
       connections -= ref
     case GetNumConnections() =>
       sender ! connections.size
+    case GetConnections() =>
+      sender ! connections.values.toList
   }
 
   def msgReceive(from: ActorRef): PartialFunction[Message, Unit] = {

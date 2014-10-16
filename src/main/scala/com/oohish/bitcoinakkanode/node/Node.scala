@@ -21,6 +21,7 @@ object Node {
   case class GetBlockCount() extends APICommand
   case class GetBlockHash(index: Int) extends APICommand
   case class GetConnectionCount() extends APICommand
+  case class GetPeerInfo() extends APICommand
 
   sealed trait APICommandResponse
 }
@@ -72,6 +73,9 @@ trait Node extends Actor with ActorLogging {
         .pipeTo(sender)
     case GetConnectionCount() =>
       (pm ? PeerManager.GetNumConnections())
+        .pipeTo(sender)
+    case GetPeerInfo() =>
+      (pm ? PeerManager.GetConnections())
         .pipeTo(sender)
   }
 

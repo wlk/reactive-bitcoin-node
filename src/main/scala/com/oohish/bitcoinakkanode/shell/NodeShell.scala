@@ -1,19 +1,20 @@
-package com.oohish.bitcoinakkanode.node
+package com.oohish.bitcoinakkanode.shell
 
+import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 import scala.io.StdIn
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 import scala.language.postfixOps
+
 import com.oohish.bitcoinakkanode.node.Node._
+import com.oohish.bitcoinakkanode.node.SPVNode
 import com.oohish.bitcoinakkanode.wire.MainNetParams
+
 import akka.actor.ActorSystem
 import akka.pattern.ask
 import akka.util.Timeout
-import com.oohish.bitcoinscodec.structures.Hash
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.util.Try
-import scala.util.Success
-import scala.util.Failure
 
 object NodeShell extends App {
 
@@ -63,6 +64,9 @@ object NodeShell extends App {
         case "getconnectioncount" =>
           val cmd = GetConnectionCount()
           println(askNode(cmd))
+        case "getpeerinfo" =>
+          val cmd = GetPeerInfo()
+          println(askNode(cmd))
         case "exit" => exiting = true
         case "quit" => exiting = true
         case "help" => println(
@@ -71,6 +75,7 @@ object NodeShell extends App {
              |  getblockcount            Returns the number of blocks in the longest block chain.
              |  getblockhash             Returns hash of block in best-block-chain at <index>; index 0 is the genesis block.
              |  getconnectioncount       Returns the number of connections to other nodes.
+             |  getpeerinfo              Returns data about each connected node.
              |  exit | quit              Exit this shell.
              |  help                     Display this help.""".stripMargin)
 
