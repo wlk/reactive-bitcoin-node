@@ -9,6 +9,12 @@ import com.oohish.bitcoinscodec.structures.Hash
 import com.oohish.bitcoinakkanode.util.Util
 
 object BlockChain {
+
+  val MAX_BLOCK_SIZE = 1000000
+  val MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE / 2
+  val MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE / 50
+  val MAX_ORPHAN_TRANSACTIONS = MAX_BLOCK_SIZE / 100
+
   case class StoredBlock(block: Block, hash: Hash, height: Int, parent: Option[StoredBlock])
   case class GetBlockLocator()
   case class PutBlock(b: Block)
