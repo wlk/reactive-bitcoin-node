@@ -1,20 +1,26 @@
 package com.oohish.bitcoinakkanode.wire
 
-import java.net.InetAddress
 import java.net.InetSocketAddress
-import scala.Array.canBuildFrom
-import scala.math.BigInt.int2bigInt
-import scala.util.Random
+
+import scala.BigInt
+import scala.concurrent.duration.DurationInt
+import scala.language.postfixOps
+
+import org.joda.time.DateTime
+
+import com.oohish.bitcoinakkanode.util.Util
+import com.oohish.bitcoinscodec.messages.Verack
+import com.oohish.bitcoinscodec.messages.Version
+import com.oohish.bitcoinscodec.structures.Message
+import com.oohish.bitcoinscodec.structures.NetworkAddress
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
+import akka.actor.Cancellable
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.actor.actorRef2Scala
-import com.oohish.bitcoinscodec.structures.Message
-import scala.language.postfixOps
-import scala.concurrent.duration._
-import akka.actor.Cancellable
 
 object PeerConnection {
   def props(
@@ -27,6 +33,7 @@ object PeerConnection {
   case class ConnectTimeout()
   case class Outgoing(m: Message)
   case class Incoming(m: Message)
+  case class InitiateHandshake()
 }
 
 class PeerConnection(
@@ -46,35 +53,36 @@ class PeerConnection(
 
   override def postStop(): Unit = timeoutReminder.cancel()
 
-  def receive = connecting(false, None)
+  def receive = ready()
 
-  def connecting(verackReceived: Boolean, versionReceived: Option[Version]): Receive = {
+  def ready(): Receive = {
+    case InitiateHandshake() =>
+      context.parent ! TCPConnection.OutgoingMessage(version())
+      context.become(awaitingVersion())
     case v: Version =>
-      context.parent ! Verack()
-      if (verackReceived) {
-        finishHandshake(v, v.timestamp)
-      } else {
-        context.parent ! Client.version(remote, local, networkParams)
-        context.become(connecting(false, Some(v)))
-      }
-    case _: Verack =>
-      if (versionReceived.isDefined) {
-        val v = versionReceived.get
-        finishHandshake(v, v.timestamp)
-      } else {
-        context.become(connecting(true, None))
-      }
-    case m: ConnectTimeout =>
+  }
+
+  def awaitingVersion(): Receive = {
+    case v: Version =>
+      context.become(awaitingVerack(v))
+    case _: ConnectTimeout =>
       context.stop(self)
   }
 
-  def finishHandshake(version: Version, time: Long): Unit = {
-    val negotiatedVersion = Math.min(networkParams.PROTOCOL_VERSION, version.version).toInt
-    context.become(connected(negotiatedVersion))
+  def awaitingVerack(v: Version): Receive = {
+    case _: Verack =>
+      finishHandshake(v)
+    case _: ConnectTimeout =>
+      context.stop(self)
+  }
+
+  def finishHandshake(v: Version): Unit = {
+    val verNum = Math.min(networkParams.PROTOCOL_VERSION, v.version).toInt
+    context.become(connected(verNum))
     manager ! PeerManager.PeerConnected(self, remote)
   }
 
-  def connected(version: Int): Receive = {
+  def connected(versionNumber: Int): Receive = {
     case Outgoing(m) =>
       context.parent ! TCPConnection.OutgoingMessage(m)
     case msg: Message =>
@@ -82,5 +90,16 @@ class PeerConnection(
     case Terminated(ref) =>
       context.stop(self)
   }
+
+  private def version() = Version(
+    networkParams.PROTOCOL_VERSION,
+    BigInt(1),
+    DateTime.now().getMillis() / 1000,
+    NetworkAddress(BigInt(1), remote),
+    NetworkAddress(BigInt(1), local),
+    Util.genNonce,
+    "/Satoshi:0.7.2/",
+    1,
+    true)
 
 }
