@@ -10,8 +10,12 @@ import akka.pattern.ask
 import akka.util.Timeout
 import com.oohish.bitcoinscodec.structures.Hash
 import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.util.Try
+import scala.util.Success
+import scala.util.Failure
 
-object NodeRunner extends App {
+object NodeShell extends App {
 
   val prompt = "bitcoin-akka-node> "
   println("Welcome to bitcoin-akka-node.")
@@ -22,6 +26,15 @@ object NodeRunner extends App {
   import system.dispatcher
   import scala.util.control.Exception._
 
+  def askNode(cmd: APICommand) = {
+    val f = (node ? cmd)
+    Await.result(f, 5 seconds) match {
+      case Some(x) => x
+      case None => "Not Found"
+      case other => other
+    }
+  }
+
   var exiting: Boolean = false
   do {
     val line = StdIn.readLine(prompt)
@@ -30,24 +43,26 @@ object NodeRunner extends App {
 
       args(0) match {
         case "getbestblockhash" =>
-          val f = (node ? GetBestBlockHash())
-          println(Await.result(f, 5 seconds))
+          val cmd = GetBestBlockHash()
+          println(askNode(cmd))
         case "getblockcount" =>
-          val f = (node ? GetBlockCount())
-          println(Await.result(f, 5 seconds))
+          val cmd = GetBlockCount()
+          println(askNode(cmd))
         case "getblockhash" =>
-          if (args.length >= 2) {
-            for {
-              index <- catching(classOf[NumberFormatException]) opt args(1).toInt
-            } {
-              val f = (node ? GetBlockHash(index))
-                .mapTo[Option[Hash]]
-              println(Await.result(f, 5 seconds).getOrElse("Not found"))
+          if (args.length < 2) {
+            println("Not enough args")
+          } else {
+            val tryCmd = for {
+              index <- Try(args(1).toInt)
+            } yield GetBlockHash(index)
+            tryCmd match {
+              case Success(cmd) => println(askNode(cmd))
+              case Failure(ex) => println(s"Problem parsing args: ${ex.getMessage}")
             }
           }
         case "getconnectioncount" =>
-          val f = (node ? GetConnectionCount())
-          println(Await.result(f, 5 seconds))
+          val cmd = GetConnectionCount()
+          println(askNode(cmd))
         case "exit" => exiting = true
         case "quit" => exiting = true
         case "help" => println(

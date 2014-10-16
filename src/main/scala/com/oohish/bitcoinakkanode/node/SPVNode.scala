@@ -1,19 +1,17 @@
 package com.oohish.bitcoinakkanode.node
 
 import scala.language.postfixOps
-
-import com.oohish.bitcoinakkanode.node.BlockChain.GetBlockLocatorResponse
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerManager
 import com.oohish.bitcoinscodec.messages.GetHeaders
 import com.oohish.bitcoinscodec.messages.Headers
 import com.oohish.bitcoinscodec.structures.Message
-
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.pattern.pipe
+import com.oohish.bitcoinscodec.structures.Hash
 
 object SPVNode {
   def props(networkParams: NetworkParameters) =
@@ -29,10 +27,10 @@ class SPVNode(np: NetworkParameters) extends Node {
   def blockDownload(ref: ActorRef) = {
     log.debug("sending block locator")
     (blockchain ? BlockChain.GetBlockLocator())
-      .mapTo[GetBlockLocatorResponse]
-      .map(blr =>
+      .mapTo[List[Hash]]
+      .map(bl =>
         PeerManager.UnicastMessage(
-          GetHeaders(networkParams.PROTOCOL_VERSION, blr.bl), ref))
+          GetHeaders(networkParams.PROTOCOL_VERSION, bl), ref))
       .pipeTo(pm)
   }
 

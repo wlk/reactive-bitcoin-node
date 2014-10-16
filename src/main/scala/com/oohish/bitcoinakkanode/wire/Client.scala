@@ -60,5 +60,7 @@ class Client(
       connection ! Register(handler)
       context.watch(handler)
       handler ! OutgoingMessage(version(remote, local, networkParams))
+    case _: akka.actor.Terminated =>
+      context.stop(self)
   }
 }

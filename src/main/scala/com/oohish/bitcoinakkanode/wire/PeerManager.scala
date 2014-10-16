@@ -75,8 +75,7 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
 
   def msgReceive(from: ActorRef): PartialFunction[Message, Unit] = {
     case Ping(nonce) =>
-      sender ! PeerConnection.Outgoing(
-        Pong(nonce))
+      sender ! PeerConnection.Outgoing(Pong(nonce))
     case Addr(addrs) =>
       for ((time, addr) <- addrs) peers += addr.address
     case other =>

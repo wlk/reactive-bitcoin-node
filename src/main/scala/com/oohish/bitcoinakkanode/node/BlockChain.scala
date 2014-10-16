@@ -12,7 +12,6 @@ object BlockChain {
   case class StoredBlock(block: Block, hash: Hash, height: Int, parent: Option[StoredBlock])
   case class GetBlockLocator()
   case class PutBlock(b: Block)
-  case class GetBlockLocatorResponse(bl: List[Hash])
   case class GetChainHead()
   case class GetBlockByIndex(index: Int)
 }
@@ -34,7 +33,7 @@ trait BlockChain extends Actor with ActorLogging {
       sender ! getBlockByIndex(index)
     case GetBlockLocator() =>
       log.debug("blockchain height: {}", chainHead.height)
-      sender ! GetBlockLocatorResponse(blockLocator(chainHead.height))
+      sender ! blockLocator(chainHead.height)
     case PutBlock(b) =>
       trySaveBlock(b)
   }
