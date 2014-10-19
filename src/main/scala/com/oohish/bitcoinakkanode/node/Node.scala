@@ -56,9 +56,9 @@ trait Node extends Actor with ActorLogging {
   def ready: Receive = {
     case PeerManager.PeerConnected(ref, addr) =>
       pm ! PeerManager.UnicastMessage(GetAddr(), ref)
-      val timeout = context.system.scheduler.
+      val t = context.system.scheduler.
         scheduleOnce(10.second, self, SyncTimeout())
-      context.become(syncing(ref, timeout))
+      context.become(syncing(ref, t))
       requestBlocks(ref)
     case PeerManager.ReceivedMessage(msg, from) =>
       msgReceive(from)(msg)

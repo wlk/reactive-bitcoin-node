@@ -60,7 +60,7 @@ trait BlockChain extends Actor with ActorLogging {
     val sb = StoredBlock(b, hash, prevHeight + 1, prev)
     blocks += hash -> sb
     if (sb.height > chainHead.height) chainHead = sb
-    log.info("saved block height: {}, chainHead height: {}", sb.height, chainHead.height)
+    log.debug("saved block height: {}, chainHead height: {}", sb.height, chainHead.height)
   }
 
   def blockHash(b: Block): Hash = {

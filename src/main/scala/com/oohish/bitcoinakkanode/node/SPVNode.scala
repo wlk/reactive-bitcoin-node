@@ -2,7 +2,6 @@ package com.oohish.bitcoinakkanode.node
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-
 import com.oohish.bitcoinakkanode.node.Node.APICommand
 import com.oohish.bitcoinakkanode.node.Node.SyncTimeout
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
@@ -11,13 +10,13 @@ import com.oohish.bitcoinscodec.messages.GetHeaders
 import com.oohish.bitcoinscodec.messages.Headers
 import com.oohish.bitcoinscodec.structures.Hash
 import com.oohish.bitcoinscodec.structures.Message
-
 import akka.actor.ActorRef
 import akka.actor.Cancellable
 import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.pattern.pipe
+import akka.util.Timeout
 
 object SPVNode {
   def props(networkParams: NetworkParameters) =
@@ -34,9 +33,11 @@ class SPVNode(np: NetworkParameters) extends Node {
 
   def syncing(conn: ActorRef, timeout: Cancellable): Receive = {
     case cmd: APICommand =>
-      sender ! "Busy syncing"
+      (blockchain ? BlockChain.GetChainHead())(Timeout(5 seconds))
+        .mapTo[BlockChain.StoredBlock]
+        .map("Busy syncing with " + _.height + " downloaded blocks.")
+        .pipeTo(sender)
     case PeerManager.ReceivedMessage(Headers(hdrs), from) if from == conn =>
-      log.info("received headers message")
       timeout.cancel
       if (hdrs.isEmpty)
         context.become(ready)
@@ -44,19 +45,20 @@ class SPVNode(np: NetworkParameters) extends Node {
         hdrs.foreach {
           blockchain ! BlockChain.PutBlock(_)
         }
-        val timeout = context.system.scheduler.
+        val t = context.system.scheduler.
           scheduleOnce(10.second, self, SyncTimeout())
-        context.become(syncing(conn, timeout))
+        context.become(syncing(conn, t))
         requestBlocks(conn)
       }
     case SyncTimeout() =>
-      log.info("sync timeout")
-      context.become(ready)
+      val t = context.system.scheduler.
+        scheduleOnce(10.second, self, SyncTimeout())
+      context.become(syncing(conn, t))
+      requestBlocks(conn)
     case _ =>
   }
 
   def requestBlocks(ref: ActorRef) = {
-    log.info("sending block locator")
     (blockchain ? BlockChain.GetBlockLocator())
       .mapTo[List[Hash]]
       .map(bl =>
