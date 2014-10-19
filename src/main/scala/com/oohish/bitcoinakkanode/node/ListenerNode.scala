@@ -22,8 +22,6 @@ class ListenerNode(np: NetworkParameters) extends Node {
 
   def requestBlocks(ref: ActorRef) = {}
 
-  def syncing(conn: ActorRef, timeout: Cancellable): Receive = ready
-
   def msgReceive(from: ActorRef): PartialFunction[Message, Unit] = {
     case other =>
       log.debug("node received other message: {}", other.getClass())

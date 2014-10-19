@@ -47,7 +47,6 @@ trait Node extends Actor with ActorLogging {
   def requestBlocks(ref: ActorRef): Unit
   def msgReceive(from: ActorRef): PartialFunction[Message, Unit]
   def blockchain: ActorRef
-  def syncing(conn: ActorRef, timeout: Cancellable): Receive
 
   val pm = context.actorOf(PeerManager.props(networkParams))
 
@@ -56,9 +55,6 @@ trait Node extends Actor with ActorLogging {
   def ready: Receive = {
     case PeerManager.PeerConnected(ref, addr) =>
       pm ! PeerManager.UnicastMessage(GetAddr(), ref)
-      val t = context.system.scheduler.
-        scheduleOnce(10.second, self, SyncTimeout())
-      context.become(syncing(ref, t))
       requestBlocks(ref)
     case PeerManager.ReceivedMessage(msg, from) =>
       msgReceive(from)(msg)
