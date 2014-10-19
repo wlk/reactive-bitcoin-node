@@ -1,19 +1,26 @@
 package com.oohish.bitcoinakkanode.node
 
-import scala.language.postfixOps
-import com.oohish.bitcoinakkanode.wire.NetworkParameters
-import com.oohish.bitcoinakkanode.wire.PeerManager
-import com.oohish.bitcoinscodec.messages.GetAddr
-import com.oohish.bitcoinscodec.structures.Message
-import akka.actor.Actor
-import akka.actor.ActorLogging
-import akka.actor.ActorRef
-import akka.actor.actorRef2Scala
-import com.oohish.bitcoinscodec.structures.Hash
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
+import com.oohish.bitcoinakkanode.wire.NetworkParameters
+import com.oohish.bitcoinakkanode.wire.PeerManager
+import com.oohish.bitcoinscodec.messages.GetAddr
+import com.oohish.bitcoinscodec.structures.Hash
+import com.oohish.bitcoinscodec.structures.Message
+
+import akka.actor.Actor
+import akka.actor.ActorLogging
+import akka.actor.ActorRef
+import akka.actor.Cancellable
+import akka.actor.actorRef2Scala
+import akka.pattern.ask
+import akka.pattern.pipe
+import akka.util.Timeout
+
 object Node {
+
+  case class SyncTimeout()
 
   sealed trait APICommand
   case class GetBestBlockHash() extends APICommand
@@ -37,23 +44,27 @@ trait Node extends Actor with ActorLogging {
   implicit val timeout = Timeout(5 seconds)
 
   def networkParams: NetworkParameters
-
+  def requestBlocks(ref: ActorRef): Unit
+  def msgReceive(from: ActorRef): PartialFunction[Message, Unit]
   def blockchain: ActorRef
+  def syncing(conn: ActorRef, timeout: Cancellable): Receive
+
   val pm = context.actorOf(PeerManager.props(networkParams))
 
-  def receive = {
+  def receive = ready
+
+  def ready: Receive = {
     case PeerManager.PeerConnected(ref, addr) =>
       pm ! PeerManager.UnicastMessage(GetAddr(), ref)
-      blockDownload(ref)
+      val timeout = context.system.scheduler.
+        scheduleOnce(10.second, self, SyncTimeout())
+      context.become(syncing(ref, timeout))
+      requestBlocks(ref)
     case PeerManager.ReceivedMessage(msg, from) =>
       msgReceive(from)(msg)
     case cmd: APICommand =>
       commandReceive(cmd)
   }
-
-  def blockDownload(ref: ActorRef): Unit
-
-  def msgReceive(from: ActorRef): PartialFunction[Message, Unit]
 
   def commandReceive: PartialFunction[APICommand, Unit] = {
     case GetBestBlockHash() =>

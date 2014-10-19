@@ -2,13 +2,12 @@ package com.oohish.bitcoinakkanode.node
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinscodec.structures.Message
-
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.util.Timeout
+import akka.actor.Cancellable
 
 object ListenerNode {
   def props(networkParams: NetworkParameters) =
@@ -21,7 +20,9 @@ class ListenerNode(np: NetworkParameters) extends Node {
 
   lazy val blockchain = context.actorOf(ListenerBlockChain.props(networkParams))
 
-  def blockDownload(ref: ActorRef) = {}
+  def requestBlocks(ref: ActorRef) = {}
+
+  def syncing(conn: ActorRef, timeout: Cancellable): Receive = ready
 
   def msgReceive(from: ActorRef): PartialFunction[Message, Unit] = {
     case other =>
