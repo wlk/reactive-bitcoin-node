@@ -5,7 +5,7 @@ name := "bitcoin-akka-node"
 
 organization := "oohish.com"
 
-version := "1.0.1-SNAPSHOT"
+version := "0.1.0-SNAPSHOT"
 
 scalaVersion := "2.11.2"
 

@@ -82,7 +82,7 @@ class PeerConnection(
     manager ! PeerManager.PeerConnected(self, remote)
   }
 
-  def connected(versionNumber: Int): Receive = {
+  def connected(verNum: Int): Receive = {
     case Outgoing(m) =>
       context.parent ! TCPConnection.OutgoingMessage(m)
     case msg: Message =>
