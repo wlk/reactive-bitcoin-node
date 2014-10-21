@@ -72,14 +72,16 @@ object TestNet3Params extends NetworkParameters {
       List()) // TODO: add tx's
   }
   def interval: Int = INTERVAL
-  def packetMagic: Long = 0x0B110907
+  def packetMagic: Long = 0x0709110B
   def port: Int = 18333
   def proofOfWorkLimit: BigInt = 0 //TODO
   def targetTimespan: Int = 0 //TODO
   def dnsSeeds: List[String] = List(
     "bitcoin.petertodd.org",
     "testnet-seed.bitcoin.petertodd.org",
-    "testnet-seed.bluematt.me")
+    "testnet-seed.bluematt.me",
+    "testnet-seed.alexykot.me",
+    "stnet-seed.bitcoin.schildbach.de")
 
 }
 
