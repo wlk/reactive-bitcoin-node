@@ -21,13 +21,15 @@ and then
 
 ```
 run
-```  (to start a node on the main network)
+```
+(to start a node on the main network)
 
 or
 
 ```
 run -n test
-``` (to start a node on testnet3)
+```
+(to start a node on testnet3)
 
 get help
 ```
