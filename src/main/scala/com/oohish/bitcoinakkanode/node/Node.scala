@@ -2,13 +2,11 @@ package com.oohish.bitcoinakkanode.node
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerManager
 import com.oohish.bitcoinscodec.messages.GetAddr
 import com.oohish.bitcoinscodec.structures.Hash
 import com.oohish.bitcoinscodec.structures.Message
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -17,6 +15,7 @@ import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout
+import java.net.InetSocketAddress
 
 object Node {
 
@@ -79,10 +78,13 @@ trait Node extends Actor with ActorLogging {
         .map(_.map(_.hash))
         .pipeTo(sender)
     case GetConnectionCount() =>
-      (pm ? PeerManager.GetNumConnections())
+      (pm ? PeerManager.GetConnections())
+        .mapTo[List[InetSocketAddress]]
+        .map(_.length)
         .pipeTo(sender)
     case GetPeerInfo() =>
       (pm ? PeerManager.GetConnections())
+        .mapTo[List[InetSocketAddress]]
         .pipeTo(sender)
   }
 

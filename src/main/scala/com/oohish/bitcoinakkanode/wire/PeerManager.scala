@@ -27,7 +27,6 @@ object PeerManager {
   case class ReceivedMessage(msg: Message, from: ActorRef)
   case class UnicastMessage(msg: Message, to: ActorRef)
   case class BroadCastMessage(msg: Message, exclude: List[ActorRef])
-  case class GetNumConnections()
   case class GetConnections()
 }
 
@@ -70,8 +69,6 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
     case akka.actor.Terminated(ref) =>
       log.debug("peer disconnected: {}", connections(ref))
       connections -= ref
-    case GetNumConnections() =>
-      sender ! connections.size
     case GetConnections() =>
       sender ! connections.values.toList
   }
