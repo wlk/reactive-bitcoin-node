@@ -1,21 +1,19 @@
 package com.oohish.bitcoinakkanode.node
 
+import java.net.InetSocketAddress
+
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
+
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerManager
-import com.oohish.bitcoinscodec.messages.GetAddr
 import com.oohish.bitcoinscodec.structures.Hash
-import com.oohish.bitcoinscodec.structures.Message
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
-import akka.actor.ActorRef
-import akka.actor.Cancellable
-import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout
-import java.net.InetSocketAddress
 
 object Node {
 
@@ -43,40 +41,10 @@ trait Node extends Actor with ActorLogging {
   implicit val timeout = Timeout(5 seconds)
 
   def networkParams: NetworkParameters
-  def requestBlocks(ref: ActorRef): Unit
-  def msgReceive(from: ActorRef): PartialFunction[Message, Unit]
-  def blockchain: ActorRef
 
   val pm = context.actorOf(PeerManager.props(networkParams))
 
-  def receive = ready
-
-  def ready: Receive = {
-    case PeerManager.PeerConnected(ref, addr) =>
-      pm ! PeerManager.UnicastMessage(GetAddr(), ref)
-      requestBlocks(ref)
-    case PeerManager.ReceivedMessage(msg, from) =>
-      msgReceive(from)(msg)
-    case cmd: APICommand =>
-      commandReceive(cmd)
-  }
-
-  def commandReceive: PartialFunction[APICommand, Unit] = {
-    case GetBestBlockHash() =>
-      (blockchain ? BlockChain.GetChainHead())
-        .mapTo[BlockChain.StoredBlock]
-        .map(_.hash)
-        .pipeTo(sender)
-    case GetBlockCount() =>
-      (blockchain ? BlockChain.GetChainHead())
-        .mapTo[BlockChain.StoredBlock]
-        .map(_.height)
-        .pipeTo(sender)
-    case GetBlockHash(index) =>
-      (blockchain ? BlockChain.GetBlockByIndex(index))
-        .mapTo[Option[BlockChain.StoredBlock]]
-        .map(_.map(_.hash))
-        .pipeTo(sender)
+  def receiveNetworkCommand: PartialFunction[APICommand, Unit] = {
     case GetConnectionCount() =>
       (pm ? PeerManager.GetPeers())
         .mapTo[List[InetSocketAddress]]

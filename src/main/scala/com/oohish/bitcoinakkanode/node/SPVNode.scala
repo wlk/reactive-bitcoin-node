@@ -2,14 +2,20 @@ package com.oohish.bitcoinakkanode.node
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
+
 import com.oohish.bitcoinakkanode.node.Node.APICommand
+import com.oohish.bitcoinakkanode.node.Node.GetBestBlockHash
+import com.oohish.bitcoinakkanode.node.Node.GetBlockCount
+import com.oohish.bitcoinakkanode.node.Node.GetBlockHash
 import com.oohish.bitcoinakkanode.node.Node.SyncTimeout
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerManager
+import com.oohish.bitcoinscodec.messages.GetAddr
 import com.oohish.bitcoinscodec.messages.GetHeaders
 import com.oohish.bitcoinscodec.messages.Headers
 import com.oohish.bitcoinscodec.structures.Hash
 import com.oohish.bitcoinscodec.structures.Message
+
 import akka.actor.ActorRef
 import akka.actor.Cancellable
 import akka.actor.Props
@@ -17,7 +23,6 @@ import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout
-import scala.util.Success
 
 object SPVNode {
   def props(networkParams: NetworkParameters) =
@@ -30,14 +35,21 @@ class SPVNode(np: NetworkParameters) extends Node {
 
   def networkParams = np
 
-  lazy val blockchain = context.actorOf(SPVBlockChain.props(networkParams))
+  val blockchain = context.actorOf(SPVBlockChain.props(networkParams))
+
+  def receive = ready
+
+  def ready: Receive = {
+    case PeerManager.PeerConnected(ref, addr) =>
+      pm ! PeerManager.UnicastMessage(GetAddr(), ref)
+      requestBlocks(ref)
+    case PeerManager.ReceivedMessage(msg, from) =>
+      msgReceive(from)(msg)
+    case cmd: APICommand =>
+      (receiveNetworkCommand orElse receiveSPVCommand)(cmd)
+  }
 
   def syncing(conn: ActorRef, timeout: Cancellable): Receive = {
-    case cmd: APICommand =>
-      (blockchain ? BlockChain.GetChainHead())(Timeout(5 seconds))
-        .mapTo[BlockChain.StoredBlock]
-        .map("Node is busy synching blockchain." + " " + _.height + " blocks downloaded.")
-        .pipeTo(sender)
     case PeerManager.ReceivedMessage(Headers(hdrs), from) if from == conn =>
       timeout.cancel
       if (hdrs.isEmpty)
@@ -52,12 +64,30 @@ class SPVNode(np: NetworkParameters) extends Node {
       (pm ? PeerManager.GetRandomConnection())(Timeout(5 seconds))
         .mapTo[Option[ActorRef]]
         .onSuccess {
-          case rc => {
-            log.info("syncing with rc")
-            rc.foreach(syncWithPeer)
-          }
+          case Some(conn) =>
+            syncWithPeer(conn)
         }
+    case cmd: APICommand =>
+      (receiveNetworkCommand orElse receiveSPVCommand)(cmd)
     case _ =>
+  }
+
+  def receiveSPVCommand: PartialFunction[APICommand, Unit] = {
+    case GetBestBlockHash() =>
+      (blockchain ? BlockChain.GetChainHead())
+        .mapTo[BlockChain.StoredBlock]
+        .map(_.hash)
+        .pipeTo(sender)
+    case GetBlockCount() =>
+      (blockchain ? BlockChain.GetChainHead())
+        .mapTo[BlockChain.StoredBlock]
+        .map(_.height)
+        .pipeTo(sender)
+    case GetBlockHash(index) =>
+      (blockchain ? BlockChain.GetBlockByIndex(index))
+        .mapTo[Option[BlockChain.StoredBlock]]
+        .map(_.map(_.hash))
+        .pipeTo(sender)
   }
 
   def requestBlocks(ref: ActorRef) = {
@@ -84,8 +114,7 @@ class SPVNode(np: NetworkParameters) extends Node {
         }
         syncWithPeer(from)
       }
-    case other =>
-      log.debug("node received other message: {}", other.getClass())
+    case _ =>
   }
 
 }
