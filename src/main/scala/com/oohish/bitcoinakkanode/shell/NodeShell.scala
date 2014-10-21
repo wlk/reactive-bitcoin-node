@@ -3,20 +3,27 @@ package com.oohish.bitcoinakkanode.shell
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 import scala.io.StdIn
+import scala.language.postfixOps
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-import scala.language.postfixOps
-import com.oohish.bitcoinakkanode.node.Node._
+
+import com.oohish.bitcoinakkanode.node.Node.APICommand
+import com.oohish.bitcoinakkanode.node.Node.GetBestBlockHash
+import com.oohish.bitcoinakkanode.node.Node.GetBlockCount
+import com.oohish.bitcoinakkanode.node.Node.GetBlockHash
+import com.oohish.bitcoinakkanode.node.Node.GetConnectionCount
+import com.oohish.bitcoinakkanode.node.Node.GetPeerInfo
 import com.oohish.bitcoinakkanode.node.SPVNode
 import com.oohish.bitcoinakkanode.wire.MainNetParams
+import com.oohish.bitcoinakkanode.wire.NetworkParameters
+import com.oohish.bitcoinakkanode.wire.TestNet3Params
+
+import akka.actor.ActorRef
 import akka.actor.ActorSystem
+import akka.actor.Props
 import akka.pattern.ask
 import akka.util.Timeout
-import com.oohish.bitcoinakkanode.wire.NetworkParameters
-import akka.actor.Props
-import java.io.File
-import akka.actor.ActorRef
 
 object NodeShell {
 
@@ -30,8 +37,8 @@ object NodeShell {
     opt[String]('n', "network name") action {
       case ("main", c) =>
         c.copy(network = MainNetParams)
-      //      case ("test", c) =>
-      //        c.copy(network = TestNet3Params)
+      case ("test", c) =>
+        c.copy(network = TestNet3Params)
     } text ("network is a String property")
   }
 
@@ -47,7 +54,6 @@ object NodeShell {
   def main(args: Array[String]) = {
 
     parser.parse(args, Config()) map { config =>
-      println(config)
 
       val prompt = "bitcoin-akka-node> "
       println("Welcome to bitcoin-akka-node.")
