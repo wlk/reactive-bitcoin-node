@@ -2,7 +2,6 @@ package com.oohish.bitcoinakkanode.node
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-
 import com.oohish.bitcoinakkanode.node.Node.APICommand
 import com.oohish.bitcoinakkanode.node.Node.SyncTimeout
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
@@ -11,7 +10,6 @@ import com.oohish.bitcoinscodec.messages.GetHeaders
 import com.oohish.bitcoinscodec.messages.Headers
 import com.oohish.bitcoinscodec.structures.Hash
 import com.oohish.bitcoinscodec.structures.Message
-
 import akka.actor.ActorRef
 import akka.actor.Cancellable
 import akka.actor.Props
@@ -19,6 +17,7 @@ import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout
+import scala.util.Success
 
 object SPVNode {
   def props(networkParams: NetworkParameters) =
@@ -50,8 +49,14 @@ class SPVNode(np: NetworkParameters) extends Node {
         syncWithPeer(conn)
       }
     case SyncTimeout() =>
-      // TODO: try connecting to a different peer
-      syncWithPeer(conn)
+      (pm ? PeerManager.GetRandomConnection())(Timeout(5 seconds))
+        .mapTo[Option[ActorRef]]
+        .onSuccess {
+          case rc => {
+            log.info("syncing with rc")
+            rc.foreach(syncWithPeer)
+          }
+        }
     case _ =>
   }
 

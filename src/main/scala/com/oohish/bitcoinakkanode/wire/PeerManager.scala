@@ -27,7 +27,8 @@ object PeerManager {
   case class ReceivedMessage(msg: Message, from: ActorRef)
   case class UnicastMessage(msg: Message, to: ActorRef)
   case class BroadCastMessage(msg: Message, exclude: List[ActorRef])
-  case class GetConnections()
+  case class GetPeers()
+  case class GetRandomConnection()
 }
 
 class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogging {
@@ -69,8 +70,15 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
     case akka.actor.Terminated(ref) =>
       log.debug("peer disconnected: {}", connections(ref))
       connections -= ref
-    case GetConnections() =>
+    case GetPeers() =>
       sender ! connections.values.toList
+    case GetRandomConnection() =>
+      val conns = connections.keys.toList
+      val randConn = if (conns.length > 0)
+        Some(conns(scala.util.Random.nextInt(conns.length)))
+      else
+        None
+      sender ! randConn
   }
 
   def msgReceive(from: ActorRef): PartialFunction[Message, Unit] = {

@@ -78,12 +78,12 @@ trait Node extends Actor with ActorLogging {
         .map(_.map(_.hash))
         .pipeTo(sender)
     case GetConnectionCount() =>
-      (pm ? PeerManager.GetConnections())
+      (pm ? PeerManager.GetPeers())
         .mapTo[List[InetSocketAddress]]
         .map(_.length)
         .pipeTo(sender)
     case GetPeerInfo() =>
-      (pm ? PeerManager.GetConnections())
+      (pm ? PeerManager.GetPeers())
         .mapTo[List[InetSocketAddress]]
         .pipeTo(sender)
   }
