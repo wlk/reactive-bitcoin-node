@@ -12,9 +12,9 @@ Requirements
 
 How to run
 --------------
-start the program
+start sbt
 ```
-sbt run
+sbt
 ```
 
 and then
