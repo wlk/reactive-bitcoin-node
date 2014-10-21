@@ -28,7 +28,8 @@ libraryDependencies ++= Seq(
     "org.typelevel" %% "scodec-stream" % "0.1.0",
     "joda-time" % "joda-time" % "2.4",
     "org.joda" % "joda-convert" % "1.4",
-    "org.reactivemongo" %% "reactivemongo" % "0.10.5.0.akka23"
+    "org.reactivemongo" %% "reactivemongo" % "0.10.5.0.akka23",
+    "com.github.scopt" %% "scopt" % "3.2.0"
 )
 
 instrumentSettings
