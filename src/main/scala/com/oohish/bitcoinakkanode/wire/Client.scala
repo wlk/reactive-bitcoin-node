@@ -1,7 +1,6 @@
 package com.oohish.bitcoinakkanode.wire
 
 import java.net.InetSocketAddress
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
@@ -12,15 +11,18 @@ import akka.io.Tcp.CommandFailed
 import akka.io.Tcp.Connect
 import akka.io.Tcp.Connected
 import akka.io.Tcp.Register
+import akka.actor.ActorRef
 
 object Client {
   def props(
+    node: ActorRef,
     peer: InetSocketAddress,
     networkParams: NetworkParameters) =
-    Props(classOf[Client], peer, networkParams)
+    Props(classOf[Client], node, peer, networkParams)
 }
 
 class Client(
+  node: ActorRef,
   peer: InetSocketAddress,
   networkParams: NetworkParameters) extends Actor with ActorLogging {
 
@@ -40,7 +42,7 @@ class Client(
       log.debug("connected to {} from {}", remote, local)
       val connection = sender
       val handler = context.actorOf(TCPConnection.props(
-        context.parent, connection, remote, local, networkParams, true))
+        context.parent, node, connection, remote, local, networkParams, true))
       connection ! Register(handler)
       context.watch(handler)
     case _: akka.actor.Terminated =>

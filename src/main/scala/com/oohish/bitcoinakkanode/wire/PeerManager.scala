@@ -13,8 +13,9 @@ import com.oohish.bitcoinscodec.structures.Message
 import com.oohish.bitcoinscodec.messages._
 
 object PeerManager {
-  def props(networkParams: NetworkParameters) =
-    Props(classOf[PeerManager], networkParams)
+  def props(node: ActorRef,
+    networkParams: NetworkParameters) =
+    Props(classOf[PeerManager], node, networkParams)
 
   def seedPeers(networkParams: NetworkParameters) = for {
     fallback <- networkParams.dnsSeeds
@@ -24,14 +25,14 @@ object PeerManager {
 
   case class Connect()
   case class PeerConnected(ref: ActorRef, addr: InetSocketAddress)
-  case class ReceivedMessage(msg: Message, from: ActorRef)
-  case class UnicastMessage(msg: Message, to: ActorRef)
   case class BroadCastMessage(msg: Message, exclude: List[ActorRef])
+  case class AddPeer(addr: InetSocketAddress)
   case class GetPeers()
   case class GetRandomConnection()
 }
 
-class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogging {
+class PeerManager(node: ActorRef,
+  networkParams: NetworkParameters) extends Actor with ActorLogging {
   import com.oohish.bitcoinscodec.structures.Message._
   import context._
   import scala.language.postfixOps
@@ -55,10 +56,8 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
         val candidates = peers.filter(addr => !connections.values.exists(_ == addr))
         util.Random.shuffle(candidates.toVector).take(1).foreach(connectToPeer)
       }
-    case PeerConnection.Incoming(msg) =>
-      msgReceive(sender)(msg)
-    case PeerManager.UnicastMessage(msg, to) =>
-      to ! PeerConnection.Outgoing(msg)
+    case AddPeer(addr) =>
+      peers += addr
     case PeerManager.BroadCastMessage(msg, exclude) =>
       for (connection <- connections.keys if !(exclude contains connection))
         connection ! PeerConnection.Outgoing(msg)
@@ -66,7 +65,7 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
       log.debug("peer connected: {}", addr)
       connections += ref -> addr
       context.watch(ref)
-      context.parent ! PeerManager.PeerConnected(ref, addr)
+      node ! PeerManager.PeerConnected(ref, addr)
     case akka.actor.Terminated(ref) =>
       log.debug("peer disconnected: {}", connections(ref))
       connections -= ref
@@ -81,18 +80,9 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
       sender ! randConn
   }
 
-  def msgReceive(from: ActorRef): PartialFunction[Message, Unit] = {
-    case Ping(nonce) =>
-      sender ! PeerConnection.Outgoing(Pong(nonce))
-    case Addr(addrs) =>
-      for ((time, addr) <- addrs) peers += addr.address
-    case other =>
-      context.parent ! PeerManager.ReceivedMessage(other, sender)
-  }
-
   def connectToPeer(address: InetSocketAddress) = {
     log.debug("connecting to: {}", address)
-    context.actorOf(Client.props(address, networkParams))
+    context.actorOf(Client.props(node, address, networkParams))
   }
 
 }

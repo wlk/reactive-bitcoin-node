@@ -19,12 +19,13 @@ import scodec.bits.ByteVector
 object TCPConnection {
   def props(
     manager: ActorRef,
+    node: ActorRef,
     connection: ActorRef,
     remote: InetSocketAddress,
     local: InetSocketAddress,
     networkParams: NetworkParameters,
     startHandshake: Boolean) =
-    Props(classOf[TCPConnection], manager, connection, remote, local, networkParams, startHandshake)
+    Props(classOf[TCPConnection], manager, node, connection, remote, local, networkParams, startHandshake)
 
   case class OutgoingMessage(msg: Message)
   case class OutgoingBytes(bytes: ByteString)
@@ -32,6 +33,7 @@ object TCPConnection {
 
 class TCPConnection(
   manager: ActorRef,
+  node: ActorRef,
   connection: ActorRef,
   remote: InetSocketAddress,
   local: InetSocketAddress,
@@ -40,7 +42,7 @@ class TCPConnection(
   import TCPConnection._
   import akka.actor.Terminated
 
-  val pc = context.actorOf(PeerConnection.props(manager, remote, local, networkParams))
+  val pc = context.actorOf(PeerConnection.props(manager, node, remote, local, networkParams))
   val decoder = context.actorOf(MessageDecoder.props(networkParams.packetMagic), name = "messageDecoder")
   val encoder = context.actorOf(MessageEncoder.props(networkParams.packetMagic), name = "messageEncoder")
 

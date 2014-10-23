@@ -25,19 +25,20 @@ import akka.actor.actorRef2Scala
 object PeerConnection {
   def props(
     manager: ActorRef,
+    node: ActorRef,
     remote: InetSocketAddress,
     local: InetSocketAddress,
     networkParams: NetworkParameters) =
-    Props(classOf[PeerConnection], manager, remote, local, networkParams)
+    Props(classOf[PeerConnection], manager, node, remote, local, networkParams)
 
   case class ConnectTimeout()
   case class Outgoing(m: Message)
-  case class Incoming(m: Message)
   case class InitiateHandshake()
 }
 
 class PeerConnection(
   manager: ActorRef,
+  node: ActorRef,
   remote: InetSocketAddress,
   local: InetSocketAddress,
   networkParams: NetworkParameters) extends Actor with ActorLogging {
@@ -85,8 +86,10 @@ class PeerConnection(
   def connected(verNum: Int): Receive = {
     case Outgoing(m) =>
       context.parent ! TCPConnection.OutgoingMessage(m)
+    case Ping(nonce) =>
+      context.parent ! TCPConnection.OutgoingMessage(Pong(nonce))
     case msg: Message =>
-      manager ! PeerConnection.Incoming(msg)
+      node ! msg
     case Terminated(ref) =>
       context.stop(self)
   }
