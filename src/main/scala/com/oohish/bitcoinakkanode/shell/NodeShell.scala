@@ -8,12 +8,12 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-import com.oohish.bitcoinakkanode.node.Node.APICommand
-import com.oohish.bitcoinakkanode.node.Node.GetBestBlockHash
-import com.oohish.bitcoinakkanode.node.Node.GetBlockCount
-import com.oohish.bitcoinakkanode.node.Node.GetBlockHash
-import com.oohish.bitcoinakkanode.node.Node.GetConnectionCount
-import com.oohish.bitcoinakkanode.node.Node.GetPeerInfo
+import com.oohish.bitcoinakkanode.node.APIClient.APICommand
+import com.oohish.bitcoinakkanode.node.APIClient.GetBestBlockHash
+import com.oohish.bitcoinakkanode.node.APIClient.GetBlockCount
+import com.oohish.bitcoinakkanode.node.APIClient.GetBlockHash
+import com.oohish.bitcoinakkanode.node.APIClient.GetConnectionCount
+import com.oohish.bitcoinakkanode.node.APIClient.GetPeerInfo
 import com.oohish.bitcoinakkanode.node.SPVNode
 import com.oohish.bitcoinakkanode.wire.MainNetParams
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
