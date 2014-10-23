@@ -2,18 +2,19 @@ package com.oohish.bitcoinakkanode.node
 
 import scala.concurrent.Future
 import scala.language.postfixOps
+
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
-import com.oohish.bitcoinakkanode.wire.PeerConnection
-import com.oohish.bitcoinscodec.messages.GetHeaders
 import com.oohish.bitcoinscodec.messages.Headers
+import com.oohish.bitcoinscodec.messages.Version
 import com.oohish.bitcoinscodec.structures.Hash
-import com.oohish.bitcoinscodec.structures.Message
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.pattern.ask
-import akka.pattern.pipe
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
+import akka.actor.ActorRef
+import akka.actor.Props
+import akka.actor.actorRef2Scala
+import akka.pattern.ask
+import akka.pattern.pipe
 
 object SPVNode {
   def props(networkParams: NetworkParameters) =
@@ -26,10 +27,11 @@ class SPVNode(np: NetworkParameters) extends Node with APIClient with Actor with
   def networkParams = np
 
   val blockchain = context.actorOf(SPVBlockChain.props(networkParams))
+  val downloader = context.actorOf(SPVBlockDownloader.props(self, blockchain, pm, np))
 
-  override def syncWithPeer(peer: ActorRef) = {
-    super.syncWithPeer(peer)
-    requestBlocks(peer)
+  override def syncWithPeer(peer: ActorRef, version: Version) = {
+    super.syncWithPeer(peer, version)
+    downloader ! SPVBlockDownloader.StartDownload(peer, version.start_height)
   }
 
   def receive: Receive =
@@ -40,18 +42,14 @@ class SPVNode(np: NetworkParameters) extends Node with APIClient with Actor with
       hdrs.foreach {
         blockchain ! BlockChain.PutBlock(_)
       }
-    //if (!hdrs.isEmpty) {}
+      if (!hdrs.isEmpty) {
+        val peer = sender
+        getChainHead
+          .map(_.height)
+          .map(SPVBlockDownloader.GotBlocks(peer, _))
+          .pipeTo(downloader)
+      }
   }
-
-  def getBlockLocator: Future[List[Hash]] =
-    (blockchain ? BlockChain.GetBlockLocator())
-      .mapTo[List[Hash]]
-
-  def requestBlocks(ref: ActorRef) =
-    getBlockLocator.map(bl =>
-      PeerConnection.Outgoing(
-        GetHeaders(networkParams.PROTOCOL_VERSION, bl)))
-      .pipeTo(ref)
 
   override def getChainHead(): Future[BlockChain.StoredBlock] =
     (blockchain ? BlockChain.GetChainHead())

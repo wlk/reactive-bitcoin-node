@@ -18,7 +18,7 @@ object PeerManager {
     Props(classOf[PeerManager], node, networkParams)
 
   case class Connect()
-  case class PeerConnected(ref: ActorRef, addr: InetSocketAddress)
+  case class PeerConnected(ref: ActorRef, addr: InetSocketAddress, v: Version)
   case class BroadCastMessage(msg: Message, exclude: List[ActorRef])
   case class AddPeer(addr: InetSocketAddress)
   case class GetPeers()
@@ -59,11 +59,11 @@ class PeerManager(node: ActorRef,
     case PeerManager.BroadCastMessage(msg, exclude) =>
       for (connection <- connections.keys if !(exclude contains connection))
         connection ! PeerConnection.Outgoing(msg)
-    case PeerManager.PeerConnected(ref, addr) =>
+    case PeerManager.PeerConnected(ref, addr, version) =>
       log.debug("peer connected: {}", addr)
       connections += ref -> addr
       context.watch(ref)
-      node ! PeerManager.PeerConnected(ref, addr)
+      node ! PeerManager.PeerConnected(ref, addr, version)
     case akka.actor.Terminated(ref) =>
       log.debug("peer disconnected: {}", connections(ref))
       connections -= ref

@@ -20,6 +20,7 @@ import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout
 import com.oohish.bitcoinscodec.messages.Inv
+import com.oohish.bitcoinscodec.messages.Version
 
 object Node {
 
@@ -41,8 +42,8 @@ trait Node {
   lazy val pm = context.actorOf(PeerManager.props(self, networkParams))
 
   def nodeBehavior: Receive = {
-    case PeerManager.PeerConnected(ref, addr) =>
-      syncWithPeer(ref)
+    case PeerManager.PeerConnected(ref, addr, version) =>
+      syncWithPeer(ref, version)
     case Addr(addrs) =>
       for ((time, addr) <- addrs)
         pm ! PeerManager.AddPeer(addr.address)
@@ -54,7 +55,7 @@ trait Node {
         .pipeTo(sender)
   }
 
-  def syncWithPeer(peer: ActorRef): Unit =
+  def syncWithPeer(peer: ActorRef, version: Version): Unit =
     peer ! PeerConnection.Outgoing(GetAddr())
 
   def getConnectionCount(): Future[Int] =

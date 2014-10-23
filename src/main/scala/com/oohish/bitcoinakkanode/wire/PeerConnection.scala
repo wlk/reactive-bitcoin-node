@@ -80,7 +80,7 @@ class PeerConnection(
   def finishHandshake(v: Version): Unit = {
     val verNum = Math.min(networkParams.PROTOCOL_VERSION, v.version).toInt
     context.become(connected(verNum))
-    manager ! PeerManager.PeerConnected(self, remote)
+    manager ! PeerManager.PeerConnected(self, remote, v)
   }
 
   def connected(verNum: Int): Receive = {
