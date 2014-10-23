@@ -17,12 +17,6 @@ object PeerManager {
     networkParams: NetworkParameters) =
     Props(classOf[PeerManager], node, networkParams)
 
-  def seedPeers(networkParams: NetworkParameters) = for {
-    fallback <- networkParams.dnsSeeds
-    address <- Try(InetAddress.getAllByName(fallback))
-      .getOrElse(Array())
-  } yield new InetSocketAddress(address, networkParams.port)
-
   case class Connect()
   case class PeerConnected(ref: ActorRef, addr: InetSocketAddress)
   case class BroadCastMessage(msg: Message, exclude: List[ActorRef])
@@ -39,7 +33,11 @@ class PeerManager(node: ActorRef,
   import scala.concurrent.duration._
   import PeerManager._
 
-  def dnsPeers = PeerManager.seedPeers(networkParams)
+  def dnsPeers = for {
+    fallback <- networkParams.dnsSeeds
+    address <- Try(InetAddress.getAllByName(fallback))
+      .getOrElse(Array())
+  } yield new InetSocketAddress(address, networkParams.port)
 
   var peers = Set.empty[InetSocketAddress]
   var connections = Map.empty[ActorRef, InetSocketAddress]
