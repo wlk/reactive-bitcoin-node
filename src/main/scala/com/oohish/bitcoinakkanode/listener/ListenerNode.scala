@@ -5,7 +5,7 @@ import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
 import com.oohish.bitcoinakkanode.node.APIClient
-import com.oohish.bitcoinakkanode.node.BlockChain
+import com.oohish.bitcoinakkanode.blockchain.BlockChain
 import com.oohish.bitcoinakkanode.node.Node
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerManager
@@ -21,13 +21,9 @@ object ListenerNode {
     Props(classOf[ListenerNode], networkParams)
 }
 
-class ListenerNode(np: NetworkParameters) extends Node with APIClient with Actor with ActorLogging {
-
-  def networkParams = np
+class ListenerNode(val networkParams: NetworkParameters) extends Node with APIClient with Actor with ActorLogging {
 
   implicit val timeout = Timeout(1 second)
-
-  val pm = context.actorOf(PeerManager.props(self, networkParams))
 
   def receive: Receive =
     nodeBehavior orElse apiClientBehavior

@@ -1,12 +1,14 @@
-package com.oohish.bitcoinakkanode.node
+package com.oohish.bitcoinakkanode.blockchain
 
-import com.oohish.bitcoinakkanode.wire.NetworkParameters
+import com.oohish.bitcoinakkanode.util.Util
+import com.oohish.bitcoinscodec.messages.Block
+import com.oohish.bitcoinscodec.structures.BlockHeader
+import com.oohish.bitcoinscodec.structures.Hash
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
-import akka.actor.Props
-import com.oohish.bitcoinscodec.messages.Block
-import com.oohish.bitcoinscodec.structures.Hash
-import com.oohish.bitcoinakkanode.util.Util
+import akka.actor.actorRef2Scala
+import scodec.bits.BitVector
 
 object BlockChain {
 
@@ -23,9 +25,7 @@ object BlockChain {
 }
 
 trait BlockChain extends Actor with ActorLogging {
-  import com.oohish.bitcoinakkanode.node.BlockChain._
-  import scodec.bits.BitVector
-  import com.oohish.bitcoinscodec.structures.BlockHeader
+  import com.oohish.bitcoinakkanode.blockchain.BlockChain._
 
   def genesis: Block
   val g = StoredBlock(genesis, blockHash(genesis), 0, None)

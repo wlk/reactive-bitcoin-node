@@ -3,12 +3,11 @@ package com.oohish.bitcoinakkanode.spv
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
+import com.oohish.bitcoinakkanode.blockchain.BlockChain
 import com.oohish.bitcoinakkanode.node.APIClient
-import com.oohish.bitcoinakkanode.node.BlockChain
-import com.oohish.bitcoinakkanode.node.BlockChainComponent
 import com.oohish.bitcoinakkanode.node.Node
+import com.oohish.bitcoinakkanode.node.SPVBlockChainComponent
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
-import com.oohish.bitcoinakkanode.wire.PeerManager
 import com.oohish.bitcoinscodec.messages.Headers
 import com.oohish.bitcoinscodec.messages.Version
 
@@ -25,18 +24,15 @@ object SPVNode {
     Props(classOf[SPVNode], networkParams)
 }
 
-class SPVNode(np: NetworkParameters) extends Node
-  with BlockChainComponent
+class SPVNode(val networkParams: NetworkParameters) extends Node
+  with SPVBlockChainComponent
   with APIClient
   with Actor
   with ActorLogging {
   import context.dispatcher
 
   implicit val timeout = Timeout(1 second)
-  val networkParams = np
-  val pm = context.actorOf(PeerManager.props(self, networkParams))
-  val blockchain = context.actorOf(SPVBlockChain.props(networkParams))
-  val downloader = context.actorOf(SPVBlockDownloader.props(self, blockchain, pm, np))
+  val downloader = context.actorOf(SPVBlockDownloader.props(self, blockchain, pm, networkParams)) //TODO: move into CAKE component.
 
   override def syncWithPeer(peer: ActorRef, version: Version) = {
     super.syncWithPeer(peer, version)

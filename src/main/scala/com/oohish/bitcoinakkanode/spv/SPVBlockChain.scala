@@ -3,7 +3,7 @@ package com.oohish.bitcoinakkanode.spv
 import com.oohish.bitcoinscodec.messages.Block
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import akka.actor.Props
-import com.oohish.bitcoinakkanode.node.BlockChain
+import com.oohish.bitcoinakkanode.blockchain.BlockChain
 
 object SPVBlockChain {
   def props(networkParams: NetworkParameters) =

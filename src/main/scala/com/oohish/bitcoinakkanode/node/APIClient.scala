@@ -1,14 +1,12 @@
 package com.oohish.bitcoinakkanode.node
 
 import java.net.InetSocketAddress
-
 import scala.concurrent.Future
 import scala.language.postfixOps
-
 import com.oohish.bitcoinscodec.structures.Hash
-
 import akka.actor.Actor
 import akka.pattern.pipe
+import com.oohish.bitcoinakkanode.blockchain.BlockChain
 
 object APIClient {
   sealed trait APICommand

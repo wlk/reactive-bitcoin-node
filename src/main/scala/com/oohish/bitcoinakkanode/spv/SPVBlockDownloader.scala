@@ -4,7 +4,7 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
-import com.oohish.bitcoinakkanode.node.BlockChain
+import com.oohish.bitcoinakkanode.blockchain.BlockChain
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerConnection
 import com.oohish.bitcoinakkanode.wire.PeerManager

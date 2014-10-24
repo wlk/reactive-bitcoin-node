@@ -13,11 +13,11 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 
-trait NetworkComponent {
+trait NetworkComponent extends PeerManagerComponent {
   this: Actor with ActorLogging =>
   import context.dispatcher
 
-  val pm: ActorRef
+  def pm: ActorRef
   implicit val timeout: Timeout
 
   def getConnectionCount(): Future[Int] =
