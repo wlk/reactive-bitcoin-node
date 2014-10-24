@@ -52,16 +52,12 @@ object NodeShell {
   }
 
   def main(args: Array[String]) = {
-
     parser.parse(args, Config()) map { config =>
-
       val prompt = "bitcoin-akka-node> "
       println("Welcome to bitcoin-akka-node.")
-
       val system = ActorSystem("bitcoin-akka-node")
       val node = system.actorOf(config.nodeProps(
         config.network), "node")
-
       var exiting: Boolean = false
       do {
         val line = StdIn.readLine(prompt)
@@ -107,10 +103,8 @@ object NodeShell {
 
             case _ => if (args.size > 0 && line != "") println(s"unknown command: ${args(0)}")
           }
-
         }
       } while (!exiting)
-
       system.shutdown()
     } getOrElse {
       // arguments are bad, error message will have been displayed

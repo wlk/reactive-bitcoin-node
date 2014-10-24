@@ -13,7 +13,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 
-trait HasPeerManager {
+trait NetworkComponent {
   this: Actor with ActorLogging =>
   import context.dispatcher
 

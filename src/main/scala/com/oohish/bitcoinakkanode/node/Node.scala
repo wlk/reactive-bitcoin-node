@@ -1,7 +1,6 @@
 package com.oohish.bitcoinakkanode.node
 
 import scala.BigInt
-import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
 import org.joda.time.DateTime
@@ -18,7 +17,6 @@ import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.actorRef2Scala
 import akka.pattern.pipe
-import akka.util.Timeout
 
 object Node {
 
@@ -26,7 +24,7 @@ object Node {
 
 }
 
-trait Node extends HasNetworkParams with HasPeerManager {
+trait Node extends HasNetworkParams with NetworkComponent {
   this: Actor with ActorLogging =>
   import context.dispatcher
 
