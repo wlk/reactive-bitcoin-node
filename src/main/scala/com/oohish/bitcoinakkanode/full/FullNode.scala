@@ -1,17 +1,4 @@
-package com.oohish.bitcoinakkanode.node
-
-import scala.language.postfixOps
-import com.oohish.bitcoinakkanode.wire.NetworkParameters
-import com.oohish.bitcoinakkanode.wire.PeerManager
-import com.oohish.bitcoinscodec.messages.GetHeaders
-import com.oohish.bitcoinscodec.messages.Headers
-import com.oohish.bitcoinscodec.structures.Message
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.actor.actorRef2Scala
-import akka.pattern.ask
-import akka.pattern.pipe
-import com.oohish.bitcoinscodec.structures.Hash
+package com.oohish.bitcoinakkanode.full
 
 object FullNode {
   //def props(networkParams: NetworkParameters) =

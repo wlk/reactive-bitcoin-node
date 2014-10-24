@@ -1,12 +1,16 @@
-package com.oohish.bitcoinakkanode.node
+package com.oohish.bitcoinakkanode.spv
 
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
+
+import com.oohish.bitcoinakkanode.node.BlockChain
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerConnection
+import com.oohish.bitcoinakkanode.wire.PeerManager
 import com.oohish.bitcoinscodec.messages.GetHeaders
 import com.oohish.bitcoinscodec.structures.Hash
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -16,7 +20,6 @@ import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout
 import akka.util.Timeout.durationToTimeout
-import com.oohish.bitcoinakkanode.wire.PeerManager
 
 object SPVBlockDownloader {
   def props(node: ActorRef,

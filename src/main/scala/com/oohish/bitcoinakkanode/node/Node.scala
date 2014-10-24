@@ -28,7 +28,7 @@ object Node {
 
 }
 
-trait Node {
+trait Node extends HasNetworkParams {
   this: Actor with ActorLogging =>
 
   import com.oohish.bitcoinakkanode.node.Node._
@@ -36,8 +36,6 @@ trait Node {
   import com.oohish.bitcoinscodec.structures._
 
   implicit val timeout = Timeout(1 second)
-
-  def networkParams: NetworkParameters
 
   lazy val pm = context.actorOf(PeerManager.props(self, networkParams))
 

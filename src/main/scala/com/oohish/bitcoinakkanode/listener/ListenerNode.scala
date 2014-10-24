@@ -1,8 +1,10 @@
-package com.oohish.bitcoinakkanode.node
+package com.oohish.bitcoinakkanode.listener
 
 import scala.concurrent.Future
-import scala.language.postfixOps
 
+import com.oohish.bitcoinakkanode.node.APIClient
+import com.oohish.bitcoinakkanode.node.BlockChain
+import com.oohish.bitcoinakkanode.node.Node
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinscodec.structures.Hash
 

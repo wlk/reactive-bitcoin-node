@@ -1,7 +1,8 @@
-package com.oohish.bitcoinakkanode.node
+package com.oohish.bitcoinakkanode.full
 
 import org.joda.time.DateTime
 
+import com.oohish.bitcoinakkanode.node.BlockChain
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinscodec.messages.Block
 import com.oohish.bitcoinscodec.structures.Hash

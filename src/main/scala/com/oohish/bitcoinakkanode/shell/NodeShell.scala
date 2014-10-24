@@ -14,7 +14,7 @@ import com.oohish.bitcoinakkanode.node.APIClient.GetBlockCount
 import com.oohish.bitcoinakkanode.node.APIClient.GetBlockHash
 import com.oohish.bitcoinakkanode.node.APIClient.GetConnectionCount
 import com.oohish.bitcoinakkanode.node.APIClient.GetPeerInfo
-import com.oohish.bitcoinakkanode.node.SPVNode
+import com.oohish.bitcoinakkanode.spv.SPVNode
 import com.oohish.bitcoinakkanode.wire.MainNetParams
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.TestNet3Params
@@ -60,7 +60,7 @@ object NodeShell {
 
       val system = ActorSystem("bitcoin-akka-node")
       val node = system.actorOf(config.nodeProps(
-        config.network))
+        config.network), "node")
 
       var exiting: Boolean = false
       do {
