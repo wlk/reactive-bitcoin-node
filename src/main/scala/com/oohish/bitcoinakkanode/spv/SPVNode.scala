@@ -1,12 +1,14 @@
 package com.oohish.bitcoinakkanode.spv
 
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
 import com.oohish.bitcoinakkanode.node.APIClient
 import com.oohish.bitcoinakkanode.node.BlockChain
 import com.oohish.bitcoinakkanode.node.Node
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
+import com.oohish.bitcoinakkanode.wire.PeerManager
 import com.oohish.bitcoinscodec.messages.Headers
 import com.oohish.bitcoinscodec.messages.Version
 import com.oohish.bitcoinscodec.structures.Hash
@@ -18,6 +20,7 @@ import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.pattern.pipe
+import akka.util.Timeout
 
 object SPVNode {
   def props(networkParams: NetworkParameters) =
@@ -29,6 +32,9 @@ class SPVNode(np: NetworkParameters) extends Node with APIClient with Actor with
 
   def networkParams = np
 
+  implicit val timeout = Timeout(1 second)
+
+  val pm = context.actorOf(PeerManager.props(self, networkParams))
   val blockchain = context.actorOf(SPVBlockChain.props(networkParams))
   val downloader = context.actorOf(SPVBlockDownloader.props(self, blockchain, pm, np))
 
