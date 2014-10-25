@@ -42,7 +42,7 @@ class Client(
       log.debug("connected to {} from {}", remote, local)
       val connection = sender
       val handler = context.actorOf(TCPConnection.props(
-        context.parent, node, connection, remote, local, networkParams, true))
+        context.parent, node, connection, remote, local, networkParams, true), "tcp-connection")
       connection ! Register(handler)
       context.watch(handler)
     case _: akka.actor.Terminated =>

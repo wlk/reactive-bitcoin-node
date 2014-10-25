@@ -32,7 +32,7 @@ class SPVNode(val networkParams: NetworkParameters) extends Node
   import context.dispatcher
 
   implicit val timeout = Timeout(1 second)
-  val downloader = context.actorOf(SPVBlockDownloader.props(self, blockchain, pm, networkParams)) //TODO: move into CAKE component.
+  val downloader = context.actorOf(SPVBlockDownloader.props(self, blockchain, pm, networkParams), "headers-downloader") //TODO: move into CAKE component.
 
   override def syncWithPeer(peer: ActorRef, version: Version) = {
     super.syncWithPeer(peer, version)

@@ -42,9 +42,9 @@ class TCPConnection(
   import TCPConnection._
   import akka.actor.Terminated
 
-  val pc = context.actorOf(PeerConnection.props(manager, node, remote, local, networkParams))
-  val decoder = context.actorOf(MessageDecoder.props(networkParams.packetMagic), name = "messageDecoder")
-  val encoder = context.actorOf(MessageEncoder.props(networkParams.packetMagic), name = "messageEncoder")
+  val pc = context.actorOf(PeerConnection.props(manager, node, remote, local, networkParams), "peer-connection")
+  val decoder = context.actorOf(MessageDecoder.props(networkParams.packetMagic), "messageDecoder")
+  val encoder = context.actorOf(MessageEncoder.props(networkParams.packetMagic), "messageEncoder")
 
   override def preStart() = {
     context.watch(pc)

@@ -7,6 +7,6 @@ import akka.actor.Actor
 trait SPVBlockChainComponent extends BlockChainComponent with HasNetworkParams {
   this: Actor =>
 
-  lazy val blockchain = context.actorOf(SPVBlockChain.props(networkParams))
+  lazy val blockchain = context.actorOf(SPVBlockChain.props(networkParams), "spv-blockchain")
 
 }
