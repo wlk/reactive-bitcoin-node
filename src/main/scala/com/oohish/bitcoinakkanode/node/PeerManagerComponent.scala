@@ -7,6 +7,6 @@ import akka.actor.Actor
 trait PeerManagerComponent extends HasNetworkParams {
   this: Actor =>
 
-  lazy val pm = context.actorOf(PeerManager.props(self, networkParams), "peer-manager")
+  val pm = context.actorOf(PeerManager.props(self, networkParams), "peer-manager")
 
 }

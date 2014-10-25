@@ -21,7 +21,9 @@ object ListenerNode {
     Props(classOf[ListenerNode], networkParams)
 }
 
-class ListenerNode(val networkParams: NetworkParameters) extends Node with APIClient with Actor with ActorLogging {
+class ListenerNode(val networkParams: NetworkParameters) extends Actor with ActorLogging
+  with Node
+  with APIClient {
 
   implicit val timeout = Timeout(1 second)
 
