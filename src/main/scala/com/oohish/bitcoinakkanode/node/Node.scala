@@ -24,7 +24,7 @@ object Node {
 
 }
 
-trait Node extends HasNetworkParams with NetworkComponent {
+trait Node extends NetworkParamsComponent with NetworkComponent {
   this: Actor with ActorLogging =>
   import context.dispatcher
 
