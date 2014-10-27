@@ -20,7 +20,8 @@ import akka.pattern.pipe
 
 object Node {
 
-  //case class SyncTimeout()
+  case class GetVersion()
+  case class SyncPeer(ref: ActorRef, v: Version)
 
 }
 
@@ -29,20 +30,15 @@ trait Node extends NetworkParamsComponent with NetworkComponent {
   import context.dispatcher
 
   def nodeBehavior: Receive = {
-    case PeerManager.PeerConnected(ref, addr, version) =>
-      syncWithPeer(ref, version)
+    case Node.SyncPeer(ref, v) =>
+      syncWithPeer(ref, v)
+    case GetAddr() =>
+      sender ! PeerConnection.Outgoing(Addr(List())) //TODO use real addrs
     case Addr(addrs) =>
       for ((time, addr) <- addrs)
         pm ! PeerManager.AddPeer(addr.address)
-    case GetAddr() => //TODO: store peer addr info
-      val time = DateTime.now().getMillis()
-      getPeerInfo
-        .map(addrs => PeerConnection.Outgoing(
-          Addr(addrs.map(addr => (time, NetworkAddress(BigInt(1), addr))))))
-        .pipeTo(sender)
   }
 
-  def syncWithPeer(peer: ActorRef, version: Version): Unit =
-    peer ! PeerConnection.Outgoing(GetAddr())
+  def syncWithPeer(peer: ActorRef, version: Version): Unit
 
 }

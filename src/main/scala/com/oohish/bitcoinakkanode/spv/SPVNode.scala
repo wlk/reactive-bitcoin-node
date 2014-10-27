@@ -33,7 +33,6 @@ class SPVNode(val networkParams: NetworkParameters) extends Actor with ActorLogg
   implicit val timeout = Timeout(1 second)
 
   override def syncWithPeer(peer: ActorRef, version: Version) = {
-    super.syncWithPeer(peer, version)
     downloader ! SPVBlockDownloader.StartDownload(peer, version.start_height)
   }
 

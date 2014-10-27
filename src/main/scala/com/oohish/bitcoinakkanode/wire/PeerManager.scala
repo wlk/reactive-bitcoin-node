@@ -11,6 +11,7 @@ import akka.actor.Props
 import akka.actor.ActorRef
 import com.oohish.bitcoinscodec.structures.Message
 import com.oohish.bitcoinscodec.messages._
+import com.oohish.bitcoinakkanode.node.Node
 
 object PeerManager {
   def props(node: ActorRef,
@@ -59,11 +60,12 @@ class PeerManager(node: ActorRef,
     case PeerManager.BroadCastMessage(msg, exclude) =>
       for (connection <- connections.keys if !(exclude contains connection))
         connection ! PeerConnection.Outgoing(msg)
-    case PeerManager.PeerConnected(ref, addr, version) =>
+    case PeerManager.PeerConnected(ref, addr, v) =>
       log.debug("peer connected: {}", addr)
       connections += ref -> addr
       context.watch(ref)
-      node ! PeerManager.PeerConnected(ref, addr, version)
+      ref ! PeerConnection.Outgoing(GetAddr())
+      node ! Node.SyncPeer(ref, v)
     case akka.actor.Terminated(ref) =>
       log.debug("peer disconnected: {}", connections(ref))
       connections -= ref
@@ -78,9 +80,7 @@ class PeerManager(node: ActorRef,
       sender ! randConn
   }
 
-  def connectToPeer(address: InetSocketAddress) = {
-    log.debug("connecting to: {}", address)
+  def connectToPeer(address: InetSocketAddress) =
     context.actorOf(Client.props(node, address, networkParams))
-  }
 
 }
