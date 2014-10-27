@@ -2,17 +2,16 @@ package com.oohish.bitcoinakkanode.wire
 
 import java.net.InetSocketAddress
 
-import scala.BigInt
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
-import org.joda.time.DateTime
-
-import com.oohish.bitcoinakkanode.util.Util
+import com.oohish.bitcoinakkanode.node.Node
+import com.oohish.bitcoinscodec.messages.Ping
+import com.oohish.bitcoinscodec.messages.Pong
 import com.oohish.bitcoinscodec.messages.Verack
 import com.oohish.bitcoinscodec.messages.Version
 import com.oohish.bitcoinscodec.structures.Message
-import com.oohish.bitcoinscodec.structures.NetworkAddress
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
@@ -21,6 +20,9 @@ import akka.actor.Cancellable
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.actor.actorRef2Scala
+import akka.pattern.ask
+import akka.pattern.pipe
+import akka.util.Timeout.durationToTimeout
 
 object PeerConnection {
   def props(
@@ -58,8 +60,10 @@ class PeerConnection(
 
   def ready(): Receive = {
     case InitiateHandshake() =>
-      context.parent ! TCPConnection.OutgoingMessage(version())
       context.become(awaitingVersion())
+      getVersion(remote, local)
+        .map(TCPConnection.OutgoingMessage(_))
+        .pipeTo(context.parent)
     case v: Version =>
   }
 
@@ -94,15 +98,8 @@ class PeerConnection(
       context.stop(self)
   }
 
-  private def version() = Version(
-    networkParams.PROTOCOL_VERSION,
-    BigInt(1),
-    DateTime.now().getMillis() / 1000,
-    NetworkAddress(BigInt(1), remote),
-    NetworkAddress(BigInt(1), local),
-    Util.genNonce,
-    "/Satoshi:0.7.2/",
-    1,
-    true)
+  def getVersion(remote: InetSocketAddress, local: InetSocketAddress): Future[Version] =
+    (node ? Node.GetVersion(remote, local))(1 second)
+      .mapTo[Version]
 
 }
