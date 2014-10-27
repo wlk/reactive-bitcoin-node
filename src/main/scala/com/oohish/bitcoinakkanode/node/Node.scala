@@ -22,17 +22,22 @@ import akka.actor.actorRef2Scala
 import akka.pattern.pipe
 
 object Node {
-
   case class GetVersion(remote: InetSocketAddress, local: InetSocketAddress)
   case class SyncPeer(ref: ActorRef, v: Version)
-
 }
 
-trait Node extends NetworkParamsComponent with NetworkComponent {
+trait Node extends NetworkParamsComponent with NetworkComponent with APIClient {
   this: Actor with ActorLogging =>
   import context.dispatcher
 
-  def nodeBehavior: Receive = {
+  def nodeBehavior: Receive
+  def syncWithPeer(peer: ActorRef, version: Version): Unit
+  def getBlockChainHeight(): Future[Int]
+  def services: BigInt
+
+  def userAgent: String = "/bitcoin-akka-node:0.1.0/"
+
+  def networkBehavior: Receive = {
     case Node.SyncPeer(ref, v) =>
       syncWithPeer(ref, v)
     case Node.GetVersion(remote, local) =>
@@ -45,10 +50,8 @@ trait Node extends NetworkParamsComponent with NetworkComponent {
         pm ! PeerManager.AddPeer(addr.address)
   }
 
-  def syncWithPeer(peer: ActorRef, version: Version): Unit
-
   def getVersion(remote: InetSocketAddress, local: InetSocketAddress): Future[Version] =
-    getBlockStart
+    getBlockChainHeight
       .map(blockStart =>
         Version(
           networkParams.PROTOCOL_VERSION,
@@ -61,8 +64,7 @@ trait Node extends NetworkParamsComponent with NetworkComponent {
           blockStart,
           true))
 
-  def getBlockStart(): Future[Int]
-  def services: BigInt
-  def userAgent: String = "/Satoshi:0.7.2/"
+  def receive: Receive =
+    networkBehavior orElse nodeBehavior orElse apiClientBehavior
 
 }

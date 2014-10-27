@@ -24,17 +24,19 @@ object ListenerNode {
 }
 
 class ListenerNode(val networkParams: NetworkParameters) extends Actor with ActorLogging
-  with Node
-  with APIClient {
+  with Node {
 
   implicit val timeout = Timeout(1 second)
 
-  override def syncWithPeer(peer: ActorRef, version: Version) = {}
-  override def services: BigInt = BigInt(1)
-  override def getBlockStart(): Future[Int] = Future.successful(1)
+  override def nodeBehavior: Receive = {
+    case _ =>
+  }
 
-  def receive: Receive =
-    nodeBehavior orElse apiClientBehavior
+  override def syncWithPeer(peer: ActorRef, version: Version) = {}
+
+  override def services: BigInt = BigInt(1)
+
+  override def getBlockChainHeight(): Future[Int] = Future.successful(1)
 
   override def getChainHead: Future[BlockChain.StoredBlock] =
     Future.failed(new UnsupportedOperationException())

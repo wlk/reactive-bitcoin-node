@@ -23,7 +23,7 @@ trait APIClient {
   import context.dispatcher
   import com.oohish.bitcoinakkanode.node.APIClient._
 
-  val apiClientBehavior: Receive = {
+  def apiClientBehavior: Receive = {
     case cmd: APICommand =>
       receiveAPICommand(cmd)
   }
