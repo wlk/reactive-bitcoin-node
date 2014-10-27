@@ -57,4 +57,6 @@ class SPVNode(val networkParams: NetworkParameters) extends Actor with ActorLogg
 
   override def getBlockChainHeight(): Future[Int] = Future.successful(1)
 
+  override def relay: Boolean = false
+
 }

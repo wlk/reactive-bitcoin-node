@@ -34,6 +34,7 @@ trait Node extends NetworkParamsComponent with NetworkComponent with APIClient {
   def syncWithPeer(peer: ActorRef, version: Version): Unit
   def getBlockChainHeight(): Future[Int]
   def services: BigInt
+  def relay: Boolean
 
   def userAgent: String = "/bitcoin-akka-node:0.1.0/"
 
@@ -62,7 +63,7 @@ trait Node extends NetworkParamsComponent with NetworkComponent with APIClient {
           Util.genNonce,
           userAgent,
           blockStart,
-          true))
+          relay))
 
   def receive: Receive =
     networkBehavior orElse nodeBehavior orElse apiClientBehavior
