@@ -5,8 +5,6 @@ import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
-import com.oohish.bitcoinakkanode.blockchain.BlockChain
-import com.oohish.bitcoinakkanode.node.APIClient
 import com.oohish.bitcoinakkanode.node.HeadersDownloaderComponent
 import com.oohish.bitcoinakkanode.node.Node
 import com.oohish.bitcoinakkanode.node.SPVBlockChainComponent
@@ -37,16 +35,11 @@ class SPVNode(val networkParams: NetworkParameters) extends Actor with ActorLogg
 
   override def nodeBehavior: Receive = {
     case Headers(hdrs) =>
-      hdrs.foreach {
-        blockchain ! BlockChain.PutBlock(_)
-      }
-      if (!hdrs.isEmpty) {
-        val peer = sender
-        getChainHead
-          .map(_.height)
-          .map(SPVBlockDownloader.GotBlocks(peer, _))
-          .pipeTo(downloader)
-      }
+      hdrs.foreach(putBlock)
+      getChainHead
+        .map(_.height)
+        .map(SPVBlockDownloader.GotBlocks(sender, _))
+        .pipeTo(downloader)
   }
 
   override def syncWithPeer(peer: ActorRef, version: Version) = {

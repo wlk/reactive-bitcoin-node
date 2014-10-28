@@ -90,8 +90,6 @@ class PeerConnection(
   def connected(verNum: Int): Receive = {
     case Outgoing(m) =>
       context.parent ! TCPConnection.OutgoingMessage(m)
-    case Ping(nonce) =>
-      context.parent ! TCPConnection.OutgoingMessage(Pong(nonce))
     case msg: Message =>
       node ! msg
     case Terminated(ref) =>

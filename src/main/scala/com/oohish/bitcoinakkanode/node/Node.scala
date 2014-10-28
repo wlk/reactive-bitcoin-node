@@ -11,7 +11,7 @@ import com.oohish.bitcoinakkanode.util.Util
 import com.oohish.bitcoinakkanode.wire.PeerConnection
 import com.oohish.bitcoinakkanode.wire.PeerManager
 import com.oohish.bitcoinscodec.messages.Addr
-import com.oohish.bitcoinscodec.messages.GetAddr
+import com.oohish.bitcoinscodec.messages._
 import com.oohish.bitcoinscodec.messages.Version
 import com.oohish.bitcoinscodec.structures.NetworkAddress
 
@@ -26,7 +26,10 @@ object Node {
   case class SyncPeer(ref: ActorRef, v: Version)
 }
 
-trait Node extends NetworkParamsComponent with NetworkComponent with APIClient {
+trait Node
+  extends NetworkParamsComponent
+  with NetworkComponent
+  with APIClient {
   this: Actor with ActorLogging =>
   import context.dispatcher
 
@@ -36,7 +39,7 @@ trait Node extends NetworkParamsComponent with NetworkComponent with APIClient {
   def services: BigInt
   def relay: Boolean
 
-  def userAgent: String = "/bitcoin-akka-node:0.1.0/"
+  val userAgent: String = "/bitcoin-akka-node:0.1.0/"
 
   def networkBehavior: Receive = {
     case Node.SyncPeer(ref, v) =>
@@ -44,6 +47,8 @@ trait Node extends NetworkParamsComponent with NetworkComponent with APIClient {
     case Node.GetVersion(remote, local) =>
       getVersion(remote, local)
         .pipeTo(sender)
+    case Ping(nonce) =>
+      sender ! PeerConnection.Outgoing(Pong(nonce))
     case GetAddr() =>
       sender ! PeerConnection.Outgoing(Addr(List())) //TODO use real addrs
     case Addr(addrs) =>

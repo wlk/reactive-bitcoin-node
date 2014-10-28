@@ -8,6 +8,7 @@ import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import com.oohish.bitcoinakkanode.blockchain.BlockChain
+import com.oohish.bitcoinscodec.messages.Block
 
 trait BlockChainComponent {
   this: Actor =>
@@ -15,6 +16,9 @@ trait BlockChainComponent {
 
   def blockchain: ActorRef
   implicit val timeout: Timeout
+
+  def putBlock(block: Block): Unit =
+    blockchain ! BlockChain.PutBlock(block)
 
   def getChainHead(): Future[BlockChain.StoredBlock] =
     (blockchain ? BlockChain.GetChainHead())
