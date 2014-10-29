@@ -39,6 +39,6 @@ class ListenerHandler(peerManager: ActorRef) extends PeerMessageHandler {
       1,
       true)
 
-  def onPeerConnected(): Unit = {}
+  def onPeerConnected(ref: ActorRef): Unit = {}
 
 }

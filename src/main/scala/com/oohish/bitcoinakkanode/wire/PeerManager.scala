@@ -44,7 +44,6 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
 
   def waiting: Receive = {
     case Init(handler) =>
-      log.info("becoming initialized.")
       context.become(initialized(handler))
       for (p <- dnsPeers) addresses += p
       system.scheduler.schedule(0 seconds, 1 second, self, Connect())
@@ -60,7 +59,6 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
       for (connection <- peers.keys if !(exclude contains connection))
         connection ! PeerConnection.Outgoing(msg)
     case PeerManager.PeerConnected(ref, addr, v) =>
-      log.info("peer connected: {}", addr)
       val offset = v.timestamp - DateTime.now().getMillis() / 1000
       peers += ref -> (offset, addr)
       context.watch(ref)

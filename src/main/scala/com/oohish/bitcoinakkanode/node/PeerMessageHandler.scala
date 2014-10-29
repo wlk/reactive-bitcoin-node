@@ -24,11 +24,11 @@ trait PeerMessageHandler extends Actor {
     case GetVersion(remote, local) =>
       sender ! getVersion(remote, local)
     case PeerConnected(ref) =>
-      onPeerConnected
+      onPeerConnected(ref)
   }
 
   def handlePeerMessage(msg: Message): Unit
   def getVersion(remote: InetSocketAddress, local: InetSocketAddress): Version
-  def onPeerConnected(): Unit
+  def onPeerConnected(ref: ActorRef): Unit
 
 }
