@@ -10,7 +10,20 @@ Requirements
 --------------
 - sbt
 
-How to run
+How to run on testnet
+--------------
+start sbt
+```
+sbt
+```
+
+and then
+
+```
+run -n test
+```
+
+How to run on mainnet
 --------------
 start sbt
 ```
@@ -22,16 +35,10 @@ and then
 ```
 run
 ```
-(to start a node on the main network)
 
-or
 
-```
-run -n test
-```
-(to start a node on testnet3)
-
-get help
+Get help
+--------------
 ```
 bitcoin-akka-node> help
 ```
