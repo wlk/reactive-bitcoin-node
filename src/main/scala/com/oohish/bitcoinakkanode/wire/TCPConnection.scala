@@ -70,9 +70,6 @@ class TCPConnection(
     case Terminated(pc) =>
       log.debug("btc connection closed")
       connection ! Tcp.Close
-    case "close" =>
-      log.debug("closing connection")
-      connection ! Tcp.Close
     case _: Tcp.ConnectionClosed =>
       log.debug("connection closed")
       context stop self

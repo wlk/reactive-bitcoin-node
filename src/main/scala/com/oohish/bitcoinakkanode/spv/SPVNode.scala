@@ -1,22 +1,19 @@
 package com.oohish.bitcoinakkanode.spv
 
-import scala.BigInt
-import scala.concurrent.Future
+import java.net.InetSocketAddress
+
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
+import scala.math.BigInt.int2bigInt
 
-import com.oohish.bitcoinakkanode.node.HeadersDownloaderComponent
 import com.oohish.bitcoinakkanode.node.Node
-import com.oohish.bitcoinakkanode.node.SPVBlockChainComponent
+import com.oohish.bitcoinakkanode.node.Node.GetConnectionCount
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
-import com.oohish.bitcoinscodec.messages.Headers
-import com.oohish.bitcoinscodec.messages.Version
+import com.oohish.bitcoinakkanode.wire.PeerManager
 
-import akka.actor.Actor
 import akka.actor.ActorLogging
-import akka.actor.ActorRef
 import akka.actor.Props
-import akka.actor.actorRef2Scala
+import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout
 
@@ -25,31 +22,25 @@ object SPVNode {
     Props(classOf[SPVNode], networkParams)
 }
 
-class SPVNode(val networkParams: NetworkParameters) extends Actor with ActorLogging
-  with Node
-  with SPVBlockChainComponent
-  with HeadersDownloaderComponent {
+class SPVNode(val networkParams: NetworkParameters)
+  extends Node with ActorLogging {
   import context.dispatcher
+
+  override def services: BigInt = 1
+  override def relay: Boolean = false
+
+  val handler = context.actorOf(SPVHandler.props(peerManager, networkParams), "spv-handler")
 
   implicit val timeout = Timeout(1 second)
 
-  override def nodeBehavior: Receive = {
-    case Headers(hdrs) =>
-      hdrs.foreach(putBlock)
-      getChainHead
-        .map(_.height)
-        .map(SPVBlockDownloader.GotBlocks(sender, _))
-        .pipeTo(downloader)
+  def receive: Receive = {
+    case GetConnectionCount() =>
+      (peerManager ? PeerManager.GetPeers())
+        .mapTo[List[InetSocketAddress]]
+        .map(_.length)
+        .pipeTo(sender)
+    case other =>
+      log.info("got: {}", other)
   }
-
-  override def syncWithPeer(peer: ActorRef, version: Version) = {
-    downloader ! SPVBlockDownloader.StartDownload(peer, version.start_height)
-  }
-
-  override def services: BigInt = BigInt(1)
-
-  override def getBlockChainHeight(): Future[Int] = Future.successful(1)
-
-  override def relay: Boolean = false
 
 }

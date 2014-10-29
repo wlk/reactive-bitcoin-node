@@ -10,8 +10,6 @@ import scala.util.Try
 
 import org.joda.time.DateTime
 
-import com.oohish.bitcoinakkanode.node.Node
-import com.oohish.bitcoinscodec.messages.GetAddr
 import com.oohish.bitcoinscodec.messages.Version
 import com.oohish.bitcoinscodec.structures.Message
 
@@ -22,10 +20,10 @@ import akka.actor.Props
 import akka.actor.actorRef2Scala
 
 object PeerManager {
-  def props(node: ActorRef,
-    networkParams: NetworkParameters) =
-    Props(classOf[PeerManager], node, networkParams)
+  def props(networkParams: NetworkParameters) =
+    Props(classOf[PeerManager], networkParams)
 
+  case class Init(handler: ActorRef)
   case class Connect()
   case class PeerConnected(ref: ActorRef, addr: InetSocketAddress, v: Version)
   case class BroadCastMessage(msg: Message, exclude: List[ActorRef])
@@ -34,48 +32,49 @@ object PeerManager {
   case class GetRandomConnection()
 }
 
-class PeerManager(node: ActorRef,
-  networkParams: NetworkParameters) extends Actor with ActorLogging {
-  import com.oohish.bitcoinscodec.structures.Message._
+class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogging {
   import context._
-  import scala.language.postfixOps
-  import scala.concurrent.duration._
   import PeerManager._
 
   var addresses = Set.empty[InetSocketAddress]
   var peers = Map.empty[ActorRef, (Long, InetSocketAddress)]
   val peerLimit = 10
 
-  override def preStart() = {
-    for (p <- dnsPeers) addresses += p
-    system.scheduler.schedule(0 seconds, 1 second, self, Connect())
+  def receive = waiting
+
+  def waiting: Receive = {
+    case Init(handler) =>
+      log.info("becoming initialized.")
+      context.become(initialized(handler))
+      for (p <- dnsPeers) addresses += p
+      system.scheduler.schedule(0 seconds, 1 second, self, Connect())
   }
 
-  def receive = {
+  def initialized(handler: ActorRef): Receive = {
     case Connect() =>
       if (peers.size < peerLimit)
-        makeConnection()
+        makeConnection(handler)
     case AddPeer(addr) =>
       addresses += addr
     case PeerManager.BroadCastMessage(msg, exclude) =>
       for (connection <- peers.keys if !(exclude contains connection))
         connection ! PeerConnection.Outgoing(msg)
     case PeerManager.PeerConnected(ref, addr, v) =>
+      log.info("peer connected: {}", addr)
       val offset = v.timestamp - DateTime.now().getMillis() / 1000
       peers += ref -> (offset, addr)
       context.watch(ref)
-      ref ! PeerConnection.Outgoing(GetAddr())
-      node ! Node.SyncPeer(ref, v)
     case akka.actor.Terminated(ref) =>
       peers -= ref
     case GetPeers() =>
       sender ! peers.values.toList
     case GetRandomConnection() =>
       sender ! randomConnection()
+
   }
 
-  def connectToPeer(address: InetSocketAddress) =
-    context.actorOf(Client.props(node, address, networkParams))
+  def connectToPeer(address: InetSocketAddress, handler: ActorRef) =
+    context.actorOf(Client.props(handler, address, networkParams))
 
   def networkTime = (DateTime.now().getMillis() / 1000) + medianOffset
 
@@ -88,9 +87,9 @@ class PeerManager(node: ActorRef,
     }
   }
 
-  def makeConnection() = {
+  def makeConnection(handler: ActorRef) = {
     val candidates = addresses.filter(addr => !peers.values.exists(_._2 == addr))
-    util.Random.shuffle(candidates.toVector).take(1).foreach(connectToPeer)
+    util.Random.shuffle(candidates.toVector).take(1).foreach(connectToPeer(_, handler))
   }
 
   def dnsPeers = for {

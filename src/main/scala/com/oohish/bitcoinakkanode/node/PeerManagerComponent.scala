@@ -1,12 +1,14 @@
 package com.oohish.bitcoinakkanode.node
 
+import akka.actor.ActorRef
 import com.oohish.bitcoinakkanode.wire.PeerManager
-
 import akka.actor.Actor
 
-trait PeerManagerComponent extends NetworkParamsComponent {
-  this: Actor =>
+trait PeerManagerComponent {
+  self: Actor with NetworkParamsComponent =>
+  import context._
 
-  val pm = context.actorOf(PeerManager.props(self, networkParams), "peer-manager")
+  val peerManager: ActorRef = context.actorOf(PeerManager.props(networkParams), "peer-manager")
 
 }
+
