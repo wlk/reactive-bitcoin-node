@@ -58,7 +58,6 @@ class PeerConnection(
 
   def ready(): Receive = {
     case InitiateHandshake() =>
-      log.info("initializing handshake.")
       context.become(awaitingVersion())
       getVersion(remote, local)
         .map(TCPConnection.OutgoingMessage(_))
@@ -68,7 +67,6 @@ class PeerConnection(
 
   def awaitingVersion(): Receive = {
     case v: Version =>
-      log.info("received version.")
       context.become(awaitingVerack(v))
     case _: ConnectTimeout =>
       context.stop(self)
@@ -76,14 +74,12 @@ class PeerConnection(
 
   def awaitingVerack(v: Version): Receive = {
     case _: Verack =>
-      log.info("received verack.")
       finishHandshake(v)
     case _: ConnectTimeout =>
       context.stop(self)
   }
 
   def finishHandshake(v: Version): Unit = {
-    log.info("finished handshake.")
     context.become(connected(v))
     manager ! PeerManager.PeerConnected(self, remote, v)
     handler ! PeerMessageHandler.PeerConnected(self)
