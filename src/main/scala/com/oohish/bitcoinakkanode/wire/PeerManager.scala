@@ -10,6 +10,7 @@ import scala.util.Try
 
 import org.joda.time.DateTime
 
+import com.oohish.bitcoinscodec.messages.GetAddr
 import com.oohish.bitcoinscodec.messages.Version
 import com.oohish.bitcoinscodec.structures.Message
 
@@ -61,6 +62,7 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
     case PeerManager.PeerConnected(ref, addr, v) =>
       val offset = v.timestamp - DateTime.now().getMillis() / 1000
       peers += ref -> (offset, addr)
+      ref ! PeerConnection.Outgoing(GetAddr())
       context.watch(ref)
     case akka.actor.Terminated(ref) =>
       peers -= ref

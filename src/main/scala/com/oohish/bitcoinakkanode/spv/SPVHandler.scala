@@ -42,7 +42,6 @@ class SPVHandler(peerManager: ActorRef,
       //println("handled msg: " + msg)
     }
 
-  override def onPeerConnected(ref: ActorRef): Unit =
-    ref ! PeerConnection.Outgoing(GetAddr())
+  override def onPeerConnected(ref: ActorRef): Unit = {}
 
 }

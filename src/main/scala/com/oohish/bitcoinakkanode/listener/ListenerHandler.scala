@@ -24,7 +24,7 @@ class ListenerHandler(peerManager: ActorRef,
 
   override def handlePeerMessage(msg: Message): Unit = msg match {
     case msg =>
-      println("handled msg: {}", msg)
+      println("Received message: " + msg)
   }
 
   override def onPeerConnected(ref: ActorRef): Unit = {}

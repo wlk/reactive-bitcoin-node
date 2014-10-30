@@ -23,7 +23,6 @@ object Node {
 }
 
 trait Node extends Actor {
-
   def networkParams: NetworkParameters
 
   val peerManager: ActorRef = context.actorOf(PeerManager.props(networkParams), "peer-manager")
