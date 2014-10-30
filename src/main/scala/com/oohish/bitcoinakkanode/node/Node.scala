@@ -1,10 +1,14 @@
 package com.oohish.bitcoinakkanode.node
 
 import scala.language.postfixOps
-import com.oohish.bitcoinscodec.structures.Hash
-import akka.actor.Actor
+
+import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerManager
+import com.oohish.bitcoinscodec.structures.Hash
+
+import akka.actor.Actor
 import akka.actor.ActorRef
+import akka.actor.actorRef2Scala
 
 object Node {
   val userAgent: String = "/bitcoin-akka-node:0.1.0/"
@@ -18,10 +22,11 @@ object Node {
   case class GetPeerInfo() extends APICommand
 }
 
-trait Node extends Actor
-  with NetworkParamsComponent
-  with PeerManagerComponent {
+trait Node extends Actor {
 
+  def networkParams: NetworkParameters
+
+  val peerManager: ActorRef = context.actorOf(PeerManager.props(networkParams), "peer-manager")
   def handler: ActorRef
 
   override def preStart() {
