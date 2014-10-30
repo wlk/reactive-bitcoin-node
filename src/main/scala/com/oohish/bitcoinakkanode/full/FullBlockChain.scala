@@ -3,6 +3,7 @@ package com.oohish.bitcoinakkanode.full
 import org.joda.time.DateTime
 
 import com.oohish.bitcoinakkanode.blockchain.BlockChain
+import com.oohish.bitcoinakkanode.util.Util
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinscodec.messages.Block
 import com.oohish.bitcoinscodec.structures.Hash
@@ -34,7 +35,7 @@ class FullBlockChain(networkParams: NetworkParameters) extends BlockChain {
   }
 
   def isDuplicateBlock(b: Block): Boolean = {
-    val hash = blockHash(b)
+    val hash = Util.blockHash(b)
     blocks.contains(hash)
   }
 

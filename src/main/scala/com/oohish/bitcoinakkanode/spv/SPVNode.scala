@@ -30,7 +30,6 @@ object SPVNode {
 
   val services: BigInt = 1
   val relay: Boolean = false
-
 }
 
 class SPVNode(val networkParams: NetworkParameters)

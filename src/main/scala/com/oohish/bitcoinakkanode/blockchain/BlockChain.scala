@@ -2,13 +2,11 @@ package com.oohish.bitcoinakkanode.blockchain
 
 import com.oohish.bitcoinakkanode.util.Util
 import com.oohish.bitcoinscodec.messages.Block
-import com.oohish.bitcoinscodec.structures.BlockHeader
 import com.oohish.bitcoinscodec.structures.Hash
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.actorRef2Scala
-import scodec.bits.BitVector
 
 object BlockChain {
 
@@ -28,8 +26,8 @@ trait BlockChain extends Actor with ActorLogging {
   import com.oohish.bitcoinakkanode.blockchain.BlockChain._
 
   def genesis: Block
-  val g = StoredBlock(genesis, blockHash(genesis), 0, None)
-  var blocks: Map[Hash, StoredBlock] = Map.empty
+  val g = StoredBlock(genesis, Util.blockHash(genesis), 0, None)
+  var blocks: Map[Hash, StoredBlock] = Map(g.hash -> g)
   var chainHead = g
 
   def receive = {
@@ -41,32 +39,20 @@ trait BlockChain extends Actor with ActorLogging {
       log.debug("blockchain height: {}", chainHead.height)
       sender ! blockLocator(chainHead.height)
     case PutBlock(b) =>
-      trySaveBlock(b)
+      receiveBlock(b)
   }
 
-  def isValidBlock(b: Block): Boolean
-
-  def trySaveBlock(b: Block) = {
-    log.debug("trying to save block.")
-    if (isValidBlock(b)) {
-      saveBlock(b)
-    }
-  }
-
-  def saveBlock(b: Block) = {
-    val hash = blockHash(b)
+  def receiveBlock(b: Block) = {
     val prev = blocks.get(b.block_header.prev_block)
     val prevHeight = prev.map(_.height).getOrElse(0)
-    val sb = StoredBlock(b, hash, prevHeight + 1, prev)
-    blocks += hash -> sb
-    if (sb.height > chainHead.height) chainHead = sb
-    log.debug("saved block height: {}, chainHead height: {}", sb.height, chainHead.height)
+    val sb = StoredBlock(b, Util.blockHash(b), prevHeight + 1, prev)
+    saveBlock(sb)
   }
 
-  def blockHash(b: Block): Hash = {
-    val bytes = BlockHeader.codec.encode(b.block_header)
-      .getOrElse(BitVector.empty).toByteArray
-    Util.hash(bytes)
+  def saveBlock(sb: StoredBlock) = {
+    blocks += sb.hash -> sb
+    if (sb.height > chainHead.height) chainHead = sb
+    log.debug("saved block height: {}, chainHead height: {}", sb.height, chainHead.height)
   }
 
   private def blockLocatorIndices(topDepth: Int): Vector[Int] = {
