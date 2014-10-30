@@ -25,30 +25,24 @@ object SPVHandler {
 
 class SPVHandler(peerManager: ActorRef,
   blockchain: ActorRef,
-  networkParams: NetworkParameters) extends PeerMessageHandler {
+  val networkParams: NetworkParameters) extends PeerMessageHandler {
 
-  def handlePeerMessage(msg: Message): Unit = msg match {
-    case Addr(addrs) =>
-      for (addr <- addrs)
-        peerManager ! PeerManager.AddPeer(addr._2.address)
-    case msg =>
-    //println("handled msg: " + msg)
-  }
+  override def services: BigInt = SPVNode.services
 
-  def getVersion(remote: InetSocketAddress, local: InetSocketAddress): Version =
-    Version(
-      networkParams.PROTOCOL_VERSION,
-      BigInt(1),
-      DateTime.now().getMillis() / 1000,
-      NetworkAddress(BigInt(1), remote),
-      NetworkAddress(BigInt(1), local),
-      Util.genNonce,
-      "/Satoshi:0.7.2/",
-      1,
-      true)
+  override def height: Int = 1 //TODO: use blockchain
 
-  def onPeerConnected(ref: ActorRef): Unit = {
+  override def relay: Boolean = SPVNode.relay
+
+  override def handlePeerMessage(msg: Message): Unit =
+    msg match {
+      case Addr(addrs) =>
+        for (addr <- addrs)
+          peerManager ! PeerManager.AddPeer(addr._2.address)
+      case msg =>
+      //println("handled msg: " + msg)
+    }
+
+  override def onPeerConnected(ref: ActorRef): Unit =
     ref ! PeerConnection.Outgoing(GetAddr())
-  }
 
 }

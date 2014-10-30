@@ -1,6 +1,5 @@
 package com.oohish.bitcoinakkanode.listener
 
-import scala.BigInt
 import scala.language.postfixOps
 
 import com.oohish.bitcoinakkanode.node.Node
@@ -11,16 +10,15 @@ import akka.actor.Props
 object ListenerNode {
   def props(networkParams: NetworkParameters) =
     Props(classOf[ListenerNode], networkParams)
+
+  val services: BigInt = 1
+  val relay: Boolean = false
 }
 
 class ListenerNode(val networkParams: NetworkParameters)
   extends Node {
-  import context.dispatcher
 
-  override def services: BigInt = BigInt(1)
-  override def relay: Boolean = false
-
-  val handler = context.actorOf(ListenerHandler.props(peerManager), "listener-handler")
+  val handler = context.actorOf(ListenerHandler.props(peerManager, networkParams), "listener-handler")
 
   def receive: Receive = {
     case _ =>

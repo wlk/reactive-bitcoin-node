@@ -22,8 +22,6 @@ trait Node extends Actor
   with NetworkParamsComponent
   with PeerManagerComponent {
 
-  def services: BigInt
-  def relay: Boolean
   def handler: ActorRef
 
   override def preStart() {

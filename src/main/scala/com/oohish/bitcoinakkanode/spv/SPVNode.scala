@@ -27,15 +27,16 @@ import akka.util.Timeout
 object SPVNode {
   def props(networkParams: NetworkParameters) =
     Props(classOf[SPVNode], networkParams)
+
+  val services: BigInt = 1
+  val relay: Boolean = false
+
 }
 
 class SPVNode(val networkParams: NetworkParameters)
   extends Node with ActorLogging {
   import context.dispatcher
   implicit val timeout = Timeout(1 second)
-
-  override def services: BigInt = 1
-  override def relay: Boolean = false
 
   val blockchain = context.actorOf(SPVBlockChain.props(networkParams), "spv-blockchain")
   val handler = context.actorOf(SPVHandler.props(peerManager, blockchain, networkParams), "spv-handler")
