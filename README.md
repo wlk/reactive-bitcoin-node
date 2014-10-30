@@ -12,7 +12,6 @@ Requirements
 
 How to run on testnet
 --------------
-start sbt
 ```
 sbt
 ```
@@ -25,7 +24,6 @@ run -n test
 
 How to run on mainnet
 --------------
-start sbt
 ```
 sbt
 ```
@@ -36,9 +34,30 @@ and then
 run
 ```
 
+Commands
+--------------
+Some of the API commands of the [original Bitcoin client](https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_calls_list) are supported.
+
+For example,
+
+```
+bitcoin-akka-node> getconnectioncount
+10
+```
+
+or
+
+```
+bitcoin-akka-node> getblockhash 73546
+000000000099ae23ec45ae651c5fa6cdc3505e20e5daf6a3c33b65e05311839c
+```
+
+etc.
+
 
 Get help
 --------------
 ```
 bitcoin-akka-node> help
+...
 ```
