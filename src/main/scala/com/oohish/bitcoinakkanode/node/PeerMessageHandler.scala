@@ -17,7 +17,7 @@ import akka.actor.actorRef2Scala
 object PeerMessageHandler {
   case class GotMessage(msg: Message)
   case class GetVersion(remote: InetSocketAddress, local: InetSocketAddress)
-  case class PeerConnected(ref: ActorRef)
+  case class PeerConnected(ref: ActorRef, v: Version)
 }
 
 trait PeerMessageHandler extends Actor {
@@ -25,11 +25,12 @@ trait PeerMessageHandler extends Actor {
 
   def receive: Receive = {
     case GotMessage(msg) =>
-      handlePeerMessage(msg)
+      val s = sender
+      handlePeerMessage(msg, s)
     case GetVersion(remote, local) =>
       sender ! getVersion(remote, local)
-    case PeerConnected(ref) =>
-      onPeerConnected(ref)
+    case PeerConnected(ref, v) =>
+      onPeerConnected(ref, v)
   }
 
   def getVersion(remote: InetSocketAddress, local: InetSocketAddress): Version =
@@ -49,7 +50,7 @@ trait PeerMessageHandler extends Actor {
   def services: BigInt
   def height: Int
   def relay: Boolean
-  def handlePeerMessage(msg: Message): Unit
-  def onPeerConnected(ref: ActorRef): Unit
+  def handlePeerMessage(msg: Message, peer: ActorRef): Unit
+  def onPeerConnected(ref: ActorRef, v: Version): Unit
 
 }

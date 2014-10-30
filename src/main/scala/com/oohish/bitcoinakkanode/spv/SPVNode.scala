@@ -38,7 +38,8 @@ class SPVNode(val networkParams: NetworkParameters)
   implicit val timeout = Timeout(1 second)
 
   val blockchain = context.actorOf(SPVBlockChain.props(networkParams), "spv-blockchain")
-  val handler = context.actorOf(SPVHandler.props(peerManager, blockchain, networkParams), "spv-handler")
+  val downloader = context.actorOf(SPVBlockDownloader.props(blockchain, peerManager, networkParams), "spv-downloader")
+  val handler = context.actorOf(SPVHandler.props(peerManager, blockchain, downloader, networkParams), "spv-handler")
 
   def receive: Receive = {
     case GetConnectionCount() =>

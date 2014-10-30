@@ -82,7 +82,7 @@ class PeerConnection(
   def finishHandshake(v: Version): Unit = {
     context.become(connected(v))
     manager ! PeerManager.PeerConnected(self, remote, v)
-    handler ! PeerMessageHandler.PeerConnected(self)
+    handler ! PeerMessageHandler.PeerConnected(self, v)
   }
 
   def connected(v: Version): Receive = {

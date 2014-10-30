@@ -2,6 +2,7 @@ package com.oohish.bitcoinakkanode.listener
 
 import com.oohish.bitcoinakkanode.node.PeerMessageHandler
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
+import com.oohish.bitcoinscodec.messages.Version
 import com.oohish.bitcoinscodec.structures.Message
 
 import akka.actor.ActorRef
@@ -22,11 +23,11 @@ class ListenerHandler(peerManager: ActorRef,
 
   override def relay: Boolean = ListenerNode.relay
 
-  override def handlePeerMessage(msg: Message): Unit = msg match {
+  override def handlePeerMessage(msg: Message, peer: ActorRef): Unit = msg match {
     case msg =>
       println("Received message: " + msg)
   }
 
-  override def onPeerConnected(ref: ActorRef): Unit = {}
+  override def onPeerConnected(ref: ActorRef, v: Version): Unit = {}
 
 }

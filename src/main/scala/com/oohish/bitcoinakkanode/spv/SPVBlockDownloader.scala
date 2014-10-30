@@ -22,19 +22,17 @@ import akka.util.Timeout
 import akka.util.Timeout.durationToTimeout
 
 object SPVBlockDownloader {
-  def props(node: ActorRef,
-    blockchain: ActorRef,
+  def props(blockchain: ActorRef,
     pm: ActorRef,
     np: NetworkParameters) =
-    Props(classOf[SPVBlockDownloader], node, blockchain, pm, np)
+    Props(classOf[SPVBlockDownloader], blockchain, pm, np)
 
   case class StartDownload(peer: ActorRef, blockCount: Int)
   case class GotBlocks(peer: ActorRef, blockCount: Int)
   case class DownloadTimeout()
 }
 
-class SPVBlockDownloader(node: ActorRef,
-  blockchain: ActorRef,
+class SPVBlockDownloader(blockchain: ActorRef,
   pm: ActorRef,
   np: NetworkParameters) extends Actor with ActorLogging {
   import context.dispatcher
