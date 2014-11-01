@@ -22,9 +22,6 @@ import akka.util.Timeout
 object ListenerNode {
   def props(networkParams: NetworkParameters) =
     Props(classOf[ListenerNode], networkParams)
-
-  val services: BigInt = 1
-  val relay: Boolean = false
 }
 
 class ListenerNode(val networkParams: NetworkParameters)
