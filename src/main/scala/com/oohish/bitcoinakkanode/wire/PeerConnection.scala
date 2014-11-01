@@ -1,15 +1,16 @@
 package com.oohish.bitcoinakkanode.wire
 
 import java.net.InetSocketAddress
+
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
+
 import com.oohish.bitcoinakkanode.node.Node
-import com.oohish.bitcoinscodec.messages.Ping
-import com.oohish.bitcoinscodec.messages.Pong
 import com.oohish.bitcoinscodec.messages.Verack
 import com.oohish.bitcoinscodec.messages.Version
 import com.oohish.bitcoinscodec.structures.Message
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -20,16 +21,15 @@ import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout.durationToTimeout
-import com.oohish.bitcoinakkanode.node.PeerMessageHandler
 
 object PeerConnection {
   def props(
     manager: ActorRef,
-    handler: ActorRef,
+    node: ActorRef,
     remote: InetSocketAddress,
     local: InetSocketAddress,
     networkParams: NetworkParameters) =
-    Props(classOf[PeerConnection], manager, handler, remote, local, networkParams)
+    Props(classOf[PeerConnection], manager, node, remote, local, networkParams)
 
   case class ConnectTimeout()
   case class Outgoing(m: Message)
@@ -38,7 +38,7 @@ object PeerConnection {
 
 class PeerConnection(
   manager: ActorRef,
-  handler: ActorRef,
+  node: ActorRef,
   remote: InetSocketAddress,
   local: InetSocketAddress,
   networkParams: NetworkParameters) extends Actor with ActorLogging {
@@ -82,20 +82,22 @@ class PeerConnection(
   def finishHandshake(v: Version): Unit = {
     context.become(connected(v))
     manager ! PeerManager.PeerConnected(self, remote, v)
-    handler ! PeerMessageHandler.PeerConnected(self, v)
+    node ! v
   }
 
   def connected(v: Version): Receive = {
     case Outgoing(m) =>
       context.parent ! TCPConnection.OutgoingMessage(m)
     case msg: Message =>
-      handler ! PeerMessageHandler.GotMessage(msg)
+      node ! msg
     case Terminated(ref) =>
       context.stop(self)
   }
 
-  def getVersion(remote: InetSocketAddress, local: InetSocketAddress): Future[Version] =
-    (handler ? PeerMessageHandler.GetVersion(remote, local))(1 second)
+  def getVersion(remote: InetSocketAddress, local: InetSocketAddress): Future[Version] = {
+    (node ? Node.GetVersion(remote, local))(1 second)
       .mapTo[Version]
+
+  }
 
 }

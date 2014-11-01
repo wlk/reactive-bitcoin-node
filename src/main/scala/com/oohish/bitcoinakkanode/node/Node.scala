@@ -1,17 +1,27 @@
 package com.oohish.bitcoinakkanode.node
 
+import java.net.InetSocketAddress
+
 import scala.language.postfixOps
 
+import org.joda.time.DateTime
+
+import com.oohish.bitcoinakkanode.util.Util
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerManager
+import com.oohish.bitcoinscodec.messages.Version
 import com.oohish.bitcoinscodec.structures.Hash
+import com.oohish.bitcoinscodec.structures.NetworkAddress
 
 import akka.actor.Actor
+import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.actorRef2Scala
 
 object Node {
   val userAgent: String = "/bitcoin-akka-node:0.1.0/"
+
+  case class GetVersion(remote: InetSocketAddress, local: InetSocketAddress)
 
   sealed trait APICommand
   case class GetBestBlockHash() extends APICommand
@@ -22,14 +32,36 @@ object Node {
   case class GetPeerInfo() extends APICommand
 }
 
-trait Node extends Actor {
+trait Node extends Actor with ActorLogging {
+  import Node._
+
   def networkParams: NetworkParameters
+  def apiBehavior: Receive
+  def networkBehavior: Receive
+  def services: BigInt
+  def height: Int
+  def relay: Boolean
 
-  val peerManager: ActorRef = context.actorOf(PeerManager.props(networkParams), "peer-manager")
-  def handler: ActorRef
+  val peerManager: ActorRef = context.actorOf(PeerManager.props(self, networkParams), "peer-manager")
 
-  override def preStart() {
-    peerManager ! PeerManager.Init(handler)
+  def receive =
+    networkBehavior orElse versionBehavior orElse apiBehavior
+
+  def versionBehavior: Receive = {
+    case GetVersion(remote, local) =>
+      sender ! getVersion(remote, local)
   }
+
+  def getVersion(remote: InetSocketAddress, local: InetSocketAddress) = Version(networkParams.PROTOCOL_VERSION,
+    services,
+    now,
+    NetworkAddress(services, remote),
+    NetworkAddress(services, local),
+    Util.genNonce,
+    Node.userAgent,
+    height,
+    relay)
+
+  def now = DateTime.now().getMillis() / 1000
 
 }

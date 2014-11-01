@@ -16,14 +16,14 @@ import akka.io.Tcp.Register
 
 object Client {
   def props(
-    handler: ActorRef,
+    node: ActorRef,
     peer: InetSocketAddress,
     networkParams: NetworkParameters) =
-    Props(classOf[Client], handler, peer, networkParams)
+    Props(classOf[Client], node, peer, networkParams)
 }
 
 class Client(
-  handler: ActorRef,
+  node: ActorRef,
   peer: InetSocketAddress,
   networkParams: NetworkParameters) extends Actor with ActorLogging {
   import Tcp._
@@ -41,7 +41,7 @@ class Client(
       log.debug("connected to {} from {}", remote, local)
       val connection = sender
       val tcpConn = context.actorOf(TCPConnection.props(
-        context.parent, handler, connection, remote, local, networkParams, true), "tcp-connection")
+        context.parent, node, connection, remote, local, networkParams, true), "tcp-connection")
       connection ! Register(tcpConn)
       context.watch(tcpConn)
     case _: akka.actor.Terminated =>

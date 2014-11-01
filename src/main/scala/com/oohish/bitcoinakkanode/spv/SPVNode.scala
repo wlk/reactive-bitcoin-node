@@ -16,6 +16,9 @@ import com.oohish.bitcoinakkanode.node.Node.GetConnectionCount
 import com.oohish.bitcoinakkanode.node.Node.GetPeerInfo
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerManager
+import com.oohish.bitcoinscodec.messages.Addr
+import com.oohish.bitcoinscodec.messages.Headers
+import com.oohish.bitcoinscodec.structures.Message
 
 import akka.actor.ActorLogging
 import akka.actor.Props
@@ -23,6 +26,7 @@ import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout
+import akka.util.Timeout.durationToTimeout
 
 object SPVNode {
   def props(networkParams: NetworkParameters) =
@@ -39,9 +43,8 @@ class SPVNode(val networkParams: NetworkParameters)
 
   val blockchain = context.actorOf(SPVBlockChain.props(networkParams), "spv-blockchain")
   val downloader = context.actorOf(SPVBlockDownloader.props(blockchain, peerManager, networkParams), "spv-downloader")
-  val handler = context.actorOf(SPVHandler.props(peerManager, blockchain, downloader, networkParams), "spv-handler")
 
-  def receive: Receive = {
+  override def apiBehavior: Receive = {
     case GetConnectionCount() =>
       (peerManager ? PeerManager.GetPeers())
         .mapTo[List[InetSocketAddress]]
@@ -69,5 +72,26 @@ class SPVNode(val networkParams: NetworkParameters)
     case other =>
       sender ! "Command not found."
   }
+
+  override def networkBehavior: Receive = {
+    case Addr(addrs) =>
+      for (addr <- addrs)
+        peerManager ! PeerManager.AddPeer(addr._2.address)
+    case Headers(hdrs) =>
+      for (hdr <- hdrs)
+        blockchain ! BlockChain.PutBlock(hdr)
+      val peer = sender
+      (blockchain ? BlockChain.GetChainHead())(1 second)
+        .mapTo[StoredBlock]
+        .map(_.height)
+        .foreach { h =>
+          downloader ! SPVBlockDownloader.GotBlocks(peer, h)
+        }
+    case msg: Message =>
+  }
+
+  override def services: BigInt = 1
+  override def height: Int = 1
+  override def relay: Boolean = false
 
 }

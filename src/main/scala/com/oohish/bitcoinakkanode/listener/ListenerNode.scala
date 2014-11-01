@@ -11,6 +11,7 @@ import com.oohish.bitcoinakkanode.node.Node.GetConnectionCount
 import com.oohish.bitcoinakkanode.node.Node.GetPeerInfo
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerManager
+import com.oohish.bitcoinscodec.structures.Message
 
 import akka.actor.Props
 import akka.actor.actorRef2Scala
@@ -31,9 +32,7 @@ class ListenerNode(val networkParams: NetworkParameters)
   import context.dispatcher
   implicit val timeout = Timeout(1 second)
 
-  val handler = context.actorOf(ListenerHandler.props(peerManager, networkParams), "listener-handler")
-
-  def receive: Receive = {
+  override def apiBehavior: Receive = {
     case GetConnectionCount() =>
       (peerManager ? PeerManager.GetPeers())
         .mapTo[List[InetSocketAddress]]
@@ -46,4 +45,13 @@ class ListenerNode(val networkParams: NetworkParameters)
     case other =>
       sender ! "Command not found."
   }
+
+  override def networkBehavior: Receive = {
+    case msg: Message =>
+      println(s"receved message: $msg")
+  }
+
+  override def services: BigInt = 1
+  override def height: Int = 1
+  override def relay: Boolean = false
 }

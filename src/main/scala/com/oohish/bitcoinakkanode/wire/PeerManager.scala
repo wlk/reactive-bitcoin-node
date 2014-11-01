@@ -21,10 +21,10 @@ import akka.actor.Props
 import akka.actor.actorRef2Scala
 
 object PeerManager {
-  def props(networkParams: NetworkParameters) =
-    Props(classOf[PeerManager], networkParams)
+  def props(node: ActorRef,
+    networkParams: NetworkParameters) =
+    Props(classOf[PeerManager], node, networkParams)
 
-  case class Init(handler: ActorRef)
   case class Connect()
   case class PeerConnected(ref: ActorRef, addr: InetSocketAddress, v: Version)
   case class BroadCastMessage(msg: Message, exclude: List[ActorRef])
@@ -33,7 +33,8 @@ object PeerManager {
   case class GetRandomConnection()
 }
 
-class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogging {
+class PeerManager(node: ActorRef,
+  networkParams: NetworkParameters) extends Actor with ActorLogging {
   import context._
   import PeerManager._
 
@@ -41,19 +42,15 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
   var peers = Map.empty[ActorRef, (Long, InetSocketAddress)]
   val peerLimit = 10
 
-  def receive = waiting
-
-  def waiting: Receive = {
-    case Init(handler) =>
-      context.become(initialized(handler))
-      for (p <- dnsPeers) addresses += p
-      system.scheduler.schedule(0 seconds, 1 second, self, Connect())
+  override def preStart() = {
+    for (p <- dnsPeers) addresses += p
+    system.scheduler.schedule(0 seconds, 1 second, self, Connect())
   }
 
-  def initialized(handler: ActorRef): Receive = {
+  def receive: Receive = {
     case Connect() =>
       if (peers.size < peerLimit)
-        makeConnection(handler)
+        makeConnection()
     case AddPeer(addr) =>
       addresses += addr
     case PeerManager.BroadCastMessage(msg, exclude) =>
@@ -73,8 +70,8 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
 
   }
 
-  def connectToPeer(address: InetSocketAddress, handler: ActorRef) =
-    context.actorOf(Client.props(handler, address, networkParams))
+  def connectToPeer(address: InetSocketAddress) =
+    context.actorOf(Client.props(node, address, networkParams))
 
   def networkTime = (DateTime.now().getMillis() / 1000) + medianOffset
 
@@ -87,9 +84,9 @@ class PeerManager(networkParams: NetworkParameters) extends Actor with ActorLogg
     }
   }
 
-  def makeConnection(handler: ActorRef) = {
+  def makeConnection() = {
     val candidates = addresses.filter(addr => !peers.values.exists(_._2 == addr))
-    util.Random.shuffle(candidates.toVector).take(1).foreach(connectToPeer(_, handler))
+    util.Random.shuffle(candidates.toVector).take(1).foreach(connectToPeer)
   }
 
   def dnsPeers = for {
