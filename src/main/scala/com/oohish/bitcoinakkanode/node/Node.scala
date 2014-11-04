@@ -54,14 +54,12 @@ trait Node extends Actor with ActorLogging {
 
   def getVersion(remote: InetSocketAddress, local: InetSocketAddress) = Version(networkParams.PROTOCOL_VERSION,
     services,
-    now,
+    DateTime.now().getMillis() / 1000,
     NetworkAddress(services, remote),
     NetworkAddress(services, local),
     Util.genNonce,
     Node.userAgent,
     height,
     relay)
-
-  def now = DateTime.now().getMillis() / 1000
 
 }
