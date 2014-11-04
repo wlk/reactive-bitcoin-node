@@ -61,3 +61,7 @@ Get help
 bitcoin-akka-node> help
 ...
 ```
+
+About
+--------------
+[bitcoin-scodec](https://github.com/yzernik/bitcoin-scodec) is used for encoding/decoding of network peer messages.
