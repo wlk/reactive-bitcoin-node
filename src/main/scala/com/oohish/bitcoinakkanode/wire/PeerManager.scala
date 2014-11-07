@@ -26,9 +26,11 @@ object PeerManager {
   case class Connect()
   case class PeerConnected(ref: ActorRef, addr: InetSocketAddress, v: Version)
   case class BroadCastMessage(msg: Message, exclude: List[ActorRef])
-  case class AddPeer(addr: InetSocketAddress)
+  case class AddAddress(addr: InetSocketAddress)
   case class GetPeers()
   case class GetRandomConnection()
+
+  val peerLimit = 10
 }
 
 class PeerManager(node: ActorRef,
@@ -38,7 +40,6 @@ class PeerManager(node: ActorRef,
 
   var addresses = Set.empty[InetSocketAddress]
   var peers = Map.empty[ActorRef, (Long, InetSocketAddress)]
-  val peerLimit = 10
 
   override def preStart() = {
     for (p <- dnsNodes) addresses += p
@@ -48,11 +49,10 @@ class PeerManager(node: ActorRef,
   def receive: Receive = {
     case Connect() =>
       makeConnection()
-    case AddPeer(addr) =>
+    case AddAddress(addr) =>
       addresses += addr
     case PeerManager.BroadCastMessage(msg, exclude) =>
-      for (connection <- peers.keys if !(exclude contains connection))
-        connection ! PeerConnection.Outgoing(msg)
+      broadcastToPeers(msg, exclude)
     case PeerManager.PeerConnected(ref, addr, v) =>
       val offset = v.timestamp - currentSeconds
       peers += ref -> (offset, addr)
@@ -98,6 +98,13 @@ class PeerManager(node: ActorRef,
       util.Random.shuffle(candidates.toVector).take(1).foreach(connectToPeer)
     }
   }
+
+  /*
+   * Broadcast a message to all peers except for those excluded.
+   */
+  def broadcastToPeers(msg: Message, exclude: List[ActorRef]) =
+    for (connection <- peers.keys if !(exclude contains connection))
+      connection ! PeerConnection.Outgoing(msg)
 
   /*
    * Get the list of addresses of DNS nodes
