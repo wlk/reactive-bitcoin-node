@@ -50,7 +50,7 @@ class PeerManagerSpec
         peerManagerRef ! PeerManager.PeerConnected(peerConnection.ref, addr, v)
         peerManagerRef ! PeerManager.GetPeers()
         val peers = expectMsgType[List[(Long, InetSocketAddress)]]
-        assert(peers.exists { case (offset, address) => address == addr })
+        peers.map(_._2) should contain(addr)
       }
     }
   }
