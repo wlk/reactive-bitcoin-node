@@ -42,14 +42,14 @@ class PeerManagerSpec
 
   "A PeerManager" should {
     "include an address in the list of connected peers after becoming connected" in {
-      within(500 millis) {
+      within(5 seconds) {
         val peerConnection = TestProbe()
         val addr = new InetSocketAddress(InetAddress.getLocalHost(), 1)
         val local = new InetSocketAddress(InetAddress.getLocalHost(), 2)
         val v = Version(60001, 1, 12345L, NetworkAddress(1, addr), NetworkAddress(1, local), 5555L, "agent1", 1, true)
         peerManagerRef ! PeerManager.PeerConnected(peerConnection.ref, addr, v)
         peerManagerRef ! PeerManager.GetPeers()
-        val peers = expectMsgType[List[(Long, InetSocketAddress)]](2 seconds)
+        val peers = expectMsgType[List[(Long, InetSocketAddress)]]
         peers.map(_._2) should contain(addr)
       }
     }
