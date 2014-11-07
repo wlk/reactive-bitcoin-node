@@ -2,38 +2,35 @@ package com.oohish.bitcoinakkanode.wire
 
 import java.net.InetAddress
 import java.net.InetSocketAddress
-
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 import scala.math.BigInt.int2bigInt
 import scala.math.BigInt.long2bigInt
-
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
-
 import com.oohish.bitcoinakkanode.node.Node
 import com.oohish.bitcoinscodec.messages.Verack
 import com.oohish.bitcoinscodec.messages.Version
 import com.oohish.bitcoinscodec.structures.NetworkAddress
 import com.typesafe.config.ConfigFactory
-
 import akka.actor.ActorSystem
 import akka.actor.actorRef2Scala
 import akka.testkit.DefaultTimeout
 import akka.testkit.ImplicitSender
 import akka.testkit.TestKit
 import akka.testkit.TestProbe
+import com.typesafe.config.ConfigFactory
 
 /**
  * a Test to show some TestKit examples
  */
 class PeerConnectionSpec
-  extends TestKit(ActorSystem("TestKitUsageSpec",
-    ConfigFactory.parseString(TestKitUsageSpec.config)))
+  extends TestKit(ActorSystem("PeerConnectionSpec",
+    ConfigFactory.parseString(PeerConnectionSpec.config)))
   with DefaultTimeout with ImplicitSender
   with WordSpecLike with Matchers with BeforeAndAfterAll {
-  import TestKitUsageSpec._
+  import PeerConnectionSpec._
 
   val remote = new InetSocketAddress(InetAddress.getLocalHost(), 1)
   val local = new InetSocketAddress(InetAddress.getLocalHost(), 2)
@@ -63,7 +60,7 @@ class PeerConnectionSpec
   }
 }
 
-object TestKitUsageSpec {
+object PeerConnectionSpec {
   // Define your test specific configuration here
   val config = """
     akka {
