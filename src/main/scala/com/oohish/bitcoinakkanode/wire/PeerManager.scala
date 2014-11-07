@@ -2,22 +2,21 @@ package com.oohish.bitcoinakkanode.wire
 
 import java.net.InetAddress
 import java.net.InetSocketAddress
-
 import scala.Array.canBuildFrom
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 import scala.util.Try
-
 import org.joda.time.DateTime
-
 import com.oohish.bitcoinscodec.messages.Version
 import com.oohish.bitcoinscodec.structures.Message
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.actorRef2Scala
+import com.oohish.bitcoinakkanode.util.Util
+
+import Util._
 
 object PeerManager {
   def props(node: ActorRef,
@@ -42,21 +41,20 @@ class PeerManager(node: ActorRef,
   val peerLimit = 10
 
   override def preStart() = {
-    for (p <- dnsPeers) addresses += p
+    for (p <- dnsNodes) addresses += p
     system.scheduler.schedule(0 seconds, 1 second, self, Connect())
   }
 
   def receive: Receive = {
     case Connect() =>
-      if (peers.size < peerLimit)
-        makeConnection()
+      makeConnection()
     case AddPeer(addr) =>
       addresses += addr
     case PeerManager.BroadCastMessage(msg, exclude) =>
       for (connection <- peers.keys if !(exclude contains connection))
         connection ! PeerConnection.Outgoing(msg)
     case PeerManager.PeerConnected(ref, addr, v) =>
-      val offset = v.timestamp - DateTime.now().getMillis() / 1000
+      val offset = v.timestamp - currentSeconds
       peers += ref -> (offset, addr)
       context.watch(ref)
     case akka.actor.Terminated(ref) =>
@@ -68,11 +66,20 @@ class PeerManager(node: ActorRef,
 
   }
 
+  /*
+   * Attempt to establish an outgoing connection to another node.
+   */
   def connectToPeer(address: InetSocketAddress) =
     context.actorOf(Client.props(node, address, networkParams))
 
-  def networkTime = (DateTime.now().getMillis() / 1000) + medianOffset
+  /*
+   * Get the network-adjusted time.
+   */
+  def networkTime = currentSeconds + medianOffset
 
+  /*
+   * Get the median offset from the local nodes clock time in seconds.
+   */
   def medianOffset: Long = {
     if (peers.isEmpty) 0
     else {
@@ -82,17 +89,28 @@ class PeerManager(node: ActorRef,
     }
   }
 
+  /*
+   * Attempt to establish a new connection from the list of saved addresses.
+   */
   def makeConnection() = {
-    val candidates = addresses.filter(addr => !peers.values.exists(_._2 == addr))
-    util.Random.shuffle(candidates.toVector).take(1).foreach(connectToPeer)
+    if (peers.size < peerLimit) {
+      val candidates = addresses.filter(addr => !peers.values.exists(_._2 == addr))
+      util.Random.shuffle(candidates.toVector).take(1).foreach(connectToPeer)
+    }
   }
 
-  def dnsPeers = for {
+  /*
+   * Get the list of addresses of DNS nodes
+   */
+  def dnsNodes: List[InetSocketAddress] = for {
     fallback <- networkParams.dnsSeeds
     address <- Try(InetAddress.getAllByName(fallback))
       .getOrElse(Array())
   } yield new InetSocketAddress(address, networkParams.port)
 
+  /*
+   * Get a random connection actor ref, if one exists.
+   */
   def randomConnection() =
     if (peers.isEmpty)
       None
