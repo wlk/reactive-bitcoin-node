@@ -57,7 +57,7 @@ trait Node extends Actor with ActorLogging {
     NetworkAddress(services, remote),
     NetworkAddress(services, local),
     genNonce,
-    Node.userAgent,
+    userAgent,
     height,
     relay)
 
