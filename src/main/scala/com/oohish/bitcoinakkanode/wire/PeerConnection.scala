@@ -25,11 +25,12 @@ import akka.util.Timeout.durationToTimeout
 object PeerConnection {
   def props(
     manager: ActorRef,
+    tcpConnection: ActorRef,
     node: ActorRef,
     remote: InetSocketAddress,
     local: InetSocketAddress,
     networkParams: NetworkParameters) =
-    Props(classOf[PeerConnection], manager, node, remote, local, networkParams)
+    Props(classOf[PeerConnection], manager, tcpConnection, node, remote, local, networkParams)
 
   case class ConnectTimeout()
   case class Outgoing(m: Message)
@@ -38,6 +39,7 @@ object PeerConnection {
 
 class PeerConnection(
   manager: ActorRef,
+  tcpConnection: ActorRef,
   node: ActorRef,
   remote: InetSocketAddress,
   local: InetSocketAddress,
@@ -61,7 +63,7 @@ class PeerConnection(
       context.become(awaitingVersion())
       getVersion(remote, local)
         .map(TCPConnection.OutgoingMessage(_))
-        .pipeTo(context.parent)
+        .pipeTo(tcpConnection)
     case v: Version =>
   }
 
@@ -87,7 +89,7 @@ class PeerConnection(
 
   def connected(v: Version): Receive = {
     case Outgoing(m) =>
-      context.parent ! TCPConnection.OutgoingMessage(m)
+      tcpConnection ! TCPConnection.OutgoingMessage(m)
     case msg: Message =>
       node ! msg
     case Terminated(ref) =>

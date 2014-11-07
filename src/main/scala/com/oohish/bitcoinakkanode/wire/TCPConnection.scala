@@ -42,7 +42,7 @@ class TCPConnection(
   import TCPConnection._
   import akka.actor.Terminated
 
-  val pc = context.actorOf(PeerConnection.props(manager, node, remote, local, networkParams), "peer-connection")
+  val pc = context.actorOf(PeerConnection.props(manager, self, node, remote, local, networkParams), "peer-connection")
   val decoder = context.actorOf(MessageDecoder.props(networkParams.packetMagic), "messageDecoder")
   val encoder = context.actorOf(MessageEncoder.props(networkParams.packetMagic), "messageEncoder")
 
