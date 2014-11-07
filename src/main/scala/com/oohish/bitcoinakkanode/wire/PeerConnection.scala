@@ -83,6 +83,7 @@ class PeerConnection(
 
   def finishHandshake(v: Version): Unit = {
     context.become(connected(v))
+    tcpConnection ! TCPConnection.OutgoingMessage(Verack())
     manager ! PeerManager.PeerConnected(self, remote, v)
     node ! v
   }

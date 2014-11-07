@@ -13,6 +13,7 @@ import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
 
 import com.oohish.bitcoinakkanode.node.Node
+import com.oohish.bitcoinscodec.messages.Verack
 import com.oohish.bitcoinscodec.messages.Version
 import com.oohish.bitcoinscodec.structures.NetworkAddress
 import com.typesafe.config.ConfigFactory
@@ -50,9 +51,13 @@ class PeerConnectionSpec
       within(500 millis) {
         peerConnectionRef ! PeerConnection.InitiateHandshake()
         node.expectMsg(Node.GetVersion(remote, local))
-        val v = Version(60000, 1, 12345L, NetworkAddress(1, remote), NetworkAddress(1, local), 5555L, "agent", 1, true)
-        node.reply(v)
-        tcpConnection.expectMsg(TCPConnection.OutgoingMessage(v))
+        val v1 = Version(60001, 1, 12345L, NetworkAddress(1, remote), NetworkAddress(1, local), 5555L, "agent1", 1, true)
+        node.reply(v1)
+        tcpConnection.expectMsg(TCPConnection.OutgoingMessage(v1))
+        val v2 = Version(60002, 1, 12346L, NetworkAddress(1, local), NetworkAddress(1, remote), 77777L, "agent2", 1, true)
+        tcpConnection.reply(v2)
+        tcpConnection.reply(Verack())
+        tcpConnection.expectMsg(TCPConnection.OutgoingMessage(Verack()))
       }
     }
   }
