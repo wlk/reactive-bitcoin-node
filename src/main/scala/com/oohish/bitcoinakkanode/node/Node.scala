@@ -4,9 +4,8 @@ import java.net.InetSocketAddress
 
 import scala.language.postfixOps
 
-import org.joda.time.DateTime
-
-import com.oohish.bitcoinakkanode.util.Util
+import com.oohish.bitcoinakkanode.util.Util.currentSeconds
+import com.oohish.bitcoinakkanode.util.Util.genNonce
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerManager
 import com.oohish.bitcoinscodec.messages.Version
@@ -54,10 +53,10 @@ trait Node extends Actor with ActorLogging {
 
   def getVersion(remote: InetSocketAddress, local: InetSocketAddress) = Version(networkParams.PROTOCOL_VERSION,
     services,
-    DateTime.now().getMillis() / 1000,
+    currentSeconds,
     NetworkAddress(services, remote),
     NetworkAddress(services, local),
-    Util.genNonce,
+    genNonce,
     Node.userAgent,
     height,
     relay)

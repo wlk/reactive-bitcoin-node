@@ -8,15 +8,23 @@ import com.oohish.bitcoinscodec.messages.Block
 import java.security.MessageDigest
 import com.oohish.bitcoinscodec.structures.BlockHeader
 import scodec.bits.BitVector
+import org.joda.time.DateTime
 
 object Util {
 
+  /*
+   * generate a random 64-bit nonce 
+   * TODO: use a secure random function.
+   */
   def genNonce(): BigInt = {
     val bytes: Array[Byte] = Array.fill(8)(0)
     Random.nextBytes(bytes)
     BigInt(0.toByte +: bytes)
   }
 
+  /* 
+   * double hash function
+   */
   def hash(bytes: Array[Byte]): Hash = {
     val messageDigest = MessageDigest.getInstance("SHA-256")
     val hash1 = messageDigest.digest(bytes)
@@ -24,10 +32,19 @@ object Util {
     Hash(ByteVector(hash2).reverse)
   }
 
+  /*
+   * hash of a block header
+   */
   def blockHash(b: Block): Hash = {
     val bytes = BlockHeader.codec.encode(b.block_header)
       .getOrElse(BitVector.empty).toByteArray
     Util.hash(bytes)
   }
+
+  /*
+   * Time utility functions
+   */
+  def currentMillis = DateTime.now().getMillis()
+  def currentSeconds = currentMillis / 1000
 
 }
