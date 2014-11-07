@@ -76,7 +76,7 @@ class SPVNode(val networkParams: NetworkParameters)
       downloader ! SPVBlockDownloader.StartDownload(sender, v.start_height)
     case Addr(addrs) =>
       for ((time, addr) <- addrs)
-        peerManager ! PeerManager.AddPeer(addr.address)
+        peerManager ! PeerManager.AddAddress(addr.address)
     case Headers(hdrs) =>
       downloader ! SPVBlockDownloader.GotBlocks(sender, hdrs)
     case msg: Message =>
