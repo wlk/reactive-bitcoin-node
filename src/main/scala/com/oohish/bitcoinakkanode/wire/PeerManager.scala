@@ -15,8 +15,8 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.actorRef2Scala
 import com.oohish.bitcoinakkanode.util.Util
-
 import Util._
+import com.oohish.bitcoinscodec.structures.NetworkAddress
 
 object PeerManager {
   def props(node: ActorRef,
@@ -39,7 +39,7 @@ class PeerManager(node: ActorRef,
   import PeerManager._
 
   var addresses = Set.empty[InetSocketAddress]
-  var peers = Map.empty[ActorRef, (Long, InetSocketAddress)]
+  var peers = Map.empty[ActorRef, (Long, NetworkAddress)]
 
   override def preStart() = {
     for (p <- dnsNodes) addresses += p
@@ -55,7 +55,8 @@ class PeerManager(node: ActorRef,
       broadcastToPeers(msg, exclude)
     case PeerManager.PeerConnected(ref, addr, v) =>
       val offset = v.timestamp - currentSeconds
-      peers += ref -> (offset, addr)
+      val networkAddress = NetworkAddress(v.services, addr)
+      peers += ref -> (offset, networkAddress)
       context.watch(ref)
     case akka.actor.Terminated(ref) =>
       peers -= ref
@@ -94,7 +95,12 @@ class PeerManager(node: ActorRef,
    */
   def makeConnection() = {
     if (peers.size < peerLimit) {
-      val candidates = addresses.filter(addr => !peers.values.exists(_._2 == addr))
+      val candidates = addresses.filter { addr =>
+        !peers.values.exists {
+          case (_, NetworkAddress(_, a)) =>
+            a == addr
+        }
+      }
       util.Random.shuffle(candidates.toVector).take(1).foreach(connectToPeer)
     }
   }

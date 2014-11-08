@@ -49,8 +49,8 @@ class PeerManagerSpec
         val v = Version(60001, 1, 12345L, NetworkAddress(1, addr), NetworkAddress(1, local), 5555L, "agent1", 1, true)
         peerManagerRef ! PeerManager.PeerConnected(peerConnection.ref, addr, v)
         peerManagerRef ! PeerManager.GetPeers()
-        val peers = expectMsgType[List[(Long, InetSocketAddress)]]
-        peers.map(_._2) should contain(addr)
+        val peers = expectMsgType[List[(Long, NetworkAddress)]]
+        peers.map(_._2.address) should contain(addr)
       }
     }
   }
