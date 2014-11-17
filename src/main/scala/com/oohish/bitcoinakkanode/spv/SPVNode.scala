@@ -33,13 +33,13 @@ object SPVNode {
     Props(classOf[SPVNode], networkParams)
 }
 
-class SPVNode(val networkParams: NetworkParameters)
+class SPVNode(val networkParameters: NetworkParameters)
   extends Node with ActorLogging {
   import context.dispatcher
   implicit val timeout = Timeout(1 second)
 
-  val blockchain = context.actorOf(SPVBlockChain.props(networkParams), "spv-blockchain")
-  val downloader = context.actorOf(SPVBlockDownloader.props(blockchain, peerManager, networkParams), "spv-downloader")
+  val blockchain = context.actorOf(SPVBlockChain.props(networkParameters), "spv-blockchain")
+  val downloader = context.actorOf(SPVBlockDownloader.props(blockchain, peerManager, networkParameters), "spv-downloader")
 
   override def apiBehavior: Receive = {
     case GetConnectionCount() =>

@@ -8,7 +8,6 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 
-import com.oohish.bitcoinakkanode.listener.ListenerNode
 import com.oohish.bitcoinakkanode.node.Node.APICommand
 import com.oohish.bitcoinakkanode.node.Node.GetBestBlockHash
 import com.oohish.bitcoinakkanode.node.Node.GetBlockCount
@@ -44,8 +43,6 @@ object NodeShell {
     opt[String]('t', "node type") action {
       case ("spv", c) =>
         c.copy(nodeProps = SPVNode.props)
-      case ("listener", c) =>
-        c.copy(nodeProps = ListenerNode.props)
     } text ("node type is a String property")
   }
 

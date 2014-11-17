@@ -31,17 +31,14 @@ object Node {
   case class GetPeerInfo() extends APICommand
 }
 
-trait Node extends Actor with ActorLogging {
+trait Node extends Actor with ActorLogging with PeerManagerComponent with NetworkParametersComponent {
   import Node._
 
-  def networkParams: NetworkParameters
   def apiBehavior: Receive
   def networkBehavior: Receive
   def services: BigInt
   def height: Int
   def relay: Boolean
-
-  val peerManager: ActorRef = context.actorOf(PeerManager.props(self, networkParams), "peer-manager")
 
   def receive =
     networkBehavior orElse versionBehavior orElse apiBehavior
@@ -51,7 +48,7 @@ trait Node extends Actor with ActorLogging {
       sender ! getVersion(remote, local)
   }
 
-  def getVersion(remote: InetSocketAddress, local: InetSocketAddress) = Version(networkParams.PROTOCOL_VERSION,
+  def getVersion(remote: InetSocketAddress, local: InetSocketAddress) = Version(networkParameters.PROTOCOL_VERSION,
     services,
     currentSeconds,
     NetworkAddress(services, remote),
