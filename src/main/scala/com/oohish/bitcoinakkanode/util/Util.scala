@@ -42,6 +42,15 @@ object Util {
   }
 
   /*
+   * hash of a block header
+   */
+  def blockHash(b: BlockHeader): Hash = {
+    val bytes = BlockHeader.codec.encode(b)
+      .getOrElse(BitVector.empty).toByteArray
+    Util.hash(bytes)
+  }
+
+  /*
    * Time utility functions
    */
   def currentMillis = DateTime.now().getMillis()
