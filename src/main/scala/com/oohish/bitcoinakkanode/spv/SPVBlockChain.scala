@@ -12,7 +12,7 @@ object SPVBlockChain {
 
 class SPVBlockChain(networkParams: NetworkParameters) extends BlockChain {
 
-  lazy val genesis = networkParams.genesisBlock
+  lazy val genesis = networkParams.genesisBlock.block_header
 
   def isValidBlock(b: Block) = true
 

@@ -18,7 +18,7 @@ object FullBlockChain {
 
 class FullBlockChain(networkParams: NetworkParameters) extends BlockChain {
 
-  lazy val genesis = networkParams.genesisBlock
+  lazy val genesis = networkParams.genesisBlock.block_header
 
   /*
    * https://en.bitcoin.it/wiki/Protocol_rules#.22block.22_messages
@@ -35,8 +35,10 @@ class FullBlockChain(networkParams: NetworkParameters) extends BlockChain {
   }
 
   def isDuplicateBlock(b: Block): Boolean = {
-    val hash = Util.blockHash(b)
-    blocks.contains(hash)
+    //val hash = Util.blockHash(b)
+    //blocks.contains(hash) 
+    // TODO: implement
+    false
   }
 
   def hasEmptyTransactions(b: Block): Boolean = {
@@ -76,7 +78,9 @@ class FullBlockChain(networkParams: NetworkParameters) extends BlockChain {
       tx <- b.txs
       txIn <- tx.tx_in
     } yield scriptOpCount(txIn.sig_script)
-    sigOpCounts.sum > BlockChain.MAX_BLOCK_SIGOPS
+    // sigOpCounts.sum > BlockChain.MAX_BLOCK_SIGOPS
+    // TODO: implement
+    false
   }
 
 }

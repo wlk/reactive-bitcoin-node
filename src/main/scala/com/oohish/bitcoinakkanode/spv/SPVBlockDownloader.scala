@@ -5,7 +5,7 @@ import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
 import com.oohish.bitcoinakkanode.blockchain.BlockChain
-import com.oohish.bitcoinakkanode.blockchain.BlockChain.StoredBlock
+import com.oohish.bitcoinakkanode.blockchain.BlockChain.SavedHeader
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerConnection
 import com.oohish.bitcoinakkanode.wire.PeerManager
@@ -97,7 +97,7 @@ class SPVBlockDownloader(blockchain: ActorRef,
 
   def getChainHeight: Future[Int] = {
     (blockchain ? BlockChain.GetChainHead())(1 second)
-      .mapTo[StoredBlock]
+      .mapTo[SavedHeader]
       .map(_.height)
   }
 

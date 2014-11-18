@@ -3,32 +3,31 @@ package com.oohish.bitcoinakkanode.blockchain
 import com.oohish.bitcoinakkanode.util.Util
 import com.oohish.bitcoinscodec.messages.Block
 import com.oohish.bitcoinscodec.structures.Hash
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.actorRef2Scala
+import com.oohish.bitcoinscodec.structures.BlockHeader
 
 object BlockChain {
 
-  val MAX_BLOCK_SIZE = 1000000
-  val MAX_BLOCK_SIZE_GEN = MAX_BLOCK_SIZE / 2
-  val MAX_BLOCK_SIGOPS = MAX_BLOCK_SIZE / 50
-  val MAX_ORPHAN_TRANSACTIONS = MAX_BLOCK_SIZE / 100
+  case class SavedHeader(header: BlockHeader, hash: Hash, height: Int)
 
-  case class StoredBlock(block: Block, hash: Hash, height: Int, parent: Option[StoredBlock])
-  case class GetBlockLocator()
-  case class PutBlock(b: Block)
-  case class GetChainHead()
-  case class GetBlockByIndex(index: Int)
+  sealed trait BlockChainCommand
+  case class GetBlockLocator() extends BlockChainCommand
+  case class PutHeader(bh: BlockHeader) extends BlockChainCommand
+  case class PutBlock(b: Block) extends BlockChainCommand
+  case class GetChainHead() extends BlockChainCommand
+  case class GetBlockByIndex(index: Int) extends BlockChainCommand
 }
 
 trait BlockChain extends Actor with ActorLogging {
   import com.oohish.bitcoinakkanode.blockchain.BlockChain._
 
-  def genesis: Block
-  val g = StoredBlock(genesis, Util.blockHash(genesis), 0, None)
-  var blocks: Map[Hash, StoredBlock] = Map(g.hash -> g)
-  var chainHead = g
+  def genesis: BlockHeader
+
+  val root = SavedHeader(genesis, Util.blockHash(genesis), 0)
+  var savedHeaders: Map[Hash, SavedHeader] = Map(Util.blockHash(genesis) -> root)
+  var chainHead = root
 
   def receive = {
     case GetChainHead() =>
@@ -39,20 +38,24 @@ trait BlockChain extends Actor with ActorLogging {
       log.debug("blockchain height: {}", chainHead.height)
       sender ! blockLocator(chainHead.height)
     case PutBlock(b) =>
-      receiveBlock(b)
+      println(b)
+      saveHeader(b.block_header)
+    case PutHeader(bh) =>
+      saveHeader(bh)
   }
 
-  def receiveBlock(b: Block) = {
-    val prev = blocks.get(b.block_header.prev_block)
-    val prevHeight = prev.map(_.height).getOrElse(0)
-    val sb = StoredBlock(b, Util.blockHash(b), prevHeight + 1, prev)
-    saveBlock(sb)
-  }
+  def saveHeader(header: BlockHeader) = {
+    val maybePrev = savedHeaders.get(header.prev_block)
+    maybePrev.foreach { savedHdr =>
+      val newSavedHdr = SavedHeader(header, Util.blockHash(header), savedHdr.height + 1)
+      val hash = Util.blockHash(header)
+      savedHeaders += hash -> newSavedHdr
 
-  def saveBlock(sb: StoredBlock) = {
-    blocks += sb.hash -> sb
-    if (sb.height > chainHead.height) chainHead = sb
-    log.debug("saved block height: {}, chainHead height: {}", sb.height, chainHead.height)
+      if (newSavedHdr.height > chainHead.height) {
+        chainHead = newSavedHdr
+      }
+      log.debug("saved block height: {}, chainHead height: {}", newSavedHdr.height, chainHead.height)
+    }
   }
 
   private def blockLocatorIndices(topDepth: Int): Vector[Int] = {
@@ -75,23 +78,27 @@ trait BlockChain extends Actor with ActorLogging {
   def blockLocator(topDepth: Int): List[Hash] = {
     val indices = blockLocatorIndices(topDepth).toSet
     var hashes = List.empty[Hash]
-    var cur: Option[StoredBlock] = Some(chainHead)
+    var cur: Option[SavedHeader] = Some(chainHead)
     while (cur.isDefined) {
       val sb = cur.get
       if (indices contains sb.height) {
         hashes ::= sb.hash
       }
-      cur = sb.parent
+      cur = savedHeaders.get(sb.header.prev_block)
     }
     hashes.reverse
   }
 
-  private def getBlockByIndex(index: Int): Option[StoredBlock] = {
-    var cur: StoredBlock = chainHead
-    while (cur.height > index && cur.parent.isDefined) {
-      cur = cur.parent.get
+  private def getBlockByIndex(index: Int): Option[SavedHeader] = {
+    var cur: SavedHeader = chainHead
+    while (cur.height > index && cur.height >= 0) {
+      cur = savedHeaders.get(cur.header.prev_block).get
     }
     if (cur.height == index) Some(cur) else None
   }
+
+  /*  private def getHashedBlockHeader(header: BlockHeader): HashedHeader = {
+    HashedHeader(header, Util.blockHash(header))
+  }*/
 
 }
