@@ -19,8 +19,6 @@ import akka.pattern.pipe
 import akka.util.Timeout.durationToTimeout
 
 object Node {
-  val userAgent: String = "/bitcoin-akka-node:0.1.0/"
-
   def props(networkParameters: NetworkParameters) =
     Props(classOf[Node], networkParameters)
 
@@ -62,7 +60,9 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
   }
 
   private def getPeerInfo(): Future[List[NetworkAddress]] = {
-    Future.failed(new UnsupportedOperationException()) //TODO: implement
+    (peerManager ? PeerManager.GetPeers())(1 second)
+      .mapTo[List[(Long, NetworkAddress)]]
+      .map(peers => peers.map(_._2))
   }
 
   private def getBestBlockHash(): Future[Hash] = {

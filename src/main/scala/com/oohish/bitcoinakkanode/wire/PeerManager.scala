@@ -97,17 +97,22 @@ class PeerManager(networkParameters: NetworkParameters) extends Actor with Actor
   }
 
   /*
+   * Get the set of addresses which are not connected.
+   */
+  def unconnectedAddresses =
+    addresses.filter { addr =>
+      !peers.values.exists {
+        case (_, NetworkAddress(_, a)) =>
+          a == addr
+      }
+    }
+
+  /*
    * Attempt to establish a new connection from the list of saved addresses.
    */
   def makeConnection() = {
     if (peers.size < peerLimit) {
-      val candidates = addresses.filter { addr =>
-        !peers.values.exists {
-          case (_, NetworkAddress(_, a)) =>
-            a == addr
-        }
-      }
-      util.Random.shuffle(candidates.toVector).take(1).foreach(connectToPeer)
+      util.Random.shuffle(unconnectedAddresses.toVector).take(1).foreach(connectToPeer)
     }
   }
 
