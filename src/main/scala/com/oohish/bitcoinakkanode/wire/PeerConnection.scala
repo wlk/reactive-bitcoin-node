@@ -83,14 +83,13 @@ class PeerConnection(
     context.become(connected(v))
     tcpConnection ! TCPConnection.OutgoingMessage(Verack())
     manager ! PeerManager.PeerConnected(self, remote, v)
-    // node ! v ...  TODO: send to peer manager instead.
   }
 
   def connected(v: Version): Receive = {
     case Outgoing(m) =>
       tcpConnection ! TCPConnection.OutgoingMessage(m)
     case msg: Message =>
-    // node ! msg ...  TODO: send to peer manager instead.
+      manager ! PeerManager.IncomingPeerMessage(msg)
     case Terminated(ref) =>
       context.stop(self)
   }

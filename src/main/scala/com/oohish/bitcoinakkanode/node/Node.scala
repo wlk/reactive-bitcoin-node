@@ -38,6 +38,8 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
   val peerManager: ActorRef = context.actorOf(PeerManager.props(networkParameters), "peer-manager")
   val networkListener: ActorRef = context.actorOf(NetworkListener.props(null, peerManager))
 
+  peerManager ! PeerManager.RegisterListener(networkListener)
+
   def receive: Receive = {
     case GetConnectionCount() =>
       getConnectionCount().pipeTo(sender)

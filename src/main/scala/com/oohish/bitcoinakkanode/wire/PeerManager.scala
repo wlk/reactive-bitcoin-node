@@ -17,6 +17,7 @@ import akka.actor.actorRef2Scala
 import com.oohish.bitcoinakkanode.util.Util
 import Util._
 import com.oohish.bitcoinscodec.structures.NetworkAddress
+import com.oohish.bitcoinscodec.messages.GetAddr
 
 object PeerManager {
   def props(networkParams: NetworkParameters) =
@@ -30,6 +31,8 @@ object PeerManager {
   case class Connect()
   case class GetVersion(remote: InetSocketAddress, local: InetSocketAddress)
   case class PeerConnected(ref: ActorRef, addr: InetSocketAddress, v: Version)
+  case class IncomingPeerMessage(msg: Message)
+  case class RegisterListener(ref: ActorRef)
   case class BroadCastMessage(msg: Message, exclude: List[ActorRef])
   case class AddAddress(addr: InetSocketAddress)
   case class GetPeers()
@@ -44,6 +47,7 @@ class PeerManager(networkParameters: NetworkParameters) extends Actor with Actor
 
   var addresses = Set.empty[InetSocketAddress]
   var peers = Map.empty[ActorRef, (Long, NetworkAddress)]
+  var listeners: Set[ActorRef] = Set.empty
 
   override def preStart() = {
     for (p <- dnsNodes) addresses += p
@@ -55,22 +59,27 @@ class PeerManager(networkParameters: NetworkParameters) extends Actor with Actor
       makeConnection()
     case GetVersion(remote, local) =>
       sender ! getVersion(remote, local)
+    case IncomingPeerMessage(msg) =>
+      for (listener <- listeners)
+        listener forward msg
     case AddAddress(addr) =>
       addresses += addr
-    case PeerManager.BroadCastMessage(msg, exclude) =>
+    case BroadCastMessage(msg, exclude) =>
       broadcastToPeers(msg, exclude)
-    case PeerManager.PeerConnected(ref, addr, v) =>
+    case PeerConnected(ref, addr, v) =>
       val offset = v.timestamp - currentSeconds
       val networkAddress = NetworkAddress(v.services, addr)
       peers += ref -> (offset, networkAddress)
       context.watch(ref)
+      ref ! PeerConnection.Outgoing(GetAddr())
     case akka.actor.Terminated(ref) =>
       peers -= ref
     case GetPeers() =>
       sender ! peers.values.toList
     case GetRandomConnection() =>
       sender ! randomConnection()
-
+    case RegisterListener(ref) =>
+      listeners += ref
   }
 
   /*
