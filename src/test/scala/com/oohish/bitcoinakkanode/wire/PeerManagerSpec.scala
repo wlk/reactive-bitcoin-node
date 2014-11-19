@@ -32,9 +32,8 @@ class PeerManagerSpec
   with WordSpecLike with Matchers with BeforeAndAfterAll {
   import PeerConnectionSpec._
 
-  val node = TestProbe()
   val networkParams = MainNetParams
-  val peerManagerRef = system.actorOf(PeerManager.props(node.ref, networkParams))
+  val peerManagerRef = system.actorOf(PeerManager.props(networkParams))
 
   override def afterAll {
     shutdown()

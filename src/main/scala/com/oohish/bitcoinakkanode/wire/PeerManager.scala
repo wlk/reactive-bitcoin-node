@@ -19,11 +19,16 @@ import Util._
 import com.oohish.bitcoinscodec.structures.NetworkAddress
 
 object PeerManager {
-  def props(node: ActorRef,
-    networkParams: NetworkParameters) =
-    Props(classOf[PeerManager], node, networkParams)
+  def props(networkParams: NetworkParameters) =
+    Props(classOf[PeerManager], networkParams)
+
+  def userAgent: String = "/bitcoin-akka-node:0.1.0/"
+  def services = 1
+  def height = 1
+  def relay = true
 
   case class Connect()
+  case class GetVersion(remote: InetSocketAddress, local: InetSocketAddress)
   case class PeerConnected(ref: ActorRef, addr: InetSocketAddress, v: Version)
   case class BroadCastMessage(msg: Message, exclude: List[ActorRef])
   case class AddAddress(addr: InetSocketAddress)
@@ -33,8 +38,7 @@ object PeerManager {
   val peerLimit = 10
 }
 
-class PeerManager(node: ActorRef,
-  networkParams: NetworkParameters) extends Actor with ActorLogging {
+class PeerManager(networkParameters: NetworkParameters) extends Actor with ActorLogging {
   import context._
   import PeerManager._
 
@@ -49,6 +53,8 @@ class PeerManager(node: ActorRef,
   def receive: Receive = {
     case Connect() =>
       makeConnection()
+    case GetVersion(remote, local) =>
+      sender ! getVersion(remote, local)
     case AddAddress(addr) =>
       addresses += addr
     case PeerManager.BroadCastMessage(msg, exclude) =>
@@ -71,7 +77,7 @@ class PeerManager(node: ActorRef,
    * Attempt to establish an outgoing connection to another node.
    */
   def connectToPeer(address: InetSocketAddress) =
-    context.actorOf(Client.props(node, address, networkParams))
+    context.actorOf(Client.props(address, networkParameters))
 
   /*
    * Get the network-adjusted time.
@@ -116,10 +122,10 @@ class PeerManager(node: ActorRef,
    * Get the list of addresses of DNS nodes
    */
   def dnsNodes: List[InetSocketAddress] = for {
-    fallback <- networkParams.dnsSeeds
+    fallback <- networkParameters.dnsSeeds
     address <- Try(InetAddress.getAllByName(fallback))
       .getOrElse(Array())
-  } yield new InetSocketAddress(address, networkParams.port)
+  } yield new InetSocketAddress(address, networkParameters.port)
 
   /*
    * Get a random connection actor ref, if one exists.
@@ -131,4 +137,19 @@ class PeerManager(node: ActorRef,
       val conns = peers.keys.toList
       Some(conns(scala.util.Random.nextInt(conns.length)))
     }
+
+  /*
+   * Get the current Version network message.
+   */
+  def getVersion(remote: InetSocketAddress, local: InetSocketAddress) =
+    Version(networkParameters.PROTOCOL_VERSION,
+      services,
+      currentSeconds,
+      NetworkAddress(services, remote),
+      NetworkAddress(services, local),
+      genNonce,
+      userAgent,
+      height,
+      relay)
+
 }

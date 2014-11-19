@@ -26,11 +26,10 @@ object PeerConnection {
   def props(
     manager: ActorRef,
     tcpConnection: ActorRef,
-    node: ActorRef,
     remote: InetSocketAddress,
     local: InetSocketAddress,
     networkParams: NetworkParameters) =
-    Props(classOf[PeerConnection], manager, tcpConnection, node, remote, local, networkParams)
+    Props(classOf[PeerConnection], manager, tcpConnection, remote, local, networkParams)
 
   case class ConnectTimeout()
   case class Outgoing(m: Message)
@@ -40,7 +39,6 @@ object PeerConnection {
 class PeerConnection(
   manager: ActorRef,
   tcpConnection: ActorRef,
-  node: ActorRef,
   remote: InetSocketAddress,
   local: InetSocketAddress,
   networkParams: NetworkParameters) extends Actor with ActorLogging {
@@ -85,22 +83,23 @@ class PeerConnection(
     context.become(connected(v))
     tcpConnection ! TCPConnection.OutgoingMessage(Verack())
     manager ! PeerManager.PeerConnected(self, remote, v)
-    node ! v
+    // node ! v ...  TODO: send to peer manager instead.
   }
 
   def connected(v: Version): Receive = {
     case Outgoing(m) =>
       tcpConnection ! TCPConnection.OutgoingMessage(m)
     case msg: Message =>
-      node ! msg
+    // node ! msg ...  TODO: send to peer manager instead.
     case Terminated(ref) =>
       context.stop(self)
   }
 
-  def getVersion(remote: InetSocketAddress, local: InetSocketAddress): Future[Version] = {
-    (node ? Node.GetVersion(remote, local))(1 second)
+  /*
+   * Get the current Version message from the peer manager actor.
+   */
+  def getVersion(remote: InetSocketAddress, local: InetSocketAddress): Future[Version] =
+    (manager ? PeerManager.GetVersion(remote, local))(1 second)
       .mapTo[Version]
-
-  }
 
 }

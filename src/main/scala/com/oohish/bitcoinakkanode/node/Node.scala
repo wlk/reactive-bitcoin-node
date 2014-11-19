@@ -1,26 +1,28 @@
 package com.oohish.bitcoinakkanode.node
 
-import java.net.InetSocketAddress
-
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
-import com.oohish.bitcoinakkanode.util.Util.currentSeconds
-import com.oohish.bitcoinakkanode.util.Util.genNonce
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerManager
-import com.oohish.bitcoinscodec.messages.Version
 import com.oohish.bitcoinscodec.structures.Hash
 import com.oohish.bitcoinscodec.structures.NetworkAddress
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
+import akka.actor.Props
 import akka.actor.actorRef2Scala
+import akka.pattern.ask
+import akka.pattern.pipe
+import akka.util.Timeout.durationToTimeout
 
 object Node {
   val userAgent: String = "/bitcoin-akka-node:0.1.0/"
 
-  case class GetVersion(remote: InetSocketAddress, local: InetSocketAddress)
+  def props(networkParameters: NetworkParameters) =
+    Props(classOf[Node], networkParameters)
 
   sealed trait APICommand
   case class GetBestBlockHash() extends APICommand
@@ -31,31 +33,48 @@ object Node {
   case class GetPeerInfo() extends APICommand
 }
 
-trait Node extends Actor with ActorLogging with PeerManagerComponent with NetworkParametersComponent {
+class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging {
+  import context.dispatcher
   import Node._
 
-  def apiBehavior: Receive
-  def networkBehavior: Receive
-  def services: BigInt
-  def height: Int
-  def relay: Boolean
+  val peerManager: ActorRef = context.actorOf(PeerManager.props(networkParameters), "peer-manager")
+  val networkListener: ActorRef = context.actorOf(NetworkListener.props(null, peerManager))
 
-  def receive =
-    networkBehavior orElse versionBehavior orElse apiBehavior
-
-  def versionBehavior: Receive = {
-    case GetVersion(remote, local) =>
-      sender ! getVersion(remote, local)
+  def receive: Receive = {
+    case GetConnectionCount() =>
+      getConnectionCount().pipeTo(sender)
+    case GetPeerInfo() =>
+      getPeerInfo().pipeTo(sender)
+    case GetBestBlockHash() =>
+      getBestBlockHash.pipeTo(sender)
+    case GetBlockCount() =>
+      getBlockCount().pipeTo(sender)
+    case GetBlockHash(index) =>
+      getBlockHash(index).pipeTo(sender)
+    case cmd: APICommand =>
+      sender ! "Command not found."
   }
 
-  def getVersion(remote: InetSocketAddress, local: InetSocketAddress) = Version(networkParameters.PROTOCOL_VERSION,
-    services,
-    currentSeconds,
-    NetworkAddress(services, remote),
-    NetworkAddress(services, local),
-    genNonce,
-    userAgent,
-    height,
-    relay)
+  private def getConnectionCount(): Future[Int] = {
+    (peerManager ? PeerManager.GetPeers())(1 second)
+      .mapTo[List[(Long, NetworkAddress)]]
+      .map(_.length)
+  }
+
+  private def getPeerInfo(): Future[List[NetworkAddress]] = {
+    Future.failed(new UnsupportedOperationException()) //TODO: implement
+  }
+
+  private def getBestBlockHash(): Future[Hash] = {
+    Future.failed(new UnsupportedOperationException()) //TODO: implement
+  }
+
+  private def getBlockCount(): Future[Int] = {
+    Future(0) //TODO: implement
+  }
+
+  private def getBlockHash(index: Int): Future[Hash] = {
+    Future.failed(new UnsupportedOperationException()) //TODO: implement
+  }
 
 }
