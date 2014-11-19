@@ -35,8 +35,7 @@ class TCPConnectionSpec
   val local = new InetSocketAddress(InetAddress.getLocalHost(), 2)
   val manager = TestProbe()
   val conn = TestProbe()
-  val node = TestProbe()
-  val tcpConnectionRef = system.actorOf(TCPConnection.props(manager.ref, node.ref, conn.ref, remote, local, MainNetParams, true))
+  val tcpConnectionRef = system.actorOf(TCPConnection.props(manager.ref, conn.ref, remote, local, MainNetParams, true))
 
   override def afterAll {
     shutdown()

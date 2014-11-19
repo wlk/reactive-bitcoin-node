@@ -7,30 +7,28 @@ import scala.language.postfixOps
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-
 import com.oohish.bitcoinakkanode.node.Node.APICommand
 import com.oohish.bitcoinakkanode.node.Node.GetBestBlockHash
 import com.oohish.bitcoinakkanode.node.Node.GetBlockCount
 import com.oohish.bitcoinakkanode.node.Node.GetBlockHash
 import com.oohish.bitcoinakkanode.node.Node.GetConnectionCount
 import com.oohish.bitcoinakkanode.node.Node.GetPeerInfo
-import com.oohish.bitcoinakkanode.spv.SPVNode
 import com.oohish.bitcoinakkanode.wire.MainNetParams
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.TestNet3Params
-
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.pattern.ask
 import akka.util.Timeout
+import com.oohish.bitcoinakkanode.node.Node
 
 object NodeShell {
 
   implicit val timeout = Timeout(5 seconds)
 
   case class Config(network: NetworkParameters = MainNetParams,
-    nodeProps: (NetworkParameters) => Props = SPVNode.props)
+    nodeProps: (NetworkParameters) => Props = Node.props)
 
   val parser = new scopt.OptionParser[Config]("scopt") {
     head("bitcoin-akka-node", "0.1.0")
@@ -42,7 +40,7 @@ object NodeShell {
     } text ("network is a String property")
     opt[String]('t', "node type") action {
       case ("spv", c) =>
-        c.copy(nodeProps = SPVNode.props)
+        c.copy(nodeProps = Node.props)
     } text ("node type is a String property")
   }
 
