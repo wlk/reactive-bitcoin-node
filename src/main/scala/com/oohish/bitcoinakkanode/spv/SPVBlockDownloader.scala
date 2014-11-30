@@ -102,6 +102,7 @@ class SPVBlockDownloader(blockchain: ActorRef,
   }
 
   def getRandomPeer: Future[Option[ActorRef]] =
-    (peerManager ? PeerManager.GetRandomConnection())
-      .mapTo[Option[ActorRef]]
+    //(peerManager ? PeerManager.GetRandomConnection())
+    //  .mapTo[Option[ActorRef]]
+    Future.failed(new Exception())
 }

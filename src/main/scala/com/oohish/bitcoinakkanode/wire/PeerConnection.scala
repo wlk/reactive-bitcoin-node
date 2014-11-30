@@ -59,9 +59,9 @@ class PeerConnection(
   def ready(): Receive = {
     case InitiateHandshake() =>
       context.become(awaitingVersion())
-      getVersion(remote, local)
-        .map(TCPConnection.OutgoingMessage(_))
-        .pipeTo(tcpConnection)
+    //getVersion(remote, local)
+    //  .map(TCPConnection.OutgoingMessage(_))
+    //  .pipeTo(tcpConnection)
     case v: Version =>
   }
 
@@ -89,7 +89,7 @@ class PeerConnection(
     case Outgoing(m) =>
       tcpConnection ! TCPConnection.OutgoingMessage(m)
     case msg: Message =>
-      manager ! PeerManager.IncomingPeerMessage(msg)
+    //manager ! PeerManager.IncomingPeerMessage(msg)
     case Terminated(ref) =>
       context.stop(self)
   }
@@ -97,8 +97,8 @@ class PeerConnection(
   /*
    * Get the current Version message from the peer manager actor.
    */
-  def getVersion(remote: InetSocketAddress, local: InetSocketAddress): Future[Version] =
-    (manager ? PeerManager.GetVersion(remote, local))(1 second)
-      .mapTo[Version]
+  //def getVersion(remote: InetSocketAddress, local: InetSocketAddress): Future[Version] =
+  //(manager ? PeerManager.GetVersion(remote, local))(1 second)
+  //  .mapTo[Version]
 
 }

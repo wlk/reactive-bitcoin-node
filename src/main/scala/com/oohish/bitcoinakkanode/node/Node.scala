@@ -3,12 +3,10 @@ package com.oohish.bitcoinakkanode.node
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerManager
 import com.oohish.bitcoinscodec.structures.Hash
 import com.oohish.bitcoinscodec.structures.NetworkAddress
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -17,6 +15,7 @@ import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout.durationToTimeout
+import com.oohish.bitcoinakkanode.blockchain.BlockChain
 
 object Node {
   def props(networkParameters: NetworkParameters) =
@@ -35,10 +34,8 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
   import context.dispatcher
   import Node._
 
-  val peerManager: ActorRef = context.actorOf(PeerManager.props(networkParameters), "peer-manager")
-  val networkListener: ActorRef = context.actorOf(NetworkListener.props(null, peerManager))
-
-  peerManager ! PeerManager.RegisterListener(networkListener)
+  val blockchain: ActorRef = null
+  val peerManager: ActorRef = context.actorOf(PeerManager.props(blockchain, networkParameters), "peer-manager")
 
   def receive: Receive = {
     case GetConnectionCount() =>
