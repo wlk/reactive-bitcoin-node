@@ -9,7 +9,7 @@ import akka.actor.Props
 object NetworkController {
   def props(blockchain: ActorRef,
     networkParameters: NetworkParameters) =
-    Props(classOf[NetworkController], networkParameters)
+    Props(classOf[NetworkController], blockchain, networkParameters)
 
   case class ConnectToAddress(address: InetSocketAddress)
   case class AddAddress(address: InetSocketAddress)
@@ -20,9 +20,10 @@ class NetworkController(blockchain: ActorRef,
   networkParameters: NetworkParameters) extends Actor {
   import NetworkController._
 
-  val addressManager = context.actorOf(AddressManager.props(networkParameters))
-  val peerManager = context.actorOf(PeerManager.props(addressManager, networkParameters))
-  val connectionStarter = context.actorOf(ConnectionStarter.props(peerManager, addressManager, networkParameters))
+  val addressManager = context.actorOf(AddressManager.props(networkParameters), "address-manager")
+  val peerManager = context.actorOf(PeerManager.props(blockchain, addressManager, networkParameters), "peer-manager")
+  val connectionStarter = context.actorOf(ConnectionStarter.props(peerManager,
+    addressManager, networkParameters), "connection-starter")
 
   def receive = {
     case GetPeers() =>

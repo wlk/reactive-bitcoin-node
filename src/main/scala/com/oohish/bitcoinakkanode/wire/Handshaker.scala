@@ -35,6 +35,8 @@ class Handshaker(peerConnection: ActorRef, remote: InetSocketAddress,
   extends Actor with ActorLogging {
   import Handshaker._
 
+  peerConnection ! PeerConnection.Register(self)
+
   def receive = ready
 
   def ready: Receive = {
@@ -43,6 +45,8 @@ class Handshaker(peerConnection: ActorRef, remote: InetSocketAddress,
       peerConnection ! PeerConnection.OutgoingMessage(getVersion(remote, local))
     case v: Version =>
     // TODO
+    case _: ConnectTimeout =>
+      context.stop(self)
   }
 
   def awaitingVersion: Receive = {
@@ -60,9 +64,9 @@ class Handshaker(peerConnection: ActorRef, remote: InetSocketAddress,
   }
 
   def finishHandshake(v: Version): Unit = {
+    log.info("finished handshake with {}", remote)
     peerConnection ! PeerConnection.OutgoingMessage(Verack())
     context.parent ! FinishedHandshake(peerConnection, v)
-    context.stop(self)
   }
 
   /*

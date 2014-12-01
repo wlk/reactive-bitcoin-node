@@ -33,14 +33,15 @@ class AddressManager(networkParameters: NetworkParameters) extends Actor with Ac
       sender ! getAddress
     case AddAddress(addr) =>
       addAddress(addr)
-
   }
 
   /*
-   * Get a random unconnected address.
+   * Get a random address.
    */
-  def getAddress =
-    Random.shuffle(addresses).headOption
+  def getAddress = {
+    val r = new Random()
+    addresses.toVector(r.nextInt(addresses.size))
+  }
 
   /*
    * Get a random unconnected address.

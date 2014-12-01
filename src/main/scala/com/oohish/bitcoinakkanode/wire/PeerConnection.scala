@@ -32,14 +32,21 @@ class PeerConnection(
   val decoder = context.actorOf(MessageDecoder.props(networkParameters.packetMagic), "messageDecoder")
   val encoder = context.actorOf(MessageEncoder.props(networkParameters.packetMagic), "messageEncoder")
 
-  var listeners: Set[ActorRef] = Set.empty
+  def receive = ready
 
-  def receive = {
+  def ready: Receive = {
     case Register(ref) =>
-      listeners += ref
+      context.become(listening(ref))
+      context.watch(ref)
+  }
+
+  def listening(listener: ActorRef): Receive = {
+    case Register(ref) =>
+      context.become(listening(ref))
+      context.unwatch(listener)
       context.watch(ref)
     case akka.actor.Terminated(ref) =>
-      listeners -= ref
+      context.stop(self)
     case OutgoingMessage(msg) =>
       log.debug("received outgoing message: " + msg)
       encoder ! msg
@@ -48,7 +55,7 @@ class PeerConnection(
       tcpConn ! Tcp.Write(b)
     case DecodedMessage(msg) =>
       log.debug("received decoded message: " + msg)
-      for (listener <- listeners) listener ! msg
+      listener ! msg
     case Tcp.Received(data) =>
       log.debug("received tcp bytes: " + ByteVector(data))
       decoder ! Tcp.Received(data)

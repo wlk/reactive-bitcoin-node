@@ -3,10 +3,13 @@ package com.oohish.bitcoinakkanode.node
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
+
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerManager
+import com.oohish.bitcoinakkanode.wire.NetworkController
 import com.oohish.bitcoinscodec.structures.Hash
 import com.oohish.bitcoinscodec.structures.NetworkAddress
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -15,7 +18,6 @@ import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout.durationToTimeout
-import com.oohish.bitcoinakkanode.blockchain.BlockChain
 
 object Node {
   def props(networkParameters: NetworkParameters) =
@@ -35,7 +37,7 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
   import Node._
 
   val blockchain: ActorRef = null
-  val peerManager: ActorRef = context.actorOf(PeerManager.props(blockchain, networkParameters), "peer-manager")
+  val networkController: ActorRef = context.actorOf(NetworkController.props(blockchain, networkParameters), "network-controller")
 
   def receive: Receive = {
     case GetConnectionCount() =>
@@ -53,13 +55,13 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
   }
 
   private def getConnectionCount(): Future[Int] = {
-    (peerManager ? PeerManager.GetPeers())(1 second)
+    (networkController ? PeerManager.GetPeers())(1 second)
       .mapTo[List[(Long, NetworkAddress)]]
       .map(_.length)
   }
 
   private def getPeerInfo(): Future[List[NetworkAddress]] = {
-    (peerManager ? PeerManager.GetPeers())(1 second)
+    (networkController ? PeerManager.GetPeers())(1 second)
       .mapTo[List[(Long, NetworkAddress)]]
       .map(peers => peers.map(_._2))
   }

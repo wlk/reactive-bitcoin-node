@@ -30,7 +30,9 @@ class ClientManager(peerManager: ActorRef, addressManager: ActorRef,
 
   def receive = {
     case MakeOutboundConnection() =>
-      for (addr <- getRandomAddress()) connectToAddress(addr)
+      for (addr <- getRandomAddress()) {
+        connectToAddress(addr)
+      }
     case ConnectToAddress(addr) =>
       connectToAddress(addr)
   }

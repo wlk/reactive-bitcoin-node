@@ -33,7 +33,7 @@ class PeerManagerSpec
   import PeerConnectionSpec._
 
   val networkParams = MainNetParams
-  val peerManagerRef = system.actorOf(PeerManager.props(null, networkParams))
+  val peerManagerRef = system.actorOf(PeerManager.props(null, null, networkParams))
 
   override def afterAll {
     shutdown()
