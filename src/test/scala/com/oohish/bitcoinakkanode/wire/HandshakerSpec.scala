@@ -60,7 +60,7 @@ class HandshakerSpec
         val v1 = Version(60001, 1, 12345L, NetworkAddress(1, remote), NetworkAddress(1, local), 5555L, "agent1", 1, true)
         proxy.send(parent, v1)
         proxy.send(parent, Verack())
-        proxy.expectMsg(FinishedHandshake(tcpConn.ref))
+        proxy.expectMsg(FinishedHandshake(tcpConn.ref, v1))
       }
     }
 

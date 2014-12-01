@@ -35,13 +35,22 @@ class Client(peerManager: ActorRef, address: InetSocketAddress,
       context stop self
     case c @ Connected(remote, local) =>
       val tcpConn = sender
-      val handshaker = context.actorOf(Handshaker.props(tcpConn, remote, local, networkParameters), "handshaker")
-      tcpConn ! Register(handshaker)
-      context.watch(handshaker)
-      handshaker ! Handshaker.InitiateHandshake()
-    case Handshaker.FinishedHandshake(tcpConn) =>
-      peerManager ! PeerManager.PeerConnected(tcpConn, address, null)
+      val peerConnection = context.actorOf(PeerConnection.props(tcpConn, networkParameters), "peerConnection")
+      tcpConn ! Register(peerConnection)
+      handshakeWithPeer(peerConnection, remote, local)
+    case Handshaker.FinishedHandshake(peerConn, version) =>
+      peerManager ! PeerManager.PeerConnected(peerConn, address, version)
     case _: akka.actor.Terminated =>
       context.stop(self)
+  }
+
+  /*
+   * Start a handshake with the peer connection.
+   */
+  def handshakeWithPeer(pc: ActorRef, remote: InetSocketAddress,
+    local: InetSocketAddress) = {
+    val handshaker = context.actorOf(Handshaker.props(pc, remote, local, networkParameters), "handshaker")
+    context.watch(handshaker)
+    handshaker ! Handshaker.InitiateHandshake()
   }
 }

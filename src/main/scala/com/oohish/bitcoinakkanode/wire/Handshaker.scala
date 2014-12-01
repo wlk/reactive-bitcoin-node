@@ -16,12 +16,12 @@ import akka.actor.Props
 import akka.actor.actorRef2Scala
 
 object Handshaker {
-  def props(tcpConn: ActorRef, remote: InetSocketAddress,
+  def props(peerConnection: ActorRef, remote: InetSocketAddress,
     local: InetSocketAddress, networkParameters: NetworkParameters) =
-    Props(classOf[Handshaker], tcpConn, remote, local, networkParameters)
+    Props(classOf[Handshaker], peerConnection, remote, local, networkParameters)
 
   case class InitiateHandshake()
-  case class FinishedHandshake(ref: ActorRef)
+  case class FinishedHandshake(ref: ActorRef, version: Version)
   case class ConnectTimeout()
 
   val services = 1
@@ -30,19 +30,17 @@ object Handshaker {
   val relay = true
 }
 
-class Handshaker(tcpConn: ActorRef, remote: InetSocketAddress,
+class Handshaker(peerConnection: ActorRef, remote: InetSocketAddress,
   local: InetSocketAddress, networkParameters: NetworkParameters)
   extends Actor with ActorLogging {
   import Handshaker._
-
-  val peerConn = context.actorOf(PeerConnection.props(tcpConn, networkParameters))
 
   def receive = ready
 
   def ready: Receive = {
     case InitiateHandshake() =>
       context.become(awaitingVersion)
-      peerConn ! PeerConnection.OutgoingMessage(getVersion(remote, local))
+      peerConnection ! PeerConnection.OutgoingMessage(getVersion(remote, local))
     case v: Version =>
     // TODO
   }
@@ -62,8 +60,8 @@ class Handshaker(tcpConn: ActorRef, remote: InetSocketAddress,
   }
 
   def finishHandshake(v: Version): Unit = {
-    peerConn ! PeerConnection.OutgoingMessage(Verack())
-    context.parent ! FinishedHandshake(tcpConn)
+    peerConnection ! PeerConnection.OutgoingMessage(Verack())
+    context.parent ! FinishedHandshake(peerConnection, v)
     context.stop(self)
   }
 
