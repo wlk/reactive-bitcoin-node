@@ -54,14 +54,35 @@ class HandshakerSpec
   }
 
   "A Handshaker" should {
-    "initiate a handshake when it receives an Initiate command" in {
-
+    "complete a handshake when it receives an Initiate command followed by version and verack" in {
       within(500 millis) {
         proxy.send(parent, Handshaker.InitiateHandshake())
         val v1 = Version(60001, 1, 12345L, NetworkAddress(1, remote), NetworkAddress(1, local), 5555L, "agent1", 1, true)
         proxy.send(parent, v1)
         proxy.send(parent, Verack())
         proxy.expectMsg(FinishedHandshake())
+      }
+    }
+
+    "fail to complete a handshake when it receives no Initiate command" in {
+      within(2 seconds) {
+        proxy.expectNoMsg(1 second)
+      }
+    }
+
+    "fail to complete a handshake when it receives only an Initiate command followed by version" in {
+      within(2 seconds) {
+        proxy.send(parent, Handshaker.InitiateHandshake())
+        proxy.expectNoMsg(1 second)
+      }
+    }
+
+    "fail to complete a handshake when it receives only an Initiate command" in {
+      within(2 seconds) {
+        proxy.send(parent, Handshaker.InitiateHandshake())
+        val v1 = Version(60001, 1, 12345L, NetworkAddress(1, remote), NetworkAddress(1, local), 5555L, "agent1", 1, true)
+        proxy.send(parent, v1)
+        proxy.expectNoMsg(1 second)
       }
     }
   }
