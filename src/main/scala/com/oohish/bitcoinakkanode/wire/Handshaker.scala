@@ -21,7 +21,7 @@ object Handshaker {
     Props(classOf[Handshaker], tcpConn, remote, local, networkParameters)
 
   case class InitiateHandshake()
-  case class FinishedHandshake()
+  case class FinishedHandshake(ref: ActorRef)
   case class ConnectTimeout()
 
   val services = 1
@@ -63,7 +63,7 @@ class Handshaker(tcpConn: ActorRef, remote: InetSocketAddress,
 
   def finishHandshake(v: Version): Unit = {
     peerConn ! PeerConnection.OutgoingMessage(Verack())
-    context.parent ! FinishedHandshake()
+    context.parent ! FinishedHandshake(tcpConn)
     context.stop(self)
   }
 

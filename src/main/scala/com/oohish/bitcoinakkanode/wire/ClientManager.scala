@@ -13,15 +13,15 @@ import akka.pattern.ask
 import akka.util.Timeout
 
 object ClientManager {
-  def props(addressManager: ActorRef,
+  def props(peerManager: ActorRef, addressManager: ActorRef,
     networkParameters: NetworkParameters) =
-    Props(classOf[ClientManager], networkParameters)
+    Props(classOf[ClientManager], peerManager, addressManager, networkParameters)
 
   case class MakeOutboundConnection()
   case class ConnectToAddress(address: InetSocketAddress)
 }
 
-class ClientManager(addressManager: ActorRef,
+class ClientManager(peerManager: ActorRef, addressManager: ActorRef,
   networkParameters: NetworkParameters) extends Actor with ActorLogging {
   import ClientManager._
   import context.dispatcher
@@ -39,7 +39,7 @@ class ClientManager(addressManager: ActorRef,
    * Start a connection with an address.
    */
   def connectToAddress(addr: InetSocketAddress) =
-    context.actorOf(Client.props(addr, networkParameters))
+    context.actorOf(Client.props(peerManager, addr, networkParameters))
 
   /*
    * Get a random address.

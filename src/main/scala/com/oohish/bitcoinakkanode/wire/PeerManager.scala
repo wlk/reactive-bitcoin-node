@@ -47,12 +47,6 @@ class PeerManager(addressManager: ActorRef,
   }
 
   /*
-   * Attempt to establish an outgoing connection to another node.
-   */
-  def connectToPeer(address: InetSocketAddress) =
-    context.actorOf(Client.props(address, networkParameters))
-
-  /*
    * Get the network-adjusted time.
    */
   def networkTime = currentSeconds + medianOffset

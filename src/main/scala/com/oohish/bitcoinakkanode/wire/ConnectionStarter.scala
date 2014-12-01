@@ -4,6 +4,7 @@ import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.Props
+import akka.actor.actorRef2Scala
 
 object ConnectionStarter {
   def props(peerManager: ActorRef, addressManager: ActorRef,
@@ -18,7 +19,7 @@ class ConnectionStarter(peerManager: ActorRef, addressManager: ActorRef,
   extends Actor with ActorLogging {
   import ConnectionStarter._
 
-  val clientManager = context.actorOf(ClientManager.props(addressManager, networkParameters))
+  val clientManager = context.actorOf(ClientManager.props(peerManager, addressManager, networkParameters))
   //val serverManager = context.actorOf(ServerManager.props(addressManager, networkParameters))
 
   def receive = {
