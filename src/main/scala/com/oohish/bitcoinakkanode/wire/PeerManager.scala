@@ -18,16 +18,9 @@ import akka.actor.actorRef2Scala
 object PeerManager {
   def props(addressManager: ActorRef,
     networkParameters: NetworkParameters) =
-    Props(classOf[PeerManager], networkParameters)
-
-  val userAgent: String = "/bitcoin-akka-node:0.1.0/"
-  val services = 1
-  val height = 1
-  val relay = true
-  val peerLimit = 10
+    Props(classOf[PeerManager], addressManager, networkParameters)
 
   case class PeerConnected(ref: ActorRef, addr: InetSocketAddress, v: Version)
-  case class AddAddress(addr: InetSocketAddress)
   case class GetPeers()
 
 }
@@ -40,14 +33,13 @@ class PeerManager(addressManager: ActorRef,
   var peers = Map.empty[ActorRef, (Long, NetworkAddress)]
 
   def receive: Receive = {
-    case AddAddress(addr) =>
-    // addressManager ! addaddress
     case PeerConnected(ref, addr, v) =>
       val offset = v.timestamp - currentSeconds
-      val networkAddress = NetworkAddress(v.services, addr)
-      peers += ref -> (offset, networkAddress)
-      context.watch(ref)
-      ref ! PeerConnection.Outgoing(GetAddr())
+      //val networkAddress = NetworkAddress(v.services, addr)
+      //peers += ref -> (offset, networkAddress)
+      //context.watch(ref)
+      //ref ! PeerConnection.Outgoing(GetAddr())
+      log.info("peer connected: {}", addr)
     case akka.actor.Terminated(ref) =>
       peers -= ref
     case GetPeers() =>

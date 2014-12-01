@@ -1,104 +1,58 @@
 package com.oohish.bitcoinakkanode.wire
 
-import java.net.InetSocketAddress
-
-import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
-import scala.language.postfixOps
-
-import com.oohish.bitcoinakkanode.node.Node
-import com.oohish.bitcoinscodec.messages.Verack
-import com.oohish.bitcoinscodec.messages.Version
+import com.oohish.bitcoinakkanode.wire.MessageDecoder.DecodedMessage
+import com.oohish.bitcoinakkanode.wire.MessageEncoder.EncodedMessage
 import com.oohish.bitcoinscodec.structures.Message
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
-import akka.actor.Cancellable
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.actor.actorRef2Scala
-import akka.pattern.ask
-import akka.pattern.pipe
-import akka.util.Timeout.durationToTimeout
+import akka.io.Tcp
+import akka.util.ByteString
+import scodec.bits.ByteVector
 
 object PeerConnection {
   def props(
-    manager: ActorRef,
-    tcpConnection: ActorRef,
-    remote: InetSocketAddress,
-    local: InetSocketAddress,
-    networkParams: NetworkParameters) =
-    Props(classOf[PeerConnection], manager, tcpConnection, remote, local, networkParams)
+    tcpConn: ActorRef,
+    networkParameters: NetworkParameters) =
+    Props(classOf[PeerConnection], tcpConn, networkParameters)
 
-  case class ConnectTimeout()
-  case class Outgoing(m: Message)
-  case class InitiateHandshake()
+  case class OutgoingMessage(msg: Message)
+  case class OutgoingBytes(bytes: ByteString)
 }
 
 class PeerConnection(
-  manager: ActorRef,
-  tcpConnection: ActorRef,
-  remote: InetSocketAddress,
-  local: InetSocketAddress,
-  networkParams: NetworkParameters) extends Actor with ActorLogging {
+  tcpConn: ActorRef,
+  networkParameters: NetworkParameters) extends Actor with ActorLogging {
   import PeerConnection._
-  import com.oohish.bitcoinscodec.structures.Message._
-  import com.oohish.bitcoinscodec.messages._
-  import context._
 
-  private var timeoutReminder: Cancellable = _
+  val decoder = context.actorOf(MessageDecoder.props(networkParameters.packetMagic), "messageDecoder")
+  val encoder = context.actorOf(MessageEncoder.props(networkParameters.packetMagic), "messageEncoder")
 
-  override def preStart() =
-    timeoutReminder = system.scheduler.scheduleOnce(5 seconds, self, ConnectTimeout())
-
-  override def postStop(): Unit = timeoutReminder.cancel()
-
-  def receive = ready()
-
-  def ready(): Receive = {
-    case InitiateHandshake() =>
-      context.become(awaitingVersion())
-    //getVersion(remote, local)
-    //  .map(TCPConnection.OutgoingMessage(_))
-    //  .pipeTo(tcpConnection)
-    case v: Version =>
+  def receive = {
+    case OutgoingMessage(msg) =>
+      log.debug("received outgoing message: " + msg)
+      encoder ! msg
+    case EncodedMessage(b) =>
+      log.debug("received encoded message: " + ByteVector(b))
+      tcpConn ! Tcp.Write(b)
+    case DecodedMessage(msg) =>
+      log.debug("received decoded message: " + msg)
+      context.parent ! msg
+    case Tcp.Received(data) =>
+      log.debug("received tcp bytes: " + ByteVector(data))
+      decoder ! Tcp.Received(data)
+    case Tcp.CommandFailed(w: Tcp.Write) =>
+      log.debug("write failed")
+    case Terminated(pc) =>
+      log.debug("btc connection closed")
+      tcpConn ! Tcp.Close
+    case _: Tcp.ConnectionClosed =>
+      log.debug("connection closed")
+      context stop self
   }
-
-  def awaitingVersion(): Receive = {
-    case v: Version =>
-      context.become(awaitingVerack(v))
-    case _: ConnectTimeout =>
-      context.stop(self)
-  }
-
-  def awaitingVerack(v: Version): Receive = {
-    case _: Verack =>
-      finishHandshake(v)
-    case _: ConnectTimeout =>
-      context.stop(self)
-  }
-
-  def finishHandshake(v: Version): Unit = {
-    context.become(connected(v))
-    tcpConnection ! TCPConnection.OutgoingMessage(Verack())
-    manager ! PeerManager.PeerConnected(self, remote, v)
-  }
-
-  def connected(v: Version): Receive = {
-    case Outgoing(m) =>
-      tcpConnection ! TCPConnection.OutgoingMessage(m)
-    case msg: Message =>
-    //manager ! PeerManager.IncomingPeerMessage(msg)
-    case Terminated(ref) =>
-      context.stop(self)
-  }
-
-  /*
-   * Get the current Version message from the peer manager actor.
-   */
-  //def getVersion(remote: InetSocketAddress, local: InetSocketAddress): Future[Version] =
-  //(manager ? PeerManager.GetVersion(remote, local))(1 second)
-  //  .mapTo[Version]
 
 }

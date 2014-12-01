@@ -6,8 +6,8 @@ import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
 import akka.actor.Actor
-import akka.actor.ActorRef
 import akka.actor.ActorLogging
+import akka.actor.ActorRef
 import akka.actor.Props
 import akka.pattern.ask
 import akka.util.Timeout
@@ -17,7 +17,7 @@ object ClientManager {
     networkParameters: NetworkParameters) =
     Props(classOf[ClientManager], networkParameters)
 
-  case class Connect()
+  case class MakeOutboundConnection()
   case class ConnectToAddress(address: InetSocketAddress)
 }
 
@@ -29,8 +29,8 @@ class ClientManager(addressManager: ActorRef,
   implicit val timeout = Timeout(5 seconds)
 
   def receive = {
-    case Connect() =>
-      connectToRandomAddress()
+    case MakeOutboundConnection() =>
+      for (addr <- getRandomAddress()) connectToAddress(addr)
     case ConnectToAddress(addr) =>
       connectToAddress(addr)
   }
@@ -42,12 +42,10 @@ class ClientManager(addressManager: ActorRef,
     context.actorOf(Client.props(addr, networkParameters))
 
   /*
-   * Start a connection with a random address.
+   * Get a random address.
    */
-  def connectToRandomAddress() = for {
-    maybeAddr <- (addressManager ? AddressManager.GetAddress()).mapTo[Option[java.net.InetSocketAddress]]
-  } maybeAddr.foreach { addr =>
-    connectToAddress(addr)
-  }
+  def getRandomAddress() =
+    (addressManager ? AddressManager.GetAddress())
+      .mapTo[java.net.InetSocketAddress]
 
 }
