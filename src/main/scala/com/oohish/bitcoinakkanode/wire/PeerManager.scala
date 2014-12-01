@@ -1,92 +1,56 @@
 package com.oohish.bitcoinakkanode.wire
 
-import java.net.InetAddress
 import java.net.InetSocketAddress
-import scala.Array.canBuildFrom
-import scala.concurrent.duration.DurationInt
+
 import scala.language.postfixOps
-import scala.util.Try
-import org.joda.time.DateTime
+
+import com.oohish.bitcoinakkanode.util.Util
+import com.oohish.bitcoinakkanode.util.Util.currentSeconds
 import com.oohish.bitcoinscodec.messages.Version
-import com.oohish.bitcoinscodec.structures.Message
+import com.oohish.bitcoinscodec.structures.NetworkAddress
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.actorRef2Scala
-import com.oohish.bitcoinakkanode.util.Util
-import Util._
-import com.oohish.bitcoinscodec.structures.NetworkAddress
-import com.oohish.bitcoinscodec.messages.GetAddr
 
 object PeerManager {
-  def props(networkParams: NetworkParameters) =
-    Props(classOf[PeerManager], networkParams)
+  def props(blockchain: ActorRef,
+    addressManager: ActorRef,
+    networkParameters: NetworkParameters) =
+    Props(classOf[PeerManager], blockchain, addressManager, networkParameters)
 
-  def userAgent: String = "/bitcoin-akka-node:0.1.0/"
-  def services = 1
-  def height = 1
-  def relay = true
-
-  case class Connect()
-  case class GetVersion(remote: InetSocketAddress, local: InetSocketAddress)
   case class PeerConnected(ref: ActorRef, addr: InetSocketAddress, v: Version)
-  case class IncomingPeerMessage(msg: Message)
-  case class RegisterListener(ref: ActorRef)
-  case class BroadCastMessage(msg: Message, exclude: List[ActorRef])
-  case class AddAddress(addr: InetSocketAddress)
   case class GetPeers()
-  case class GetRandomConnection()
-
-  val peerLimit = 10
 }
 
-class PeerManager(networkParameters: NetworkParameters) extends Actor with ActorLogging {
+class PeerManager(blockchain: ActorRef,
+  addressManager: ActorRef,
+  networkParameters: NetworkParameters) extends Actor with ActorLogging {
   import context._
   import PeerManager._
 
-  var addresses = Set.empty[InetSocketAddress]
   var peers = Map.empty[ActorRef, (Long, NetworkAddress)]
-  var listeners: Set[ActorRef] = Set.empty
-
-  override def preStart() = {
-    for (p <- dnsNodes) addresses += p
-    system.scheduler.schedule(0 seconds, 1 second, self, Connect())
-  }
 
   def receive: Receive = {
-    case Connect() =>
-      makeConnection()
-    case GetVersion(remote, local) =>
-      sender ! getVersion(remote, local)
-    case IncomingPeerMessage(msg) =>
-      for (listener <- listeners)
-        listener forward msg
-    case AddAddress(addr) =>
-      addresses += addr
-    case BroadCastMessage(msg, exclude) =>
-      broadcastToPeers(msg, exclude)
-    case PeerConnected(ref, addr, v) =>
-      val offset = v.timestamp - currentSeconds
-      val networkAddress = NetworkAddress(v.services, addr)
-      peers += ref -> (offset, networkAddress)
-      context.watch(ref)
-      ref ! PeerConnection.Outgoing(GetAddr())
+    case PeerConnected(pc, addr, version) =>
+      context.watch(pc)
+      val offset = getPeerOffset(version)
+      //ref ! PeerConnection.Outgoing(GetAddr())
+      syncWithPeer(pc)
+      val handler = context.actorOf(PeerHandler.props(blockchain, addressManager, pc))
+      val networkAddress = NetworkAddress(version.services, addr)
+      log.info("pc added: {}", pc)
+      peers += pc -> (offset, networkAddress)
+      log.info("number of peers connected: {}", peers.size)
     case akka.actor.Terminated(ref) =>
+      log.info("pc terminated: {}", ref)
       peers -= ref
+      log.info("number of peers connected: {}", peers.size)
     case GetPeers() =>
       sender ! peers.values.toList
-    case GetRandomConnection() =>
-      sender ! randomConnection()
-    case RegisterListener(ref) =>
-      listeners += ref
   }
-
-  /*
-   * Attempt to establish an outgoing connection to another node.
-   */
-  def connectToPeer(address: InetSocketAddress) =
-    context.actorOf(Client.props(address, networkParameters))
 
   /*
    * Get the network-adjusted time.
@@ -97,73 +61,31 @@ class PeerManager(networkParameters: NetworkParameters) extends Actor with Actor
    * Get the median offset from the local nodes clock time in seconds.
    */
   def medianOffset: Long = {
-    if (peers.isEmpty) 0
-    else {
+    if (!peers.isEmpty) {
       val offsets = peers.values.map(_._1).toList
       val medianIndex = offsets.length / 2
       offsets(medianIndex)
+    } else {
+      0
     }
   }
 
   /*
-   * Get the set of addresses which are not connected.
+   * Get the set of connected addresses.
    */
-  def unconnectedAddresses =
-    addresses.filter { addr =>
-      !peers.values.exists {
-        case (_, NetworkAddress(_, a)) =>
-          a == addr
-      }
-    }
+  def getConnectedAddresses = peers.values.map(_._2.address).toSet
 
   /*
-   * Attempt to establish a new connection from the list of saved addresses.
+   * Get the offset of the connected peer.
    */
-  def makeConnection() = {
-    if (peers.size < peerLimit) {
-      util.Random.shuffle(unconnectedAddresses.toVector).take(1).foreach(connectToPeer)
-    }
+  def getPeerOffset(version: Version) = version.timestamp - Util.currentSeconds
+
+  /*
+   * Sync with newly connected peer.
+   */
+  def syncWithPeer(pc: ActorRef) = {
+    val syncer = context.actorOf(PeerSyncer.props(blockchain, addressManager, self))
+    syncer ! PeerSyncer.SyncWithPeer(pc)
   }
-
-  /*
-   * Broadcast a message to all peers except for those excluded.
-   */
-  def broadcastToPeers(msg: Message, exclude: List[ActorRef]) =
-    for (connection <- peers.keys if !(exclude contains connection))
-      connection ! PeerConnection.Outgoing(msg)
-
-  /*
-   * Get the list of addresses of DNS nodes
-   */
-  def dnsNodes: List[InetSocketAddress] = for {
-    fallback <- networkParameters.dnsSeeds
-    address <- Try(InetAddress.getAllByName(fallback))
-      .getOrElse(Array())
-  } yield new InetSocketAddress(address, networkParameters.port)
-
-  /*
-   * Get a random connection actor ref, if one exists.
-   */
-  def randomConnection() =
-    if (peers.isEmpty)
-      None
-    else {
-      val conns = peers.keys.toList
-      Some(conns(scala.util.Random.nextInt(conns.length)))
-    }
-
-  /*
-   * Get the current Version network message.
-   */
-  def getVersion(remote: InetSocketAddress, local: InetSocketAddress) =
-    Version(networkParameters.PROTOCOL_VERSION,
-      services,
-      currentSeconds,
-      NetworkAddress(services, remote),
-      NetworkAddress(services, local),
-      genNonce,
-      userAgent,
-      height,
-      relay)
 
 }

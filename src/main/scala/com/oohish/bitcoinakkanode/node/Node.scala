@@ -6,6 +6,7 @@ import scala.language.postfixOps
 
 import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinakkanode.wire.PeerManager
+import com.oohish.bitcoinakkanode.wire.NetworkController
 import com.oohish.bitcoinscodec.structures.Hash
 import com.oohish.bitcoinscodec.structures.NetworkAddress
 
@@ -35,10 +36,8 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
   import context.dispatcher
   import Node._
 
-  val peerManager: ActorRef = context.actorOf(PeerManager.props(networkParameters), "peer-manager")
-  val networkListener: ActorRef = context.actorOf(NetworkListener.props(null, peerManager))
-
-  peerManager ! PeerManager.RegisterListener(networkListener)
+  val blockchain: ActorRef = null
+  val networkController: ActorRef = context.actorOf(NetworkController.props(blockchain, networkParameters), "network-controller")
 
   def receive: Receive = {
     case GetConnectionCount() =>
@@ -56,13 +55,13 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
   }
 
   private def getConnectionCount(): Future[Int] = {
-    (peerManager ? PeerManager.GetPeers())(1 second)
+    (networkController ? PeerManager.GetPeers())(1 second)
       .mapTo[List[(Long, NetworkAddress)]]
       .map(_.length)
   }
 
   private def getPeerInfo(): Future[List[NetworkAddress]] = {
-    (peerManager ? PeerManager.GetPeers())(1 second)
+    (networkController ? PeerManager.GetPeers())(1 second)
       .mapTo[List[(Long, NetworkAddress)]]
       .map(peers => peers.map(_._2))
   }
