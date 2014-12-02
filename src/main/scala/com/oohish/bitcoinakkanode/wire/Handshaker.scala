@@ -64,7 +64,6 @@ class Handshaker(peerConnection: ActorRef, remote: InetSocketAddress,
   }
 
   def finishHandshake(v: Version): Unit = {
-    log.info("finished handshake with {}", remote)
     peerConnection ! PeerConnection.OutgoingMessage(Verack())
     context.parent ! FinishedHandshake(peerConnection, v)
   }

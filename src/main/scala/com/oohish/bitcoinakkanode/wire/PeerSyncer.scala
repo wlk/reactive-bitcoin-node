@@ -21,7 +21,6 @@ class PeerSyncer(blockchain: ActorRef, addressManager: ActorRef, peerManager: Ac
 
   def receive = {
     case SyncWithPeer(pc) =>
-      log.info("requesting Addr's with GetAddr")
       pc ! PeerConnection.OutgoingMessage(GetAddr())
     // TODO: get block headers
   }

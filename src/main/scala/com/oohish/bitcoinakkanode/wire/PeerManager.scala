@@ -41,7 +41,6 @@ class PeerManager(blockchain: ActorRef,
       syncWithPeer(pc)
       val handler = context.actorOf(PeerHandler.props(blockchain, addressManager, pc))
       val networkAddress = NetworkAddress(version.services, addr)
-      log.info("pc added: {}", pc)
       peers += pc -> (offset, networkAddress)
       log.info("number of peers connected: {}", peers.size)
     case akka.actor.Terminated(ref) =>
