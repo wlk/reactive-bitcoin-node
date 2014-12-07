@@ -66,16 +66,10 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
       .map(peers => peers.map(_._2))
   }
 
-  private def getBestBlockHash(): Future[Hash] = {
-    Future.failed(new UnsupportedOperationException()) //TODO: implement
-  }
+  private def getBestBlockHash(): Future[Hash] = ???
 
-  private def getBlockCount(): Future[Int] = {
-    Future(0) //TODO: implement
-  }
+  private def getBlockCount(): Future[Int] = ???
 
-  private def getBlockHash(index: Int): Future[Hash] = {
-    Future.failed(new UnsupportedOperationException()) //TODO: implement
-  }
+  private def getBlockHash(index: Int): Future[Hash] = ???
 
 }
