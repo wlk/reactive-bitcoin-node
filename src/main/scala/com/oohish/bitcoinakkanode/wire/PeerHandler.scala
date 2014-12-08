@@ -31,8 +31,6 @@ object PeerHandler {
 
 class PeerHandler(blockchain: ActorRef, addressManager: ActorRef, peerConnection: ActorRef) extends Actor with ActorLogging {
 
-  peerConnection ! PeerConnection.Register(self)
-
   def receive = {
     case addr: Addr =>
       for (addr <- addr.addrs)

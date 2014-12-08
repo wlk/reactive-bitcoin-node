@@ -3,7 +3,6 @@ package com.oohish.bitcoinakkanode.wire
 import com.oohish.bitcoinakkanode.wire.MessageDecoder.DecodedMessage
 import com.oohish.bitcoinakkanode.wire.MessageEncoder.EncodedMessage
 import com.oohish.bitcoinscodec.structures.Message
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -12,58 +11,76 @@ import akka.actor.actorRef2Scala
 import akka.io.Tcp
 import akka.util.ByteString
 import scodec.bits.ByteVector
+import java.net.InetSocketAddress
+import akka.io.Tcp.Register
+
+import com.oohish.bitcoinakkanode.util.Util
+import com.oohish.bitcoinscodec.messages.Verack
+import com.oohish.bitcoinscodec.messages.Version
+import com.oohish.bitcoinscodec.structures.NetworkAddress
 
 object PeerConnection {
-  def props(
+  def props(remote: InetSocketAddress,
+    local: InetSocketAddress,
     tcpConn: ActorRef,
     networkParameters: NetworkParameters) =
-    Props(classOf[PeerConnection], tcpConn, networkParameters)
+    Props(classOf[PeerConnection], remote, local, tcpConn, networkParameters)
 
-  case class Register(ref: ActorRef)
+  val services = 1
+  val userAgent = "/bitcoin-akka-node:0.1.0/"
+  val height = 1
+  val relay = true
+
+  case class Connect()
   case class OutgoingMessage(msg: Message)
   case class OutgoingBytes(bytes: ByteString)
 }
 
-class PeerConnection(
+class PeerConnection(remote: InetSocketAddress,
+  local: InetSocketAddress,
   tcpConn: ActorRef,
   networkParameters: NetworkParameters) extends Actor with ActorLogging {
   import PeerConnection._
 
-  val decoder = context.actorOf(MessageDecoder.props(networkParameters.packetMagic), "messageDecoder")
-  val encoder = context.actorOf(MessageEncoder.props(networkParameters.packetMagic), "messageEncoder")
+  val translator = context.actorOf(MessageTranslator.props(tcpConn, self, networkParameters), "translator")
+  val handshaker = context.actorOf(Handshaker.props(remote, local, networkParameters), "handshaker")
+  val peerHandler: ActorRef = null
 
-  def receive = ready
+  tcpConn ! Register(translator)
 
-  def ready: Receive = {
-    case Register(ref) =>
-      context.become(listening(ref))
-      context.watch(ref)
-  }
+  def receive = handshaking
 
-  def listening(listener: ActorRef): Receive = {
-    case Register(ref) =>
-      context.become(listening(ref))
-      context.unwatch(listener)
-      context.watch(ref)
-    case akka.actor.Terminated(ref) =>
-      context.stop(self)
+  def handshaking: Receive = {
+    case Connect() =>
+      val version = getVersion(remote, local)
+      handshaker ! version
+    case msg: Message =>
+      handshaker ! msg
     case OutgoingMessage(msg) =>
-      log.debug("received outgoing message: " + msg)
-      encoder ! msg
-    case EncodedMessage(b) =>
-      log.debug("received encoded message: " + ByteVector(b))
-      tcpConn ! Tcp.Write(b)
-    case DecodedMessage(msg) =>
-      log.debug("received decoded message: " + msg)
-      listener ! msg
-    case Tcp.Received(data) =>
-      log.debug("received tcp bytes: " + ByteVector(data))
-      decoder ! Tcp.Received(data)
-    case Tcp.CommandFailed(w: Tcp.Write) =>
-      log.debug("write failed")
-    case _: Tcp.ConnectionClosed =>
-      log.debug("connection closed")
-      context stop self
+    // ignore
+    case Handshaker.FinishedHandshake(v) =>
+      context.become(connected(v))
   }
+
+  def connected(version: Version): Receive = {
+    case msg: Message =>
+      peerHandler ! msg
+    case OutgoingMessage(msg) =>
+      translator ! MessageTranslator.OutgoingMessage(msg)
+  }
+
+  /*
+   * Get the current Version network message.
+   */
+  def getVersion(remote: InetSocketAddress, local: InetSocketAddress) =
+    Version(networkParameters.PROTOCOL_VERSION,
+      services,
+      Util.currentSeconds,
+      NetworkAddress(services, remote),
+      NetworkAddress(services, local),
+      Util.genNonce,
+      userAgent,
+      height,
+      relay)
 
 }
