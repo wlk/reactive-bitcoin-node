@@ -23,7 +23,7 @@ libraryDependencies ++= {
     	"com.typesafe.akka" %% "akka-actor" % akkaV,
     	"com.quantifind" %% "sumac" % sumacV,
     	"com.oohish" %% "bitcoin-scodec" % bitcoinScodecV,
-    	"com.github.yzernik" %% "btc-io" % "0.1.0-SNAPSHOT",
+    	"com.github.yzernik" %% "btc-io" % "0.1.0",
     	"joda-time" % "joda-time" % "2.4",
     	"org.joda" % "joda-convert" % "1.4",
     	"com.typesafe.akka" %% "akka-testkit" % akkaV % "test",
