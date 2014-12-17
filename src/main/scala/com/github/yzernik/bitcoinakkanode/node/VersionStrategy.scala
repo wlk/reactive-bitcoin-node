@@ -9,8 +9,8 @@ import scala.util.Random
 
 import org.joda.time.DateTime
 
-import com.oohish.bitcoinscodec.messages.Version
-import com.oohish.bitcoinscodec.structures.NetworkAddress
+import com.github.yzernik.bitcoinscodec.messages.Version
+import com.github.yzernik.bitcoinscodec.structures.NetworkAddress
 
 trait VersionStrategy {
 

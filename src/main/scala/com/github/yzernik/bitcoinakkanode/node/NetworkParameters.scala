@@ -2,9 +2,9 @@ package com.github.yzernik.bitcoinakkanode.node
 
 import scala.math.BigInt.int2bigInt
 
-import com.oohish.bitcoinscodec.messages.Block
-import com.oohish.bitcoinscodec.structures.BlockHeader
-import com.oohish.bitcoinscodec.structures.Hash
+import com.github.yzernik.bitcoinscodec.messages.Block
+import com.github.yzernik.bitcoinscodec.structures.BlockHeader
+import com.github.yzernik.bitcoinscodec.structures.Hash
 
 import scodec.bits.HexStringSyntax
 

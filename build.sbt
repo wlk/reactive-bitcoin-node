@@ -1,5 +1,7 @@
 name := "bitcoin-akka-node"
 
+organization := "com.github.yzernik"
+
 version := "0.1.0-SNAPSHOT"
 
 scalaVersion := "2.11.4"
@@ -18,14 +20,11 @@ resolvers ++= Seq(
 libraryDependencies ++= {
 	val akkaV = "2.3.7"
 	val sumacV = "0.3.0"
-	val bitcoinScodecV = "0.2.3"
+	val btcioV = "0.1.1"
 	Seq(
     	"com.typesafe.akka" %% "akka-actor" % akkaV,
     	"com.quantifind" %% "sumac" % sumacV,
-    	"com.oohish" %% "bitcoin-scodec" % bitcoinScodecV,
-    	"com.github.yzernik" %% "btc-io" % "0.1.0",
-    	"joda-time" % "joda-time" % "2.4",
-    	"org.joda" % "joda-convert" % "1.4",
+    	"com.github.yzernik" %% "btc-io" % btcioV,
     	"com.typesafe.akka" %% "akka-testkit" % akkaV % "test",
     	"org.scalatest" % "scalatest_2.11" % "2.2.1" % "test"
 	)

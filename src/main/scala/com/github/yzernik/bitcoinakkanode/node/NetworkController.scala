@@ -6,8 +6,8 @@ import java.net.InetSocketAddress
 import scala.math.BigInt.int2bigInt
 
 import com.github.yzernik.btcio.akka.BTC
-import com.oohish.bitcoinscodec.messages.Version
-import com.oohish.bitcoinscodec.structures.NetworkAddress
+import com.github.yzernik.bitcoinscodec.messages.Version
+import com.github.yzernik.bitcoinscodec.structures.NetworkAddress
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
