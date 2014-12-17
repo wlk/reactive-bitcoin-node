@@ -1,4 +1,4 @@
-package com.oohish.bitcoinakkanode.wire
+package com.github.yzernik.bitcoinakkanode.node
 
 import scala.math.BigInt.int2bigInt
 
