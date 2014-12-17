@@ -1,9 +1,7 @@
-package com.oohish.bitcoinakkanode.node
+package com.github.yzernik.bitcoinakkanode.node
 
 import scala.concurrent.Future
-import scala.language.postfixOps
 
-import com.oohish.bitcoinakkanode.wire.NetworkParameters
 import com.oohish.bitcoinscodec.structures.Hash
 import com.oohish.bitcoinscodec.structures.NetworkAddress
 
