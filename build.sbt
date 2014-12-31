@@ -1,4 +1,4 @@
-name := "bitcoin-akka-node"
+name := "reactive-bitcoin-node"
 
 organization := "com.github.yzernik"
 
