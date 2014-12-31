@@ -1,4 +1,4 @@
-package com.github.yzernik.bitcoinakkanode.node
+package com.github.yzernik.reactivebitcoinnode.node
 
 import java.net.InetAddress
 import java.net.InetSocketAddress
