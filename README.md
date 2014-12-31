@@ -1,4 +1,4 @@
-bitcoin-akka-node
+reactive-bitcoin-node
 ==============
 [![Build Status](https://travis-ci.org/yzernik/bitcoin-akka-node.svg?branch=master)](https://travis-ci.org/yzernik/bitcoin-akka-node)
 [![Coverage Status](https://img.shields.io/coveralls/yzernik/bitcoin-akka-node.svg)](https://coveralls.io/r/yzernik/bitcoin-akka-node?branch=master)
@@ -41,14 +41,14 @@ Some of the API commands of the [original Bitcoin client](https://en.bitcoin.it/
 For example,
 
 ```
-bitcoin-akka-node> getconnectioncount
+reactive-bitcoin-node> getconnectioncount
 10
 ```
 
 or
 
 ```
-bitcoin-akka-node> getblockhash 73546
+reactive-bitcoin-node> getblockhash 73546
 000000000099ae23ec45ae651c5fa6cdc3505e20e5daf6a3c33b65e05311839c
 ```
 
@@ -58,7 +58,7 @@ etc.
 Get help
 --------------
 ```
-bitcoin-akka-node> help
+reactive-bitcoin-node> help
 ...
 ```
 
