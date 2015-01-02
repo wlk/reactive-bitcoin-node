@@ -28,10 +28,10 @@ class NetworkController extends Actor with ActorLogging {
   val magic = MainNetParams.packetMagic
   val manager = IO(new BTC(magic))
   //manager ! BTC.Bind(8334)
-  manager ! BTC.Connect(new InetSocketAddress(InetAddress.getByName("cpe-104-34-16-248.socal.res.rr.com"), 8333))
+  manager ! BTC.Connect(new InetSocketAddress(InetAddress.getByName("107-135-125-218.lightspeed.irvnca.sbcglobal.net"), 8333))
 
   def receive = {
-    case BTC.Connected(remote, local, _) =>
+    case BTC.Connected(remote, local) =>
       log.info(s"connected to: $remote")
       val handler = context.actorOf(PeerHandler.props(versionResource))
       handler ! PeerHandler.HandlePeer(sender, remote, local)

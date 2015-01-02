@@ -20,7 +20,7 @@ resolvers ++= Seq(
 libraryDependencies ++= {
 	val akkaV = "2.3.7"
 	val sumacV = "0.3.0"
-	val btcioV = "0.1.1"
+	val btcioV = "0.1.2-SNAPSHOT"
 	Seq(
     	"com.typesafe.akka" %% "akka-actor" % akkaV,
     	"com.quantifind" %% "sumac" % sumacV,
