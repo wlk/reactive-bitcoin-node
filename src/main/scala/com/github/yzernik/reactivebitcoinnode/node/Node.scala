@@ -2,8 +2,8 @@ package com.github.yzernik.reactivebitcoinnode.node
 
 import scala.concurrent.Future
 
-import com.github.yzernik.bitcoinscodec.structures.Hash
-import com.github.yzernik.bitcoinscodec.structures.NetworkAddress
+import io.github.yzernik.bitcoinscodec.structures.Hash
+import io.github.yzernik.bitcoinscodec.structures.NetworkAddress
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
