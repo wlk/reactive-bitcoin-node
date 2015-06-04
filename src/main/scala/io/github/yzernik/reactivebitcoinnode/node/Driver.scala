@@ -1,4 +1,4 @@
-package com.github.yzernik.reactivebitcoinnode.node
+package io.github.yzernik.reactivebitcoinnode.node
 
 import akka.actor.ActorSystem
 

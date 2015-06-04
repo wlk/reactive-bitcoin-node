@@ -1,4 +1,4 @@
-package com.github.yzernik.reactivebitcoinnode.node
+package io.github.yzernik.reactivebitcoinnode.node
 
 import scala.math.BigInt.int2bigInt
 

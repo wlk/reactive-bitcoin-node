@@ -1,6 +1,6 @@
 name := "reactive-bitcoin-node"
 
-organization := "com.github.yzernik"
+organization := "io.github.yzernik"
 
 version := "0.1.0-SNAPSHOT"
 
