@@ -6,6 +6,8 @@ object Driver extends App {
 
   val sys = ActorSystem("mysys")
 
-  sys.actorOf(NetworkController.props())
+  val params: NetworkParameters = MainNetParams
+
+  sys.actorOf(Node.props(params))
 
 }
