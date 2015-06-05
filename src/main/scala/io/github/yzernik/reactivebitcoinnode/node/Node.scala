@@ -19,12 +19,12 @@ object Node {
     Props(classOf[Node], networkParameters)
 
   sealed trait APICommand
-  case class GetBestBlockHash() extends APICommand
+  case object GetBestBlockHash extends APICommand
   case class GetBlock(hash: Hash) extends APICommand
-  case class GetBlockCount() extends APICommand
+  case object GetBlockCount extends APICommand
   case class GetBlockHash(index: Int) extends APICommand
-  case class GetConnectionCount() extends APICommand
-  case class GetPeerInfo() extends APICommand
+  case object GetConnectionCount extends APICommand
+  case object GetPeerInfo extends APICommand
 }
 
 class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging {
@@ -38,19 +38,19 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
   val btc = IO(new BTC(magic, services, userAgent))
 
   val blockchain: ActorRef = context.actorOf(BlockChain.props)
-  val peerManager: ActorRef = context.actorOf(PeerManager.props(btc))
+  val peerManager: ActorRef = context.actorOf(PeerManager.props(btc, networkParameters))
   val networkController: ActorRef = context.actorOf(NetworkController.props(blockchain, peerManager, btc))
 
   networkController ! NetworkController.Initialize
 
   def receive: Receive = {
-    case GetConnectionCount() =>
+    case GetConnectionCount =>
       getConnectionCount().pipeTo(sender)
-    case GetPeerInfo() =>
+    case GetPeerInfo =>
       getPeerInfo().pipeTo(sender)
-    case GetBestBlockHash() =>
+    case GetBestBlockHash =>
       getBestBlockHash.pipeTo(sender)
-    case GetBlockCount() =>
+    case GetBlockCount =>
       getBlockCount().pipeTo(sender)
     case GetBlockHash(index) =>
       getBlockHash(index).pipeTo(sender)

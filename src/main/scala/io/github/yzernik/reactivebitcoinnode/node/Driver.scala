@@ -6,7 +6,7 @@ object Driver extends App {
 
   val sys = ActorSystem("mysys")
 
-  val params: NetworkParameters = MainNetParams
+  val params: NetworkParameters = TestNet3Params
 
   sys.actorOf(Node.props(params))
 
