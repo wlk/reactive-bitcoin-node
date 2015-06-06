@@ -1,7 +1,6 @@
 reactive-bitcoin-node
 ==============
 [![Build Status](https://travis-ci.org/yzernik/reactive-bitcoin-node.svg?branch=master)](https://travis-ci.org/yzernik/reactive-bitcoin-node)
-[![Coverage Status](https://img.shields.io/coveralls/yzernik/reactive-bitcoin-node.svg)](https://coveralls.io/r/yzernik/reactive-bitcoin-node?branch=master)
 [![tip for next commit](https://tip4commit.com/projects/1006.svg)](https://tip4commit.com/github/yzernik/bitcoin-akka-node)
 
 **Disclaimer: This is experimental software. Do not use it with real money.**
