@@ -13,30 +13,24 @@ Requirements
 How to run on testnet
 --------------
 ```
-sbt
-```
-
-and then
-
-```
-run -n test
+sbt "run --network test"
 ```
 
 How to run on mainnet
 --------------
 ```
-sbt
+sbt "run --network main"
 ```
 
-and then
+or
 
 ```
-run
+sbt run
 ```
 
 Commands
 --------------
-Some of the API commands of the [original Bitcoin client](https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_calls_list) are supported.
+Some of the API commands of the [original Bitcoin client](https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_calls_list) are supported through the interactive shell.
 
 For example,
 
