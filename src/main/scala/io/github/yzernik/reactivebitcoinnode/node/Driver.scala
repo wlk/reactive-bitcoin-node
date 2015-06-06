@@ -2,7 +2,7 @@ package io.github.yzernik.reactivebitcoinnode.node
 
 import akka.actor.ActorSystem
 
-object Driver extends App {
+object Driver {
 
   val sys = ActorSystem("mysys")
 
