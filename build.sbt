@@ -17,15 +17,12 @@ resolvers ++= Seq(
  
 libraryDependencies ++= {
   val akkaV = "2.3.11"
-  val sumacV = "0.3.0"
-  val btcioV = "0.1.3"
-  val scalatestV = "2.2.4"
   Seq(
     "com.typesafe.akka" %% "akka-actor"     % akkaV,
-    "com.quantifind"    %% "sumac"          % sumacV,
-    "io.github.yzernik" %% "btc-io"         % btcioV,
-    "com.typesafe.akka" %% "akka-testkit"   % akkaV      % "test",
-    "org.scalatest"      % "scalatest_2.11" % scalatestV % "test"
+    "com.quantifind"    %% "sumac"          % "0.3.0",
+    "io.github.yzernik" %% "btc-io"         % "0.1.3",
+    "com.typesafe.akka" %% "akka-testkit"   % akkaV    % "test",
+    "org.scalatest"      % "scalatest_2.11" % "2.2.4"  % "test"
   )
 }
 
