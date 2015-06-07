@@ -2,6 +2,8 @@ package io.github.yzernik.reactivebitcoinnode.node
 
 import scala.BigInt
 import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+import scala.language.postfixOps
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
@@ -9,9 +11,11 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.io.IO
+import akka.pattern.ask
 import akka.pattern.pipe
+import akka.util.Timeout
+import io.github.yzernik.bitcoinscodec.messages.Version
 import io.github.yzernik.bitcoinscodec.structures.Hash
-import io.github.yzernik.bitcoinscodec.structures.NetworkAddress
 import io.github.yzernik.btcio.actors.BTC
 
 object Node {
@@ -25,12 +29,17 @@ object Node {
   case class GetBlockHash(index: Int) extends APICommand
   case object GetConnectionCount extends APICommand
   case object GetPeerInfo extends APICommand
+
+  sealed trait APIResponse
+  case class GetPeerInfoResponse(peers: Set[Version]) extends APIResponse
 }
 
 class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging {
   import context.dispatcher
   import context.system
   import Node._
+
+  implicit val timeout = Timeout(5 seconds)
 
   val magic = networkParameters.packetMagic
   val services = BigInt(1L)
@@ -60,7 +69,9 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
 
   private def getConnectionCount(): Future[Int] = ???
 
-  private def getPeerInfo(): Future[List[NetworkAddress]] = ???
+  private def getPeerInfo(): Future[GetPeerInfoResponse] =
+    (peerManager ? GetPeerInfo).mapTo[Set[Version]]
+      .map(GetPeerInfoResponse(_))
 
   private def getBestBlockHash(): Future[Hash] = ???
 
