@@ -51,7 +51,7 @@ trait CLI {
       print("reactive-bitcoin-node>")
       val ln = scala.io.StdIn.readLine
       ok = ln != null && ln != "quit" && ln != "exit"
-      if (!ln.isEmpty())
+      if (ok && !ln.isEmpty())
         handleCommand(node, ln)
     } while (ok)
   }
