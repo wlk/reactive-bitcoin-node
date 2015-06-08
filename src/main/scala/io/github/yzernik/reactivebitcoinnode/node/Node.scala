@@ -32,6 +32,8 @@ object Node {
 
   sealed trait APIResponse
   case class GetPeerInfoResponse(peers: Set[PeerInfo]) extends APIResponse
+  case class GetConnectionCountResponse(count: Int) extends APIResponse
+
 }
 
 class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging {
@@ -67,7 +69,10 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
       sender ! "Command not found."
   }
 
-  private def getConnectionCount(): Future[Int] = ???
+  private def getConnectionCount(): Future[GetConnectionCountResponse] =
+    (peerManager ? GetPeerInfo).mapTo[Set[PeerInfo]]
+      .map(_.size)
+      .map(GetConnectionCountResponse(_))
 
   private def getPeerInfo(): Future[GetPeerInfoResponse] =
     (peerManager ? GetPeerInfo).mapTo[Set[PeerInfo]]

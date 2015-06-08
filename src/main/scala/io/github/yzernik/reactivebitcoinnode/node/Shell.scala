@@ -1,25 +1,18 @@
 package io.github.yzernik.reactivebitcoinnode.node
 
-import com.quantifind.sumac.FieldArgs
-import akka.actor.ActorSystem
-import scala.BigInt
-import scala.concurrent.Future
+import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-import akka.actor.Actor
-import akka.actor.ActorLogging
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+
+import com.quantifind.sumac.FieldArgs
+
 import akka.actor.ActorRef
-import akka.actor.Props
-import akka.actor.actorRef2Scala
-import akka.io.IO
+import akka.actor.ActorSystem
 import akka.pattern.ask
-import akka.pattern.pipe
 import akka.util.Timeout
-import io.github.yzernik.bitcoinscodec.messages.Version
-import io.github.yzernik.bitcoinscodec.structures.Hash
-import io.github.yzernik.btcio.actors.BTC
-import com.quantifind.sumac
-import scala.concurrent.Await
 
 class NodeArgs extends FieldArgs {
   var network: String = "main"
@@ -34,14 +27,24 @@ class NodeArgs extends FieldArgs {
 
 trait CLI {
 
-  def handleCommand(node: ActorRef, input: String) = {
+  def getAPICommand(input: String): Try[Node.APICommand] = {
     val cmdpattern = """([^\s]+)(.*)""".r
     input match {
-      case cmdpattern(cmd, param) if cmd == "getpeerinfo" =>
-        val c = Node.GetPeerInfo
-        println(queryNode(node, c))
+      case cmdpattern("getpeerinfo", param) =>
+        Success(Node.GetPeerInfo)
+      case cmdpattern("getconnectioncount", param) =>
+        Success(Node.GetConnectionCount)
       case _ =>
-        println(s"cmd not found: $input")
+        Failure(new IllegalStateException(s"cmd not found: $input"))
+    }
+  }
+
+  def handleCommand(node: ActorRef, input: String) = {
+    getAPICommand(input) match {
+      case Success(cmd) =>
+        println(queryNode(node, cmd))
+      case Failure(e) =>
+        println(e.getMessage)
     }
   }
 
@@ -61,25 +64,26 @@ trait CLI {
 }
 
 object Shell extends CLI {
-  val sys = ActorSystem("shellsys")
 
   def main(args: Array[String]) {
+    val sys = ActorSystem("shellsys")
+
     val nodeArgs = new NodeArgs
     try {
       nodeArgs.parse(args)
       println(s"Starting bitcoin node on network: ${nodeArgs.network}")
       val node = sys.actorOf(Node.props(nodeArgs.getNetworkParams))
       handleInputs(node)
-      println(s"Stopping bitcoin node")
-      sys.shutdown
+      println(s"Shutting down bitcoin node")
     } catch {
       case e: com.quantifind.sumac.FeedbackException =>
         println(nodeArgs.helpMessage)
     }
+
+    sys.shutdown
   }
 
   override def queryNode(node: ActorRef, cmd: Node.APICommand): Node.APIResponse = {
-    import sys.dispatcher
     val t = 10 seconds
     implicit val timeout = Timeout(t)
     val f = (node ? cmd).mapTo[Node.APIResponse]
