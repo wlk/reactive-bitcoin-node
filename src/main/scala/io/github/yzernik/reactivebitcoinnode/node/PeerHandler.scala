@@ -1,29 +1,32 @@
 package io.github.yzernik.reactivebitcoinnode.node
 
+import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-
-import org.joda.time.DateTime
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.actorRef2Scala
-import io.github.yzernik.bitcoinscodec.messages.Version
+import akka.pattern.ask
+import akka.pattern.pipe
+import akka.util.Timeout
 import io.github.yzernik.btcio.actors.BTC
+import io.github.yzernik.btcio.actors.PeerInfo
+import io.github.yzernik.btcio.actors.PeerConnection
 
 object PeerHandler {
-  def props(listener: ActorRef, version: Version) =
-    Props(classOf[PeerHandler], listener, version)
+  def props(listener: ActorRef) =
+    Props(classOf[PeerHandler], listener)
 
   case class Initialize(ref: ActorRef)
   case object GetInfo
 }
 
-class PeerHandler(listener: ActorRef, version: Version) extends Actor with ActorLogging {
+class PeerHandler(listener: ActorRef) extends Actor with ActorLogging {
   import PeerHandler._
+  import context.dispatcher
 
-  var peerInfo = PeerInfo(version)
+  implicit val timeout = Timeout(7 seconds)
 
   def receive = ready
 
@@ -38,24 +41,16 @@ class PeerHandler(listener: ActorRef, version: Version) extends Actor with Actor
     case BTC.Closed =>
       context.stop(self)
     case BTC.Received(msg) =>
-      peerInfo = peerInfo.copy(lastTime = DateTime.now)
       listener ! PeerManager.ReceivedFromPeer(msg, sender)
     case BTC.Send(msg) =>
       log.info(s"Sending outgoing message: $msg")
       conn ! BTC.Send(msg)
     case GetInfo =>
-      sender ! peerInfo
+      getPeerInfo(conn).pipeTo(sender)
+
   }
 
-}
-
-case class PeerInfo(version: Version, startTime: DateTime, lastTime: DateTime)
-
-object PeerInfo {
-
-  def apply(version: Version): PeerInfo = {
-    val now = DateTime.now
-    PeerInfo(version, now, now)
-  }
+  private def getPeerInfo(conn: ActorRef) =
+    (conn ? PeerConnection.GetPeerInfo).mapTo[PeerInfo]
 
 }

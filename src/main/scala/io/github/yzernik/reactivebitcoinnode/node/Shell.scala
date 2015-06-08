@@ -80,7 +80,7 @@ object Shell extends CLI {
 
   override def queryNode(node: ActorRef, cmd: Node.APICommand): Node.APIResponse = {
     import sys.dispatcher
-    val t = 5 seconds
+    val t = 10 seconds
     implicit val timeout = Timeout(t)
     val f = (node ? cmd).mapTo[Node.APIResponse]
     Await.result(f, t)

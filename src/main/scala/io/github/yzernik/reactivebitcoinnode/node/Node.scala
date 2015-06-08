@@ -14,9 +14,9 @@ import akka.io.IO
 import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout
-import io.github.yzernik.bitcoinscodec.messages.Version
 import io.github.yzernik.bitcoinscodec.structures.Hash
 import io.github.yzernik.btcio.actors.BTC
+import io.github.yzernik.btcio.actors.PeerInfo
 
 object Node {
   def props(networkParameters: NetworkParameters) =
@@ -39,7 +39,7 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
   import context.system
   import Node._
 
-  implicit val timeout = Timeout(5 seconds)
+  implicit val timeout = Timeout(9 seconds)
 
   val magic = networkParameters.packetMagic
   val services = BigInt(1L)
