@@ -1,20 +1,49 @@
 package io.github.yzernik.reactivebitcoinnode.node
 
-import java.net.InetAddress
-import java.net.InetSocketAddress
-
+import scala.BigInt
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-import scala.util.Random
-import scala.util.Try
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.actorRef2Scala
+import akka.io.IO
+import akka.pattern.ask
+import akka.pattern.pipe
+import akka.util.Timeout
 import io.github.yzernik.bitcoinscodec.messages.Version
+import io.github.yzernik.bitcoinscodec.structures.Hash
+import io.github.yzernik.btcio.actors.BTC
+
+import java.net.InetAddress
+import java.net.InetSocketAddress
+import scala.language.postfixOps
+import scala.util.Random
+import scala.util.Try
+import akka.actor.Actor
+import akka.actor.ActorLogging
+import akka.actor.ActorRef
+import akka.actor.Props
+import akka.actor.Terminated
+import akka.actor.actorRef2Scala
 import io.github.yzernik.bitcoinscodec.structures.Message
 import io.github.yzernik.btcio.actors.BTC
+import scala.concurrent.Future
+
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
+import scala.language.postfixOps
+
+import akka.actor.Actor
+import akka.actor.ActorLogging
+import akka.actor.ActorRef
+import akka.actor.Props
+import akka.actor.actorRef2Scala
+import akka.pattern.ask
+import akka.util.Timeout
 
 object PeerManager {
   def props(btc: ActorRef, networkParameters: NetworkParameters) =
@@ -38,7 +67,7 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
   import PeerManager._
 
   var addresses: Set[InetSocketAddress] = getSeedAddresses.toSet
-  var connections: Map[ActorRef, Version] = Map.empty
+  var connections: Set[ActorRef] = Set.empty
 
   def receive = ready
 
@@ -56,21 +85,22 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
       log.info("updating connections...")
       updateConnections
     case BTC.Connected(version) =>
-      sender ! BTC.Register(self)
-      connections += sender -> version
-      log.info(s"current connection count: ${connections.size}")
-      listener ! NewConnection(sender)
-    case BTC.Closed =>
-      connections -= sender
-    case BTC.Received(msg) =>
-      listener ! ReceivedFromPeer(msg, sender)
+      val p = context.actorOf(PeerHandler.props(listener, version))
+      context.watch(p)
+      p ! PeerHandler.Initialize(sender)
+      connections += p
+    case Terminated(ref) =>
+      connections -= ref
     case SendToPeer(msg, ref) =>
       log.info(s"Sending outgoing message: $msg")
       ref ! BTC.Send(msg)
     case GetNetworkTime =>
+    /*
       sender ! getAverageNetworkTime
+      * 
+      */
     case Node.GetPeerInfo =>
-      sender ! connections.values.toSet
+      getPeerInfos.pipeTo(sender)
   }
 
   private def getRandomElement[A](s: Iterable[A]) =
@@ -92,8 +122,15 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
   private def getAverageNetworkTime =
     if (connections.isEmpty) 0
     else {
-      val times = connections.values.map(_.timestamp)
-      times.sum / times.size
+      ???
     }
+
+  private def getPeerInfos: Future[Set[PeerInfo]] = {
+    implicit val timeout = Timeout(5 seconds)
+    val fInfos = connections.map { ref =>
+      (ref ? PeerHandler.GetInfo).mapTo[PeerInfo]
+    }
+    Future.sequence(fInfos)
+  }
 
 }

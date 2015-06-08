@@ -31,7 +31,7 @@ object Node {
   case object GetPeerInfo extends APICommand
 
   sealed trait APIResponse
-  case class GetPeerInfoResponse(peers: Set[Version]) extends APIResponse
+  case class GetPeerInfoResponse(peers: Set[PeerInfo]) extends APIResponse
 }
 
 class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging {
@@ -70,7 +70,7 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
   private def getConnectionCount(): Future[Int] = ???
 
   private def getPeerInfo(): Future[GetPeerInfoResponse] =
-    (peerManager ? GetPeerInfo).mapTo[Set[Version]]
+    (peerManager ? GetPeerInfo).mapTo[Set[PeerInfo]]
       .map(GetPeerInfoResponse(_))
 
   private def getBestBlockHash(): Future[Hash] = ???
