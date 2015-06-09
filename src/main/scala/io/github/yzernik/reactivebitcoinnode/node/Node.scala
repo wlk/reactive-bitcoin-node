@@ -4,7 +4,6 @@ import scala.BigInt
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -14,9 +13,11 @@ import akka.io.IO
 import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout
+import io.github.yzernik.bitcoinscodec.messages.Block
 import io.github.yzernik.bitcoinscodec.structures.Hash
 import io.github.yzernik.btcio.actors.BTC
 import io.github.yzernik.btcio.actors.PeerInfo
+import akka.actor.ActorSystem
 
 object Node {
   def props(networkParameters: NetworkParameters) =
@@ -30,13 +31,11 @@ object Node {
   case object GetConnectionCount extends APICommand
   case object GetPeerInfo extends APICommand
 
-  sealed trait APIResponse
-  case class GetPeerInfoResponse(peers: Set[PeerInfo]) extends APIResponse
-  case class GetConnectionCountResponse(count: Int) extends APIResponse
-
 }
 
-class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging {
+class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
+  with NetworkCommands
+  with BlockchainCommands {
   import context.dispatcher
   import context.system
   import Node._
@@ -55,33 +54,48 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
   networkController ! NetworkController.Initialize
 
   def receive: Receive = {
-    case GetConnectionCount =>
-      getConnectionCount().pipeTo(sender)
-    case GetPeerInfo =>
-      getPeerInfo().pipeTo(sender)
-    case GetBestBlockHash =>
-      getBestBlockHash.pipeTo(sender)
-    case GetBlockCount =>
-      getBlockCount().pipeTo(sender)
-    case GetBlockHash(index) =>
-      getBlockHash(index).pipeTo(sender)
     case cmd: APICommand =>
-      sender ! "Command not found."
+      executeCommand(cmd).pipeTo(sender)
   }
 
-  private def getConnectionCount(): Future[GetConnectionCountResponse] =
-    (peerManager ? GetPeerInfo).mapTo[Set[PeerInfo]]
-      .map(_.size)
-      .map(GetConnectionCountResponse(_))
+  private def executeCommand(cmd: APICommand): Future[Any] = {
+    cmd match {
+      case GetConnectionCount  => getConnectionCount
+      case GetPeerInfo         => getPeersInfo
+      case GetBlockCount       => getBlockCount
+      case GetBestBlockHash    => getBestBlockHash
+      case GetBlockHash(index) => ???
+      case GetBlock(index)     => ???
+    }
+  }
 
-  private def getPeerInfo(): Future[GetPeerInfoResponse] =
-    (peerManager ? GetPeerInfo).mapTo[Set[PeerInfo]]
-      .map(GetPeerInfoResponse(_))
+  private def getConnectionCount = getPeersInfo.map(_.size)
 
-  private def getBestBlockHash(): Future[Hash] = ???
+}
 
-  private def getBlockCount(): Future[Int] = ???
+trait NetworkCommands { self: Node =>
+  def getPeersInfo: Future[Set[PeerInfo]] =
+    (peerManager ? Node.GetPeerInfo).mapTo[Set[PeerInfo]]
+}
 
-  private def getBlockHash(index: Int): Future[Hash] = ???
+trait BlockchainCommands { self: Node =>
+  def getBlockCount: Future[Int] = ???
+  def getBestBlockHash: Future[Hash] = ???
+  def getBlockHash(index: Int): Future[Hash] = ???
+  def getBlock(hash: Hash): Future[Block] = ???
+}
+
+class NodeObj(networkParameters: NetworkParameters, implicit val _system: ActorSystem) {
+  import Node._
+  import _system.dispatcher
+
+  implicit val timeout = Timeout(10 seconds)
+
+  val node = _system.actorOf(Node.props(networkParameters))
+
+  def getPeerInfo: Future[Set[PeerInfo]] = queryNode(GetPeerInfo).mapTo[Set[PeerInfo]]
+  def getConnectionCount: Future[Int] = queryNode(GetConnectionCount).mapTo[Int]
+
+  private def queryNode(cmd: Node.APICommand) = node ? cmd
 
 }

@@ -1,18 +1,29 @@
 package io.github.yzernik.reactivebitcoinnode.node
 
-import scala.concurrent.Await
+import scala.BigInt
+import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
-
-import com.quantifind.sumac.FieldArgs
-
+import akka.actor.Actor
+import akka.actor.ActorLogging
 import akka.actor.ActorRef
-import akka.actor.ActorSystem
+import akka.actor.Props
+import akka.actor.actorRef2Scala
+import akka.io.IO
 import akka.pattern.ask
+import akka.pattern.pipe
 import akka.util.Timeout
+import io.github.yzernik.bitcoinscodec.messages.Block
+import io.github.yzernik.bitcoinscodec.structures.Hash
+import io.github.yzernik.btcio.actors.BTC
+import io.github.yzernik.btcio.actors.PeerInfo
+import akka.actor.ActorSystem
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.language.postfixOps
+import com.quantifind.sumac.FieldArgs
+import akka.actor.ActorSystem
+import scala.concurrent.Await
 
 class NodeArgs extends FieldArgs {
   var network: String = "main"
@@ -25,45 +36,47 @@ class NodeArgs extends FieldArgs {
     }
 }
 
-trait CLI {
+class CLI(node: NodeObj) {
+  import scala.concurrent.ExecutionContext.Implicits.global
 
-  def getAPICommand(input: String): Try[Node.APICommand] = {
-    val cmdpattern = """([^\s]+)(.*)""".r
+  def getAPIResult(input: String): Future[Any] = {
+    val cmdpattern = """[\s]*([^\s]+)(.*)""".r
     input match {
       case cmdpattern("getpeerinfo", param) =>
-        Success(Node.GetPeerInfo)
+        node.getPeerInfo
       case cmdpattern("getconnectioncount", param) =>
-        Success(Node.GetConnectionCount)
+        node.getConnectionCount
       case _ =>
-        Failure(new IllegalStateException(s"cmd not found: $input"))
+        Future.failed(new IllegalStateException(s"command not found: $input"))
     }
   }
 
-  def handleCommand(node: ActorRef, input: String) = {
-    getAPICommand(input) match {
-      case Success(cmd) =>
-        println(queryNode(node, cmd))
-      case Failure(e) =>
-        println(e.getMessage)
+  def getCLIResult(input: String) =
+    getAPIResult(input).map {
+      res => res.toString
+    }.recover {
+      case e => e.getMessage
     }
+
+  def evalCommand(input: String) = {
+    val f = getCLIResult(input)
+    Await.result(f, 10 seconds)
   }
 
-  def handleInputs(node: ActorRef): Unit = {
+  def handleInputs: Unit = {
     var ok = true
     do {
       print("reactive-bitcoin-node>")
       val ln = scala.io.StdIn.readLine
       ok = ln != null && ln != "quit" && ln != "exit"
       if (ok && !ln.isEmpty())
-        handleCommand(node, ln)
+        println(evalCommand(ln))
     } while (ok)
   }
 
-  def queryNode(node: ActorRef, cmd: Node.APICommand): Node.APIResponse
-
 }
 
-object Shell extends CLI {
+object Shell {
 
   def main(args: Array[String]) {
     val sys = ActorSystem("shellsys")
@@ -72,8 +85,9 @@ object Shell extends CLI {
     try {
       nodeArgs.parse(args)
       println(s"Starting bitcoin node on network: ${nodeArgs.network}")
-      val node = sys.actorOf(Node.props(nodeArgs.getNetworkParams))
-      handleInputs(node)
+      val node = new NodeObj(nodeArgs.getNetworkParams, sys)
+      val cli = new CLI(node)
+      cli.handleInputs
       println(s"Shutting down bitcoin node")
     } catch {
       case e: com.quantifind.sumac.FeedbackException =>
@@ -81,13 +95,6 @@ object Shell extends CLI {
     }
 
     sys.shutdown
-  }
-
-  override def queryNode(node: ActorRef, cmd: Node.APICommand): Node.APIResponse = {
-    val t = 10 seconds
-    implicit val timeout = Timeout(t)
-    val f = (node ? cmd).mapTo[Node.APIResponse]
-    Await.result(f, t)
   }
 
 }
