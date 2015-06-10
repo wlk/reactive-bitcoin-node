@@ -63,7 +63,7 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
     case UpdateConnections =>
       log.info("updating connections...")
       updateConnections
-    case BTC.Connected(version, inbound) =>
+    case BTC.Connected(version) =>
       val p = context.actorOf(PeerHandler.props(listener))
       context.watch(p)
       p ! PeerHandler.Initialize(sender)
