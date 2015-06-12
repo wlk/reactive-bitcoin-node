@@ -4,9 +4,11 @@ import scala.BigInt
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
+import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.io.IO
@@ -16,8 +18,6 @@ import akka.util.Timeout
 import io.github.yzernik.bitcoinscodec.messages.Block
 import io.github.yzernik.bitcoinscodec.structures.Hash
 import io.github.yzernik.btcio.actors.BTC
-import io.github.yzernik.btcio.actors.PeerInfo
-import akka.actor.ActorSystem
 
 object Node {
   def props(networkParameters: NetworkParameters) =
@@ -74,8 +74,8 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
 }
 
 trait NetworkCommands { self: Node =>
-  def getPeersInfo: Future[Set[PeerInfo]] =
-    (peerManager ? Node.GetPeerInfo).mapTo[Set[PeerInfo]]
+  def getPeersInfo: Future[Set[BTC.PeerInfo]] =
+    (peerManager ? Node.GetPeerInfo).mapTo[Set[BTC.PeerInfo]]
 }
 
 trait BlockchainCommands { self: Node =>
@@ -93,7 +93,7 @@ class NodeObj(networkParameters: NetworkParameters, implicit val _system: ActorS
 
   val node = _system.actorOf(Node.props(networkParameters), name = "node")
 
-  def getPeerInfo: Future[Set[PeerInfo]] = queryNode(GetPeerInfo).mapTo[Set[PeerInfo]]
+  def getPeerInfo: Future[Set[BTC.PeerInfo]] = queryNode(GetPeerInfo).mapTo[Set[BTC.PeerInfo]]
   def getConnectionCount: Future[Int] = queryNode(GetConnectionCount).mapTo[Int]
 
   private def queryNode(cmd: Node.APICommand) = node ? cmd

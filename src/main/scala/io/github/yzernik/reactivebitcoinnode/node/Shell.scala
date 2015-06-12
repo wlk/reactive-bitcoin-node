@@ -16,7 +16,7 @@ import akka.util.Timeout
 import io.github.yzernik.bitcoinscodec.messages.Block
 import io.github.yzernik.bitcoinscodec.structures.Hash
 import io.github.yzernik.btcio.actors.BTC
-import io.github.yzernik.btcio.actors.PeerInfo
+import io.github.yzernik.btcio.actors.BTC.PeerInfo
 import akka.actor.ActorSystem
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

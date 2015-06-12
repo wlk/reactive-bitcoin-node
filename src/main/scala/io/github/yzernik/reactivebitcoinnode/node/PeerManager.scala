@@ -3,6 +3,7 @@ package io.github.yzernik.reactivebitcoinnode.node
 import java.net.InetAddress
 import java.net.InetSocketAddress
 
+import scala.annotation.migration
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
@@ -20,7 +21,7 @@ import akka.pattern.pipe
 import akka.util.Timeout
 import io.github.yzernik.bitcoinscodec.structures.Message
 import io.github.yzernik.btcio.actors.BTC
-import io.github.yzernik.btcio.actors.PeerInfo
+import io.github.yzernik.btcio.actors.BTC.PeerInfo
 
 object PeerManager {
   def props(btc: ActorRef, networkParameters: NetworkParameters) =
@@ -76,10 +77,7 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
       log.info(s"Sending outgoing message: $msg")
       ref ! BTC.Send(msg)
     case GetNetworkTime =>
-    /*
-      sender ! getAverageNetworkTime
-      * 
-      */
+      ???
     case Node.GetPeerInfo =>
       getPeerInfos.pipeTo(sender)
   }
@@ -108,7 +106,7 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
 
   private def getPeerInfos: Future[Set[PeerInfo]] = {
     val fInfos = connections.map { ref =>
-      (ref ? PeerHandler.GetInfo).mapTo[PeerInfo]
+      (ref ? BTC.GetPeerInfo).mapTo[PeerInfo]
     }
     Future.sequence(fInfos)
   }

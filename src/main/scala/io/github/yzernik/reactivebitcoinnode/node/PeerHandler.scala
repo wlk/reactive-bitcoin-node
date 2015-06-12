@@ -12,8 +12,7 @@ import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout
 import io.github.yzernik.btcio.actors.BTC
-import io.github.yzernik.btcio.actors.BaseConnection
-import io.github.yzernik.btcio.actors.PeerInfo
+import io.github.yzernik.btcio.actors.BTC._
 
 object PeerHandler {
   def props(listener: ActorRef) =
@@ -46,12 +45,12 @@ class PeerHandler(listener: ActorRef) extends Actor with ActorLogging {
     case BTC.Send(msg) =>
       log.info(s"Sending outgoing message: $msg")
       conn ! BTC.Send(msg)
-    case GetInfo =>
+    case BTC.GetPeerInfo =>
       getPeerInfo(conn).pipeTo(sender)
 
   }
 
   private def getPeerInfo(conn: ActorRef) =
-    (conn ? BaseConnection.GetPeerInfo).mapTo[PeerInfo]
+    (conn ? GetPeerInfo).mapTo[PeerInfo]
 
 }
