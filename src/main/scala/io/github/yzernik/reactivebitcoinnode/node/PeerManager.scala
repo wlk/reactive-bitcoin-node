@@ -47,6 +47,7 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
 
   var addresses: Set[InetSocketAddress] = getSeedAddresses.toSet
   var connections: Set[ActorRef] = Set.empty
+  var i = 0
 
   def receive = ready
 
@@ -64,7 +65,8 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
       log.info("updating connections...")
       updateConnections
     case BTC.Connected(version) =>
-      val p = context.actorOf(PeerHandler.props(listener))
+      val p = context.actorOf(PeerHandler.props(listener), name = s"peerHandler-$i")
+      i += 1
       context.watch(p)
       p ! PeerHandler.Initialize(sender)
       connections += p

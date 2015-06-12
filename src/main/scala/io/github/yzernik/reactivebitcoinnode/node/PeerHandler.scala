@@ -27,7 +27,7 @@ class PeerHandler(listener: ActorRef) extends Actor with ActorLogging {
   import PeerHandler._
   import context.dispatcher
 
-  implicit val timeout = Timeout(7 seconds)
+  implicit val timeout = Timeout(5 seconds)
 
   def receive = ready
 

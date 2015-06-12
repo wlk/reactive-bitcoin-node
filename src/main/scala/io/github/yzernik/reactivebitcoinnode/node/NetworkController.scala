@@ -35,7 +35,7 @@ class NetworkController(blockchain: ActorRef, peerManager: ActorRef, btc: ActorR
   def ready: Receive = {
     case Initialize =>
       peerManager ! PeerManager.Initialize(self)
-      context.system.scheduler.schedule(0 seconds, 5 seconds, peerManager, PeerManager.UpdateConnections)
+      context.system.scheduler.schedule(0 seconds, 1 seconds, peerManager, PeerManager.UpdateConnections)
       context.become(active(true))
   }
 

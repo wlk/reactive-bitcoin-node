@@ -47,9 +47,9 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
   val userAgent = "reactive-btc"
   val btc = IO(new BTC(magic, services, userAgent))
 
-  val blockchain: ActorRef = context.actorOf(BlockChainController.props(btc, networkParameters))
-  val peerManager: ActorRef = context.actorOf(PeerManager.props(btc, networkParameters))
-  val networkController: ActorRef = context.actorOf(NetworkController.props(blockchain, peerManager, btc))
+  val blockchain: ActorRef = context.actorOf(BlockChainController.props(btc, networkParameters), name = "blockchain")
+  val peerManager: ActorRef = context.actorOf(PeerManager.props(btc, networkParameters), name = "peerManager")
+  val networkController: ActorRef = context.actorOf(NetworkController.props(blockchain, peerManager, btc), name = "networkController")
 
   networkController ! NetworkController.Initialize
 
@@ -91,7 +91,7 @@ class NodeObj(networkParameters: NetworkParameters, implicit val _system: ActorS
 
   implicit val timeout = Timeout(10 seconds)
 
-  val node = _system.actorOf(Node.props(networkParameters))
+  val node = _system.actorOf(Node.props(networkParameters), name = "node")
 
   def getPeerInfo: Future[Set[PeerInfo]] = queryNode(GetPeerInfo).mapTo[Set[PeerInfo]]
   def getConnectionCount: Future[Int] = queryNode(GetConnectionCount).mapTo[Int]
