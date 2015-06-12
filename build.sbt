@@ -20,7 +20,7 @@ libraryDependencies ++= {
   Seq(
     "com.typesafe.akka" %% "akka-actor"     % akkaV,
     "com.quantifind"    %% "sumac"          % "0.3.0",
-    "io.github.yzernik" %% "btc-io"         % "0.1.4",
+    "io.github.yzernik" %% "btc-io"         % "0.1.5",
     "com.typesafe.akka" %% "akka-testkit"   % akkaV    % "test",
     "org.scalatest"      % "scalatest_2.11" % "2.2.4"  % "test"
   )

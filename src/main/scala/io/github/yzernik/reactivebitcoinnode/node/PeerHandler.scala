@@ -2,6 +2,7 @@ package io.github.yzernik.reactivebitcoinnode.node
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -11,8 +12,8 @@ import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout
 import io.github.yzernik.btcio.actors.BTC
+import io.github.yzernik.btcio.actors.BaseConnection
 import io.github.yzernik.btcio.actors.PeerInfo
-import io.github.yzernik.btcio.actors.PeerConnection
 
 object PeerHandler {
   def props(listener: ActorRef) =
@@ -51,6 +52,6 @@ class PeerHandler(listener: ActorRef) extends Actor with ActorLogging {
   }
 
   private def getPeerInfo(conn: ActorRef) =
-    (conn ? PeerConnection.GetPeerInfo).mapTo[PeerInfo]
+    (conn ? BaseConnection.GetPeerInfo).mapTo[PeerInfo]
 
 }
