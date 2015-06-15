@@ -18,6 +18,7 @@ import akka.pattern.pipe
 import akka.util.Timeout
 import io.github.yzernik.bitcoinscodec.messages.Addr
 import io.github.yzernik.bitcoinscodec.messages.GetAddr
+import io.github.yzernik.bitcoinscodec.messages.GetHeaders
 import io.github.yzernik.bitcoinscodec.structures.Message
 import io.github.yzernik.bitcoinscodec.structures.NetworkAddress
 
@@ -50,7 +51,7 @@ class NetworkController(blockchain: ActorRef, peerManager: ActorRef, btc: ActorR
   def active(syncing: Boolean): Receive = {
     case PeerManager.NewConnection(ref) =>
       log.info(s"Got a new connection: $ref")
-      handleNewConnection(ref)
+      handleNewConnection(ref, syncing)
     case PeerManager.ReceivedFromPeer(msg, ref) =>
       log.info(s"network controller received from $ref other: $msg")
       handlePeerMessage(ref, syncing)(msg)
@@ -66,9 +67,13 @@ class NetworkController(blockchain: ActorRef, peerManager: ActorRef, btc: ActorR
     (peerManager ? PeerManager.GetAddresses).mapTo[Set[InetSocketAddress]]
   }
 
-  private def handleNewConnection(peer: ActorRef) = {
+  private def handleNewConnection(peer: ActorRef, syncing: Boolean) = {
     peerManager ! PeerManager.SendToPeer(GetAddr(), peer)
-    context.become(active(true))
+    if (syncing) {
+      //val msg: Future[GetHeaders] = ???
+      //sendToPeer(peer, msg)
+    }
+
   }
 
   private def getAddr =
@@ -85,7 +90,6 @@ class NetworkController(blockchain: ActorRef, peerManager: ActorRef, btc: ActorR
 
   private def sendToPeer(peer: ActorRef, futureMsg: Future[Message]) = {
     val cmd = futureMsg.map { msg =>
-      println(s"sending msg to peer: $msg")
       PeerManager.SendToPeer(msg, peer)
     }
     cmd.pipeTo(peerManager)
