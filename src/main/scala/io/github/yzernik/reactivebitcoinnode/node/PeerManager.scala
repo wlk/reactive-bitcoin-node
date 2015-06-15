@@ -19,6 +19,7 @@ import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout
+import io.github.yzernik.bitcoinscodec.messages.Version
 import io.github.yzernik.bitcoinscodec.structures.Message
 import io.github.yzernik.btcio.actors.BTC
 import io.github.yzernik.btcio.actors.BTC.PeerInfo
@@ -37,6 +38,12 @@ object PeerManager {
   case class SendToPeers(msg: Message, exclude: List[ActorRef])
 
   val NUM_CONNECTIONS = 10
+
+  private def getSeedAddresses(seeds: List[String], port: Int) =
+    for {
+      fallback <- seeds
+      address <- Try(InetAddress.getAllByName(fallback)).getOrElse(Array())
+    } yield new InetSocketAddress(address, port)
 }
 
 class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends Actor with ActorLogging {
@@ -46,9 +53,8 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
 
   implicit val timeout = Timeout(8 seconds)
 
-  var addresses: Set[InetSocketAddress] = getSeedAddresses.toSet
-  var connections: Set[ActorRef] = Set.empty
-  var i = 0
+  var addresses: Set[InetSocketAddress] = getSeedAddresses(networkParameters.dnsSeeds, networkParameters.port).toSet
+  var connections: Map[ActorRef, Version] = Map.empty
 
   def receive = ready
 
@@ -59,27 +65,37 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
 
   def active(listener: ActorRef): Receive = {
     case AddNode(addr, connect) =>
-      addresses += addr
-      if (connect)
-        btc ! BTC.Connect(addr)
+      log.info(s"adding connection to : $addr, connecting?: $connect")
+      addNode(addr, connect)
     case UpdateConnections =>
       log.info("updating connections...")
       updateConnections
     case BTC.Connected(version) =>
-      val p = context.actorOf(PeerHandler.props(listener), name = s"peerHandler-$i")
-      i += 1
-      context.watch(p)
-      p ! PeerHandler.Initialize(sender)
-      connections += p
+      registerConnection(listener, sender, version)
+    case BTC.Received(msg) =>
+      log.info(s"Recevied incoming message: $msg")
+      listener ! PeerManager.ReceivedFromPeer(msg, sender)
+    case SendToPeer(msg, ref) =>
+      log.info(s"Sending outgoing message: $msg to peer: $ref")
+      ref ! BTC.Send(msg)
     case Terminated(ref) =>
       connections -= ref
-    case SendToPeer(msg, ref) =>
-      log.info(s"Sending outgoing message: $msg")
-      ref ! BTC.Send(msg)
     case GetNetworkTime =>
-      ???
+      sender ! getAverageNetworkTime
     case Node.GetPeerInfo =>
       getPeerInfos.pipeTo(sender)
+  }
+
+  private def addNode(addr: InetSocketAddress, connect: Boolean) = {
+    addresses += addr
+    if (connect) btc ! BTC.Connect(addr)
+  }
+
+  private def registerConnection(listener: ActorRef, conn: ActorRef, v: Version) = {
+    context.watch(conn)
+    conn ! BTC.Register(self)
+    listener ! PeerManager.NewConnection(conn)
+    connections += conn -> v
   }
 
   private def getRandomElement[A](s: Iterable[A]) =
@@ -92,23 +108,18 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
         self ! AddNode(addr, true)
       }
 
-  private def getSeedAddresses =
-    for {
-      fallback <- networkParameters.dnsSeeds
-      address <- Try(InetAddress.getAllByName(fallback)).getOrElse(Array())
-    } yield new InetSocketAddress(address, networkParameters.port)
-
   private def getAverageNetworkTime =
     if (connections.isEmpty) 0
     else {
-      ???
+      val times = connections.values.map(_.timestamp)
+      times.sum / times.size
     }
 
-  private def getPeerInfos: Future[Set[PeerInfo]] = {
-    val fInfos = connections.map { ref =>
+  private def getPeerInfos = {
+    val fInfos = connections.keys.map { ref =>
       (ref ? BTC.GetPeerInfo).mapTo[PeerInfo]
     }
-    Future.sequence(fInfos)
+    Future.sequence(fInfos.toSet)
   }
 
 }

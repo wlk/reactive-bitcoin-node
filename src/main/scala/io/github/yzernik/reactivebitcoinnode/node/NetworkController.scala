@@ -57,7 +57,6 @@ class NetworkController(blockchain: ActorRef, peerManager: ActorRef, btc: ActorR
 
   private def handleNewConnection(peer: ActorRef) = {
     peerManager ! PeerManager.SendToPeer(GetAddr(), peer)
-    //peerManager ! PeerManager.SendToPeer(GetHeaders(), peer)
     context.become(active(true))
   }
 
