@@ -1,5 +1,9 @@
 package io.github.yzernik.reactivebitcoinnode.node
 
+import java.net.InetSocketAddress
+
+import scala.BigInt
+import scala.annotation.migration
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
@@ -10,10 +14,12 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.pattern.ask
+import akka.pattern.pipe
 import akka.util.Timeout
 import io.github.yzernik.bitcoinscodec.messages.Addr
 import io.github.yzernik.bitcoinscodec.messages.GetAddr
 import io.github.yzernik.bitcoinscodec.structures.Message
+import io.github.yzernik.bitcoinscodec.structures.NetworkAddress
 
 object NetworkController {
   def props(blockchain: ActorRef, peerManager: ActorRef, btc: ActorRef) =
@@ -27,6 +33,8 @@ class NetworkController(blockchain: ActorRef, peerManager: ActorRef, btc: ActorR
   import NetworkController._
   import context.system
   import context.dispatcher
+
+  implicit val timeout = Timeout(5 seconds)
 
   var preferredDownloadPeers: Vector[ActorRef] = Vector.empty
 
@@ -51,8 +59,11 @@ class NetworkController(blockchain: ActorRef, peerManager: ActorRef, btc: ActorR
   }
 
   private def getNetworkTime: Future[Long] = {
-    implicit val timeout = Timeout(5 seconds)
     (peerManager ? PeerManager.GetNetworkTime).mapTo[Long]
+  }
+
+  private def getAddresses: Future[Set[InetSocketAddress]] = {
+    (peerManager ? PeerManager.GetAddresses).mapTo[Set[InetSocketAddress]]
   }
 
   private def handleNewConnection(peer: ActorRef) = {
@@ -60,13 +71,33 @@ class NetworkController(blockchain: ActorRef, peerManager: ActorRef, btc: ActorR
     context.become(active(true))
   }
 
-  def handlePeerMessage(peer: ActorRef, syncing: Boolean): PartialFunction[Message, Unit] = {
-    case Addr(addrs) =>
-      addrs.map { case (t, a) => a.address }.foreach { addr =>
-        log.info(s"Adding address: $addr")
+  private def getAddr =
+    for {
+      netAddrs <- getAddresses.map(addrs => addrs.map(NetworkAddress(BigInt(1L), _)))
+      t <- getNetworkTime
+    } yield Addr(netAddrs.toList.map(addr => (t, addr)))
+
+  private def handleAddr(addrs: List[(Long, NetworkAddress)]) =
+    addrs.map { case (t, a) => a.address }
+      .foreach { addr =>
         peerManager ! PeerManager.AddNode(addr, false)
       }
-    case _ =>
+
+  private def sendToPeer(peer: ActorRef, futureMsg: Future[Message]) = {
+    val cmd = futureMsg.map { msg =>
+      println(s"sending msg to peer: $msg")
+      PeerManager.SendToPeer(msg, peer)
+    }
+    cmd.pipeTo(peerManager)
+  }
+
+  def handlePeerMessage(peer: ActorRef, syncing: Boolean): PartialFunction[Message, Unit] = {
+    case Addr(addrs) =>
+      handleAddr(addrs)
+    case GetAddr() =>
+      sendToPeer(peer, getAddr)
+    case other =>
+    // println(s"received msg: $other")
   }
 
 }

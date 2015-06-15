@@ -33,6 +33,7 @@ object PeerManager {
   case class AddNode(addr: InetSocketAddress, connect: Boolean)
   case class NewConnection(ref: ActorRef)
   case object GetNetworkTime
+  case object GetAddresses
   case class ReceivedFromPeer(msg: Message, peer: ActorRef)
   case class SendToPeer(msg: Message, peer: ActorRef)
   case class SendToPeers(msg: Message, exclude: List[ActorRef])
@@ -84,6 +85,8 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
       sender ! getAverageNetworkTime
     case Node.GetPeerInfo =>
       getPeerInfos.pipeTo(sender)
+    case GetAddresses =>
+      sender ! addresses
   }
 
   private def addNode(addr: InetSocketAddress, connect: Boolean) = {
