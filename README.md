@@ -3,7 +3,6 @@ reactive-bitcoin-node
 [![Build Status](https://travis-ci.org/yzernik/reactive-bitcoin-node.svg?branch=master)](https://travis-ci.org/yzernik/reactive-bitcoin-node)
 [![tip for next commit](https://tip4commit.com/projects/1006.svg)](https://tip4commit.com/github/yzernik/reactive-bitcoin-node)
 
-**Disclaimer: This is experimental software. Do not use it with real money.**
 
 Requirements
 --------------
