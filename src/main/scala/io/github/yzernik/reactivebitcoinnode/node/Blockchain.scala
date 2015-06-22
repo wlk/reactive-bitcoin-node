@@ -4,10 +4,10 @@ import io.github.yzernik.bitcoinscodec.messages.Block
 import io.github.yzernik.bitcoinscodec.structures.Hash
 
 /**
- * Scala port of the blockchain implementation at
- * https://github.com/decentraland/decentraland-core/blob/master/lib/blockchain.js
+ * Scala port of the Blockchain implementation at
+ * https://github.com/decentraland/decentraland-core/blob/master/lib/Blockchain.js
  */
-case class BlockChain(genesis: Block) {
+case class Blockchain() {
 
   var tip: Hash = Hash.NULL
   var work: Map[Hash, Int] = Map(Hash.NULL -> 0)
@@ -83,7 +83,7 @@ case class BlockChain(genesis: Block) {
     var toConfirm: List[Hash] = Nil
     var pointer: Hash = hash
 
-    while (!height.contains(hash)) {
+    while (!height.contains(pointer)) {
       toConfirm ::= pointer
       pointer = prev(pointer)
     }
@@ -118,7 +118,7 @@ case class BlockChain(genesis: Block) {
   }
 
   /**
-   * Propose a new block for addition to the blockchain.
+   * Propose a new block for addition to the Blockchain.
    */
   @throws[Exception]
   def proposeNewBlock(block: Block): (List[Hash], List[Hash]) = {
@@ -182,7 +182,7 @@ case class BlockChain(genesis: Block) {
     hash == Hash.NULL || work.contains(hash)
 
   /**
-   * Prune the blockchain.
+   * Prune the Blockchain.
    */
   def prune =
     prev.keys.foreach { hash =>
@@ -243,7 +243,3 @@ case class BlockChain(genesis: Block) {
 }
 
 class BlockchainException(msg: String) extends RuntimeException(msg)
-
-
-
-

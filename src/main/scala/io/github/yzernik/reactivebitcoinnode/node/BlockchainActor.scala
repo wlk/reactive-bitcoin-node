@@ -12,7 +12,7 @@ object BlockchainActor {
 
 class BlockchainActor(btc: ActorRef, networkParameters: NetworkParameters) extends Actor with ActorLogging {
 
-  var blockchain = BlockChain(networkParameters.genesisBlock)
+  var blockchain = Blockchain()
 
   def receive = {
     case _ =>
