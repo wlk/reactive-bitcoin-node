@@ -1,13 +1,11 @@
 package io.github.yzernik.reactivebitcoinnode.node
 
 import java.net.InetSocketAddress
-
 import scala.BigInt
 import scala.annotation.migration
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -21,15 +19,16 @@ import io.github.yzernik.bitcoinscodec.messages.GetAddr
 import io.github.yzernik.bitcoinscodec.messages.GetHeaders
 import io.github.yzernik.bitcoinscodec.structures.Message
 import io.github.yzernik.bitcoinscodec.structures.NetworkAddress
+import io.github.yzernik.bitcoinscodec.structures.Hash
 
 object NetworkController {
-  def props(blockchain: ActorRef, peerManager: ActorRef, btc: ActorRef) =
-    Props(classOf[NetworkController], blockchain, peerManager, btc)
+  def props(peerManager: ActorRef, btc: ActorRef, networkParameters: NetworkParameters) =
+    Props(classOf[NetworkController], peerManager, btc, networkParameters)
 
   case object Initialize
 }
 
-class NetworkController(blockchain: ActorRef, peerManager: ActorRef, btc: ActorRef)
+class NetworkController(peerManager: ActorRef, btc: ActorRef, networkParameters: NetworkParameters)
   extends Actor with ActorLogging {
   import NetworkController._
   import context.system
@@ -37,6 +36,7 @@ class NetworkController(blockchain: ActorRef, peerManager: ActorRef, btc: ActorR
 
   implicit val timeout = Timeout(5 seconds)
 
+  val blockchain = new Blockchain
   var preferredDownloadPeers: Vector[ActorRef] = Vector.empty
 
   def receive = ready
@@ -70,24 +70,33 @@ class NetworkController(blockchain: ActorRef, peerManager: ActorRef, btc: ActorR
   private def handleNewConnection(peer: ActorRef, syncing: Boolean) = {
     peerManager ! PeerManager.SendToPeer(GetAddr(), peer)
     if (syncing) {
-      //val msg: Future[GetHeaders] = ???
-      //sendToPeer(peer, msg)
+      val msg = GetHeaders(networkParameters.PROTOCOL_VERSION, blockchain.getBlockLocator, Hash.NULL)
+      sendToPeer(peer, Future.successful(msg))
     }
 
   }
 
+  /**
+   * Get the Addr message to send to a peer.
+   */
   private def getAddr =
     for {
       netAddrs <- getAddresses.map(addrs => addrs.map(NetworkAddress(BigInt(1L), _)))
       t <- getNetworkTime
     } yield Addr(netAddrs.toList.map(addr => (t, addr)))
 
+  /**
+   * Handle an Addr message from a peer.
+   */
   private def handleAddr(addrs: List[(Long, NetworkAddress)]) =
     addrs.map { case (t, a) => a.address }
       .foreach { addr =>
         peerManager ! PeerManager.AddNode(addr, false)
       }
 
+  /**
+   * Send a message to a specific peer.
+   */
   private def sendToPeer(peer: ActorRef, futureMsg: Future[Message]) = {
     val cmd = futureMsg.map { msg =>
       PeerManager.SendToPeer(msg, peer)
@@ -95,6 +104,9 @@ class NetworkController(blockchain: ActorRef, peerManager: ActorRef, btc: ActorR
     cmd.pipeTo(peerManager)
   }
 
+  /**
+   * Handle a message from a peer.
+   */
   def handlePeerMessage(peer: ActorRef, syncing: Boolean): PartialFunction[Message, Unit] = {
     case Addr(addrs) =>
       handleAddr(addrs)
