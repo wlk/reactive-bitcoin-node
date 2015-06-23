@@ -7,7 +7,7 @@ import io.github.yzernik.bitcoinscodec.structures.Hash
  * Scala port of the Blockchain implementation at
  * https://github.com/decentraland/decentraland-core/blob/master/lib/Blockchain.js
  */
-case class Blockchain() {
+case class Blockchain(genesis: Block) {
 
   var tip: Hash = Hash.NULL
   var work: Map[Hash, Int] = Map(Hash.NULL -> 0)
@@ -18,6 +18,11 @@ case class Blockchain() {
 
   val blockStore = new InMemoryBlockStore
   val txStore = new InMemoryTransactionStore
+
+  /**
+   * Initialize the blockchain with the genesis block.
+   */
+  this.proposeNewBlock(genesis)
 
   /**
    * Calculate the work.

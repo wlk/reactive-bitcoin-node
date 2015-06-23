@@ -1,11 +1,12 @@
 package io.github.yzernik.reactivebitcoinnode.node
 
 import java.net.InetSocketAddress
+
 import scala.BigInt
-import scala.annotation.migration
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -17,18 +18,18 @@ import akka.util.Timeout
 import io.github.yzernik.bitcoinscodec.messages.Addr
 import io.github.yzernik.bitcoinscodec.messages.GetAddr
 import io.github.yzernik.bitcoinscodec.messages.GetHeaders
+import io.github.yzernik.bitcoinscodec.structures.Hash
 import io.github.yzernik.bitcoinscodec.structures.Message
 import io.github.yzernik.bitcoinscodec.structures.NetworkAddress
-import io.github.yzernik.bitcoinscodec.structures.Hash
 
 object NetworkController {
-  def props(peerManager: ActorRef, btc: ActorRef, networkParameters: NetworkParameters) =
-    Props(classOf[NetworkController], peerManager, btc, networkParameters)
+  def props(peerManager: ActorRef, blockchainController: ActorRef, networkParameters: NetworkParameters) =
+    Props(classOf[NetworkController], peerManager, blockchainController, networkParameters)
 
   case object Initialize
 }
 
-class NetworkController(peerManager: ActorRef, btc: ActorRef, networkParameters: NetworkParameters)
+class NetworkController(peerManager: ActorRef, blockchainController: ActorRef, networkParameters: NetworkParameters)
   extends Actor with ActorLogging {
   import NetworkController._
   import context.system
@@ -36,7 +37,6 @@ class NetworkController(peerManager: ActorRef, btc: ActorRef, networkParameters:
 
   implicit val timeout = Timeout(5 seconds)
 
-  val blockchain = new Blockchain
   var preferredDownloadPeers: Vector[ActorRef] = Vector.empty
 
   def receive = ready
@@ -67,11 +67,17 @@ class NetworkController(peerManager: ActorRef, btc: ActorRef, networkParameters:
     (peerManager ? PeerManager.GetAddresses).mapTo[Set[InetSocketAddress]]
   }
 
+  private def getBlockLocatorHashes: Future[List[Hash]] = {
+    (blockchainController ? BlockchainController.GetBlockLocator).mapTo[List[Hash]]
+  }
+
   private def handleNewConnection(peer: ActorRef, syncing: Boolean) = {
     peerManager ! PeerManager.SendToPeer(GetAddr(), peer)
     if (syncing) {
-      val msg = GetHeaders(networkParameters.PROTOCOL_VERSION, blockchain.getBlockLocator, Hash.NULL)
-      sendToPeer(peer, Future.successful(msg))
+      val msg = getBlockLocatorHashes.map { bl =>
+        GetHeaders(networkParameters.PROTOCOL_VERSION, bl, Hash.NULL)
+      }
+      sendToPeer(peer, msg)
     }
 
   }

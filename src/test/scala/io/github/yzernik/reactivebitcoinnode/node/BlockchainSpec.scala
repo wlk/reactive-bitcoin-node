@@ -7,14 +7,20 @@ import org.scalatest.Matchers
 
 class BlockchainSpec extends FlatSpec with Matchers {
 
-  "A Blockchain" should "start with the null hash" in {
-    val blockchain = new Blockchain
-    blockchain.getCurrentHeight should be(-1)
-  }
-
-  it should "accept a genesis block" in {
-    val blockchain = new Blockchain
-    blockchain.proposeNewBlock(TestNet3Params.genesisBlock)
+  "A Blockchain" should "start with height zero" in {
+    val blockchain = new Blockchain(TestNet3Params.genesisBlock)
     blockchain.getCurrentHeight should be(0)
   }
+
+  it should "start with the genesis block at the tip" in {
+    val blockchain = new Blockchain(TestNet3Params.genesisBlock)
+    blockchain.getTipBlock should be(TestNet3Params.genesisBlock)
+  }
+
+  it should "start with the correct block locator" in {
+    val blockchain = new Blockchain(TestNet3Params.genesisBlock)
+    val bl = List(TestNet3Params.genesisBlock.block_header.hash)
+    blockchain.getBlockLocator should be(bl)
+  }
+
 }
