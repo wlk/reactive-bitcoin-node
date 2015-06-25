@@ -49,9 +49,14 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
 
   val blockchainController = context.actorOf(BlockchainController.props(networkParameters, btc), name = "blockchainController")
   val peerManager = context.actorOf(PeerManager.props(btc, networkParameters), name = "peerManager")
-  val networkController = context.actorOf(NetworkController.props(peerManager, blockchainController, networkParameters), name = "networkController")
+  // val blockchainSync = context.actorOf(BlockChainSync.props(blockchainController), name = "blockchainSync")
 
-  networkController ! NetworkController.Initialize
+  /**
+   * Start the node on the network.
+   */
+  peerManager ! PeerManager.Initialize(blockchainController)
+
+  context.system.scheduler.schedule(0 seconds, 1 seconds, peerManager, PeerManager.UpdateConnections)
 
   def receive: Receive = {
     case cmd: APICommand =>
