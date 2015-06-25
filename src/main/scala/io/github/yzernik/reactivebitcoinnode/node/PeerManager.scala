@@ -3,7 +3,6 @@ package io.github.yzernik.reactivebitcoinnode.node
 import java.net.InetAddress
 import java.net.InetSocketAddress
 
-import scala.annotation.migration
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
@@ -61,10 +60,8 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
 
   def active(blockchainController: ActorRef): Receive = {
     case AddNode(addr, connect) =>
-      log.info(s"adding connection to : $addr, connecting?: $connect")
       addNode(addr, connect)
     case UpdateConnections =>
-      log.info("updating connections...")
       updateConnections
     case BTC.Connected(version, event, inbound) =>
       registerConnection(blockchainController, sender, version, inbound)
@@ -88,7 +85,7 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
 
   private def registerConnection(blockchainController: ActorRef, conn: ActorRef, v: Version, inbound: Boolean) = {
     context.watch(conn)
-    val handler = context.actorOf(PeerHandler.props(blockchainController, self))
+    val handler = context.actorOf(PeerHandler.props(blockchainController, self, networkParameters))
     handler ! PeerHandler.Initialize(conn, inbound)
     connections += conn -> v
   }

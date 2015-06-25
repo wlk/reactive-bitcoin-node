@@ -245,6 +245,12 @@ case class Blockchain(genesis: Block) {
    */
   def getTipBlock =
     blockStore.get(tip)
+
+  /**
+   * Get the hash by height.
+   */
+  def getHashByHeight(index: Int) =
+    hashByHeight(index)
 }
 
 class BlockchainException(msg: String) extends RuntimeException(msg)

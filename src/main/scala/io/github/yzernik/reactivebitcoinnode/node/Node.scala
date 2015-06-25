@@ -7,7 +7,6 @@ import scala.language.postfixOps
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
-import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.actor.actorRef2Scala
@@ -49,7 +48,6 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
 
   val blockchainController = context.actorOf(BlockchainController.props(networkParameters, btc), name = "blockchainController")
   val peerManager = context.actorOf(PeerManager.props(btc, networkParameters), name = "peerManager")
-  // val blockchainSync = context.actorOf(BlockChainSync.props(blockchainController), name = "blockchainSync")
 
   /**
    * Start the node on the network.
@@ -69,8 +67,8 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
       case GetPeerInfo         => getPeersInfo
       case GetBlockCount       => getBlockCount
       case GetBestBlockHash    => getBestBlockHash
-      case GetBlockHash(index) => ???
-      case GetBlock(index)     => ???
+      case GetBlockHash(index) => getBlockHash(index)
+      case GetBlock(hash)      => ???
     }
   }
 
@@ -84,9 +82,11 @@ trait NetworkCommands { self: Node =>
 }
 
 trait BlockchainCommands { self: Node =>
-  def getBlockCount: Future[Int] = ???
+  def getBlockCount: Future[Int] =
+    (blockchainController ? BlockchainController.GetCurrentHeight).mapTo[Int]
   def getBestBlockHash: Future[Hash] = ???
-  def getBlockHash(index: Int): Future[Hash] = ???
+  def getBlockHash(index: Int): Future[Hash] =
+    (blockchainController ? BlockchainController.GetBlockHash(index)).mapTo[Hash]
   def getBlock(hash: Hash): Future[Block] = ???
 }
 
@@ -100,6 +100,9 @@ class NodeObj(networkParameters: NetworkParameters, implicit val _system: ActorS
 
   def getPeerInfo: Future[Set[BTC.PeerInfo]] = queryNode(GetPeerInfo).mapTo[Set[BTC.PeerInfo]]
   def getConnectionCount: Future[Int] = queryNode(GetConnectionCount).mapTo[Int]
+
+  def getBlockCount: Future[Int] = queryNode(GetBlockCount).mapTo[Int]
+  def getBlockHash(index: Int): Future[Hash] = queryNode(GetBlockHash(index)).mapTo[Hash]
 
   private def queryNode(cmd: Node.APICommand) = node ? cmd
 

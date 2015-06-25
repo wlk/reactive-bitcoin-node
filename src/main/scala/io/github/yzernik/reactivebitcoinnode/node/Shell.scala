@@ -46,6 +46,8 @@ class CLI(node: NodeObj) {
         node.getPeerInfo
       case cmdpattern("getconnectioncount", param) =>
         node.getConnectionCount
+      case cmdpattern("getblockcount", param) =>
+        node.getBlockCount
       case _ =>
         Future.failed(new IllegalStateException(s"command not found: $input"))
     }
