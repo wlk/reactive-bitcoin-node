@@ -7,7 +7,6 @@ import scala.language.postfixOps
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
-import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.io.IO
@@ -88,22 +87,4 @@ trait BlockchainCommands { self: Node =>
   def getBlockHash(index: Int): Future[Hash] =
     (blockchainController ? BlockchainController.GetBlockHash(index)).mapTo[Hash]
   def getBlock(hash: Hash): Future[Block] = ???
-}
-
-class NodeObj(networkParameters: NetworkParameters, implicit val _system: ActorSystem) {
-  import Node._
-  import _system.dispatcher
-
-  implicit val timeout = Timeout(10 seconds)
-
-  val node = _system.actorOf(Node.props(networkParameters), name = "node")
-
-  def getPeerInfo: Future[Set[BTC.PeerInfo]] = queryNode(GetPeerInfo).mapTo[Set[BTC.PeerInfo]]
-  def getConnectionCount: Future[Int] = queryNode(GetConnectionCount).mapTo[Int]
-
-  def getBlockCount: Future[Int] = queryNode(GetBlockCount).mapTo[Int]
-  def getBlockHash(index: Int): Future[Hash] = queryNode(GetBlockHash(index)).mapTo[Hash]
-
-  private def queryNode(cmd: Node.APICommand) = node ? cmd
-
 }
