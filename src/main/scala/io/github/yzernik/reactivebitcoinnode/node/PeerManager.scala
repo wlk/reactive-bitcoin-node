@@ -51,9 +51,7 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
   var addresses: Set[InetSocketAddress] = getSeedAddresses(networkParameters.dnsSeeds, networkParameters.port).toSet
   var connections: Map[ActorRef, Version] = Map.empty
 
-  def receive = ready
-
-  def ready: Receive = {
+  def receive = {
     case Initialize(blockchainController) =>
       context.become(active(blockchainController))
   }
