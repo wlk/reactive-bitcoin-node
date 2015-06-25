@@ -72,7 +72,7 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
     case Node.GetPeerInfo =>
       getPeerInfos.pipeTo(sender)
     case GetAddresses =>
-      sender ! addresses
+      sender ! addresses.toList
   }
 
   /**

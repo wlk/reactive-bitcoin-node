@@ -7,6 +7,7 @@ import scala.language.postfixOps
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
+import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.io.IO
@@ -37,8 +38,6 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
   import context.dispatcher
   import context.system
   import Node._
-
-  implicit val timeout = Timeout(9 seconds)
 
   val magic = networkParameters.packetMagic
   val services = BigInt(1L)
@@ -75,16 +74,24 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
 
 }
 
-trait NetworkCommands { self: Node =>
-  def getPeersInfo: Future[Set[BTC.PeerInfo]] =
+trait NetworkCommands {
+  private implicit val timeout = Timeout(10 seconds)
+
+  val peerManager: ActorRef
+
+  def getPeersInfo =
     (peerManager ? Node.GetPeerInfo).mapTo[Set[BTC.PeerInfo]]
 }
 
-trait BlockchainCommands { self: Node =>
-  def getBlockCount: Future[Int] =
+trait BlockchainCommands {
+  private implicit val timeout = Timeout(10 seconds)
+
+  val blockchainController: ActorRef
+
+  def getBlockCount =
     (blockchainController ? BlockchainController.GetCurrentHeight).mapTo[Int]
   def getBestBlockHash: Future[Hash] = ???
-  def getBlockHash(index: Int): Future[Hash] =
+  def getBlockHash(index: Int) =
     (blockchainController ? BlockchainController.GetBlockHash(index)).mapTo[Hash]
   def getBlock(hash: Hash): Future[Block] = ???
 }

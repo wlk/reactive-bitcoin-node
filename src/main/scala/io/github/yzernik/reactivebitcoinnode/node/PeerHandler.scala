@@ -2,7 +2,6 @@ package io.github.yzernik.reactivebitcoinnode.node
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -17,8 +16,9 @@ import io.github.yzernik.bitcoinscodec.messages.GetHeaders
 import io.github.yzernik.bitcoinscodec.messages.Headers
 import io.github.yzernik.bitcoinscodec.structures.Hash
 import io.github.yzernik.btcio.actors.BTC
-
 import akka.pattern.{ ask, pipe }
+import java.net.InetSocketAddress
+import io.github.yzernik.bitcoinscodec.structures.NetworkAddress
 
 object PeerHandler {
   def props(blockchainController: ActorRef, peerManager: ActorRef, networkParameters: NetworkParameters) =
@@ -32,6 +32,8 @@ class PeerHandler(blockchainController: ActorRef, peerManager: ActorRef, network
   extends Actor with ActorLogging {
   import PeerHandler._
   import context.dispatcher
+
+  implicit val timeout = Timeout(5 seconds)
 
   def receive: Receive = {
     case Initialize(conn, inbound) =>
@@ -50,6 +52,8 @@ class PeerHandler(blockchainController: ActorRef, peerManager: ActorRef, network
       handleAddr(addr)
     case BTC.Received(headers: Headers) =>
       handleHeaders(headers, conn)
+    case BTC.Received(getAddr: GetAddr) =>
+      handleGetAddr(conn)
     case other =>
       log.info(s"Peer Handler received message: $other")
   }
@@ -60,10 +64,8 @@ class PeerHandler(blockchainController: ActorRef, peerManager: ActorRef, network
     getGetHeaders.map(BTC.Send).pipeTo(conn)
   }
 
-  private def getBlockLocator = {
-    implicit val timeout = Timeout(5 seconds)
+  private def getBlockLocator =
     (blockchainController ? BlockchainController.GetBlockLocator).mapTo[List[Hash]]
-  }
 
   /**
    * Get the GetHeaders message.
@@ -83,7 +85,7 @@ class PeerHandler(blockchainController: ActorRef, peerManager: ActorRef, network
     }
 
   /**
-   * Handle a headers message.
+   * Handle a Headers message.
    */
   private def handleHeaders(headers: Headers, conn: ActorRef) = {
     headers.invs.foreach { block =>
@@ -91,6 +93,19 @@ class PeerHandler(blockchainController: ActorRef, peerManager: ActorRef, network
     }
     if (!headers.invs.isEmpty)
       getGetHeaders.map(BTC.Send).pipeTo(conn)
+  }
+
+  /**
+   * Handle a GetAddr message.
+   */
+  private def handleGetAddr(conn: ActorRef) = {
+    val addresses = (peerManager ? PeerManager.GetAddresses).mapTo[List[InetSocketAddress]]
+    val networkTime = (peerManager ? PeerManager.GetNetworkTime).mapTo[Int]
+    val addr = for {
+      addrs <- addresses
+      t <- networkTime
+    } yield Addr(addrs.map { a => (t.toLong, NetworkAddress(BigInt(1), a)) })
+    getGetHeaders.map(BTC.Send).pipeTo(conn)
   }
 
 }
