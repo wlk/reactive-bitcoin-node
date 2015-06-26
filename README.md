@@ -15,13 +15,13 @@ The bitcoin node can be used in Java or Scala code, or run through the command-l
 
 - sbt
 
-### run on testnet
+### Start a node on testnet
 
 ```
 sbt "run --network test"
 ```
 
-### run on mainnet
+### Start a node on mainnet
 
 ```
 sbt "run --network main"
