@@ -3,18 +3,24 @@
 [![Build Status](https://travis-ci.org/yzernik/reactive-bitcoin-node.svg?branch=master)](https://travis-ci.org/yzernik/reactive-bitcoin-node)
 [![tip for next commit](https://tip4commit.com/projects/1006.svg)](https://tip4commit.com/github/yzernik/reactive-bitcoin-node)
 
+Akka actor based bitcoin client.
 
-## Requirements
+Some of the API commands of the [original Bitcoin client](https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_calls_list) are supported. More are in progress.
+
+
+## Running in the shell
+
+### Requirements
 
 - sbt
 
-## How to run on testnet
+### run on testnet
 
 ```
 sbt "run --network test"
 ```
 
-## How to run on mainnet
+### run on mainnet
 
 ```
 sbt "run --network main"
@@ -26,9 +32,9 @@ or
 sbt run
 ```
 
-## Commands
+### Commands
 
-Some of the API commands of the [original Bitcoin client](https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_calls_list) are supported through the interactive shell.
+Commands can be run throught the shell.
 
 For example,
 
@@ -46,13 +52,6 @@ reactive-bitcoin-node> getblockhash 73546
 
 etc.
 
-
-## Get help
-
-```
-reactive-bitcoin-node> help
-...
-```
 
 ## About
 
