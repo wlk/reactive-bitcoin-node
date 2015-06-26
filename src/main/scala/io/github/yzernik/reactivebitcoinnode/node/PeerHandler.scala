@@ -1,5 +1,7 @@
 package io.github.yzernik.reactivebitcoinnode.node
 
+import java.net.InetSocketAddress
+import scala.BigInt
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 import akka.actor.Actor
@@ -9,16 +11,19 @@ import akka.actor.Props
 import akka.actor.Terminated
 import akka.actor.actorRef2Scala
 import akka.pattern.ask
+import akka.pattern.pipe
 import akka.util.Timeout
 import io.github.yzernik.bitcoinscodec.messages.Addr
+import io.github.yzernik.bitcoinscodec.messages.Alert
 import io.github.yzernik.bitcoinscodec.messages.GetAddr
 import io.github.yzernik.bitcoinscodec.messages.GetHeaders
 import io.github.yzernik.bitcoinscodec.messages.Headers
+import io.github.yzernik.bitcoinscodec.messages.Ping
+import io.github.yzernik.bitcoinscodec.messages.Pong
 import io.github.yzernik.bitcoinscodec.structures.Hash
-import io.github.yzernik.btcio.actors.BTC
-import akka.pattern.{ ask, pipe }
-import java.net.InetSocketAddress
 import io.github.yzernik.bitcoinscodec.structures.NetworkAddress
+import io.github.yzernik.btcio.actors.BTC
+import io.github.yzernik.bitcoinscodec.structures.Message
 
 object PeerHandler {
   def props(blockchainController: ActorRef, peerManager: ActorRef, networkParameters: NetworkParameters) =
@@ -48,22 +53,21 @@ class PeerHandler(blockchainController: ActorRef, peerManager: ActorRef, network
       context.stop(self)
     case Terminated(ref) =>
       context.stop(self)
-    case BTC.Received(addr: Addr) =>
-      handleAddr(addr)
-    case BTC.Received(headers: Headers) =>
-      handleHeaders(headers, conn)
-    case BTC.Received(getAddr: GetAddr) =>
-      handleGetAddr(conn)
-    case other =>
-      log.info(s"Peer Handler received message: $other")
+    case BTC.Received(msg) =>
+      handleMsg(msg, conn)
   }
 
+  /**
+   * Do the initial sync with a new peer connection.
+   */
   private def initialSync(conn: ActorRef, inbound: Boolean) = {
-    // log.info(s"Doing initial sync with peer: $conn")
     conn ! BTC.Send(GetAddr())
     getGetHeaders.map(BTC.Send).pipeTo(conn)
   }
 
+  /**
+   * Get the block locator hashes.
+   */
   private def getBlockLocator =
     (blockchainController ? BlockchainController.GetBlockLocator).mapTo[List[Hash]]
 
@@ -74,6 +78,26 @@ class PeerHandler(blockchainController: ActorRef, peerManager: ActorRef, network
     getBlockLocator.map { bl =>
       GetHeaders(networkParameters.PROTOCOL_VERSION, bl, Hash.NULL)
     }
+
+  /**
+   * Handle an incoming message from a peer.
+   */
+  private def handleMsg(msg: Message, conn: ActorRef) = {
+    msg match {
+      case addr: Addr =>
+        handleAddr(addr)
+      case headers: Headers =>
+        handleHeaders(headers, conn)
+      case getAddr: GetAddr =>
+        handleGetAddr(conn)
+      case ping: Ping =>
+        handlePing(ping, conn)
+      case alert: Alert =>
+        handleAlert(alert, conn)
+      case other =>
+        log.info(s"Peer Handler received message: $other")
+    }
+  }
 
   /**
    * Handle an Addr message from a peer.
@@ -106,6 +130,21 @@ class PeerHandler(blockchainController: ActorRef, peerManager: ActorRef, network
       t <- networkTime
     } yield Addr(addrs.map { a => (t.toLong, NetworkAddress(BigInt(1), a)) })
     getGetHeaders.map(BTC.Send).pipeTo(conn)
+  }
+
+  /**
+   * Handle a Ping message.
+   */
+  private def handlePing(ping: Ping, conn: ActorRef) = {
+    conn ! BTC.Send(Pong(ping.nonce))
+  }
+
+  /**
+   * Handle an Alert message.
+   */
+  private def handleAlert(alert: Alert, conn: ActorRef) = {
+    println(s"Alert: ${alert.comment}")
+    peerManager ! PeerManager.RelayMessage(alert, conn)
   }
 
 }

@@ -30,12 +30,9 @@ object PeerManager {
   case class Initialize(blockchainController: ActorRef)
   case object UpdateConnections
   case class AddNode(addr: InetSocketAddress, connect: Boolean)
-  case class NewConnection(ref: ActorRef)
   case object GetNetworkTime
   case object GetAddresses
-  case class ReceivedFromPeer(msg: Message, peer: ActorRef)
-  case class SendToPeer(msg: Message, peer: ActorRef)
-  case class SendToPeers(msg: Message, exclude: List[ActorRef])
+  case class RelayMessage(msg: Message, from: ActorRef)
 
   val NUM_CONNECTIONS = 10
 
@@ -71,6 +68,8 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
       getPeerInfos.pipeTo(sender)
     case GetAddresses =>
       sender ! addresses.toList
+    case RelayMessage(msg, from) =>
+      relayMessage(msg, from)
   }
 
   /**
@@ -121,7 +120,7 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
     val fInfos = connections.keys.map { ref =>
       (ref ? BTC.GetPeerInfo).mapTo[PeerInfo]
     }
-    Future.sequence(fInfos.toSet)
+    Future.sequence(fInfos.toList)
   }
 
   /**
@@ -132,5 +131,13 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
       fallback <- seeds
       address <- Try(InetAddress.getAllByName(fallback)).getOrElse(Array())
     } yield new InetSocketAddress(address, port)
+
+  /**
+   * Relay a message from a peer to the other peers.
+   */
+  private def relayMessage(msg: Message, conn: ActorRef) =
+    for { (c, _) <- connections } {
+      if (conn != c) c ! BTC.Send(msg)
+    }
 
 }

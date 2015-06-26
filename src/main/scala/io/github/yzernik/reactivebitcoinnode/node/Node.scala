@@ -80,7 +80,7 @@ trait NetworkCommands {
   val peerManager: ActorRef
 
   def getPeersInfo =
-    (peerManager ? Node.GetPeerInfo).mapTo[Set[BTC.PeerInfo]]
+    (peerManager ? Node.GetPeerInfo).mapTo[List[BTC.PeerInfo]]
 }
 
 trait BlockchainCommands {
