@@ -17,10 +17,14 @@ import akka.pattern.pipe
 import akka.util.Timeout
 import io.github.yzernik.bitcoinscodec.messages.Addr
 import io.github.yzernik.bitcoinscodec.messages.Alert
+import io.github.yzernik.bitcoinscodec.messages.Block
 import io.github.yzernik.bitcoinscodec.messages.GetAddr
+import io.github.yzernik.bitcoinscodec.messages.GetData
 import io.github.yzernik.bitcoinscodec.messages.Headers
+import io.github.yzernik.bitcoinscodec.messages.Inv
 import io.github.yzernik.bitcoinscodec.messages.Ping
 import io.github.yzernik.bitcoinscodec.messages.Pong
+import io.github.yzernik.bitcoinscodec.structures.InvVect
 import io.github.yzernik.bitcoinscodec.structures.Message
 import io.github.yzernik.bitcoinscodec.structures.NetworkAddress
 import io.github.yzernik.btcio.actors.BTC
@@ -80,6 +84,10 @@ class PeerHandler(blockchainController: ActorRef, peerManager: ActorRef, blockDo
         handlePing(ping, conn)
       case alert: Alert =>
         handleAlert(alert, conn)
+      case inv: Inv =>
+        handleInv(inv, conn)
+      case block: Block =>
+        handleBlock(block, conn)
       case other =>
         log.info(s"Peer Handler received message: $other")
     }
@@ -131,5 +139,23 @@ class PeerHandler(blockchainController: ActorRef, peerManager: ActorRef, blockDo
     println(s"Alert: ${alert.comment}")
     peerManager ! PeerManager.RelayMessage(alert, conn)
   }
+
+  /**
+   * Handle an Inv message.
+   */
+  private def handleInv(inv: Inv, conn: ActorRef) = {
+    inv.invs.foreach { iv =>
+      if (iv.inv_type == InvVect.MSG_BLOCK) {
+        conn ! BTC.Send(GetData(List(iv)))
+      }
+    }
+    peerManager ! PeerManager.RelayMessage(inv, conn) // TODO: validate before relaying Inv.
+  }
+
+  /**
+   * Handle a Block message.
+   */
+  private def handleBlock(block: Block, conn: ActorRef) =
+    blockchainController ! BlockchainController.ProposeNewBlock(block)
 
 }
