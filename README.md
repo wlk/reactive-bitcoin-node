@@ -7,6 +7,7 @@ Akka actor based bitcoin client.
 
 Some of the API commands of the [original Bitcoin client](https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_calls_list) are supported. More are in progress.
 
+The bitcoin node can be used in Java or Scala code, or run through the command-line interface.
 
 ## Running in the shell
 
