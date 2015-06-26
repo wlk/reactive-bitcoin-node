@@ -20,6 +20,8 @@ object BlockchainController {
   case class GetBlockHash(index: Int) extends Command
   case object GetBlockLocator extends Command
   case class ProposeNewBlock(block: Block) extends Command
+
+  case object BlocksProposed
 }
 
 class BlockchainController(networkParameters: NetworkParameters, btc: ActorRef)
@@ -42,7 +44,7 @@ class BlockchainController(networkParameters: NetworkParameters, btc: ActorRef)
     case ProposeNewBlock(block) =>
       val (a, b) = blockchain.proposeNewBlock(block)
       btc ! BTC.UpdateHeight(blockchain.getCurrentHeight)
-    // log.info(s"Current height: ${blockchain.getCurrentHeight}, hash: ${blockchain.tip}")
+      log.info(s"Current height: ${blockchain.getCurrentHeight}, hash: ${blockchain.tip}")
   }
 
 }

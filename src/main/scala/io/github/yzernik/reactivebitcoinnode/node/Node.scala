@@ -45,7 +45,8 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
   val btc = IO(new BTC(magic, services, userAgent))
 
   val blockchainController = context.actorOf(BlockchainController.props(networkParameters, btc), name = "blockchainController")
-  val peerManager = context.actorOf(PeerManager.props(btc, networkParameters), name = "peerManager")
+  val blockDownloader = context.actorOf(BlockDownloader.props(blockchainController, networkParameters), name = "blockDownloader")
+  val peerManager = context.actorOf(PeerManager.props(btc, blockDownloader, networkParameters), name = "peerManager")
 
   /**
    * Start the node on the network.

@@ -3,6 +3,7 @@ package io.github.yzernik.reactivebitcoinnode.node
 import java.net.InetAddress
 import java.net.InetSocketAddress
 
+import scala.annotation.migration
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
@@ -24,8 +25,8 @@ import io.github.yzernik.btcio.actors.BTC
 import io.github.yzernik.btcio.actors.BTC.PeerInfo
 
 object PeerManager {
-  def props(btc: ActorRef, networkParameters: NetworkParameters) =
-    Props(classOf[PeerManager], btc, networkParameters)
+  def props(btc: ActorRef, blockDownloader: ActorRef, networkParameters: NetworkParameters) =
+    Props(classOf[PeerManager], btc, blockDownloader, networkParameters)
 
   case class Initialize(blockchainController: ActorRef)
   case object UpdateConnections
@@ -38,7 +39,7 @@ object PeerManager {
 
 }
 
-class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends Actor with ActorLogging {
+class PeerManager(btc: ActorRef, blockDownloader: ActorRef, networkParameters: NetworkParameters) extends Actor with ActorLogging {
   import context.system
   import context.dispatcher
   import PeerManager._
@@ -82,7 +83,7 @@ class PeerManager(btc: ActorRef, networkParameters: NetworkParameters) extends A
 
   private def registerConnection(blockchainController: ActorRef, conn: ActorRef, v: Version, inbound: Boolean) = {
     context.watch(conn)
-    val handler = context.actorOf(PeerHandler.props(blockchainController, self, networkParameters))
+    val handler = context.actorOf(PeerHandler.props(blockchainController, self, blockDownloader, networkParameters))
     handler ! PeerHandler.Initialize(conn, inbound)
     connections += conn -> v
   }
