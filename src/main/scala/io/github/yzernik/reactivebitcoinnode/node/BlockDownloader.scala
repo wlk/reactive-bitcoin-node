@@ -33,10 +33,6 @@ class BlockDownloader(blockchainController: ActorRef, networkParameters: Network
   import context.dispatcher
   import context.system
 
-  import akka.actor.Actor
-  import akka.actor.Props
-  import scala.concurrent.duration._
-
   implicit val timeout = Timeout(10 seconds)
 
   var downloadPeers = Map.empty[ActorRef, Long]
@@ -62,6 +58,9 @@ class BlockDownloader(blockchainController: ActorRef, networkParameters: Network
       downloadPeers += conn -> 0
   }
 
+  /**
+    * Update the recorded response time for this peer.
+    */
   private def updateResponseTime(peer: ActorRef, startTime: DateTime) = {
     val requestTime = DateTime.now.getMillis - startTime.getMillis
     downloadPeers += peer -> requestTime

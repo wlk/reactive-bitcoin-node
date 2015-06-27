@@ -32,12 +32,12 @@ object Node {
 
 }
 
-class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
-  with NetworkCommands
-  with BlockchainCommands {
+class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging {
   import context.dispatcher
   import context.system
   import Node._
+
+  implicit val timeout = Timeout(10 seconds)
 
   val magic = networkParameters.packetMagic
   val services = BigInt(1L)
@@ -71,23 +71,11 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
     }
   }
 
-  private def getConnectionCount = getPeersInfo.map(_.size)
-
-}
-
-trait NetworkCommands {
-  private implicit val timeout = Timeout(10 seconds)
-
-  val peerManager: ActorRef
 
   def getPeersInfo =
     (peerManager ? Node.GetPeerInfo).mapTo[List[BTC.PeerInfo]]
-}
-
-trait BlockchainCommands {
-  private implicit val timeout = Timeout(10 seconds)
-
-  val blockchainController: ActorRef
+  def getConnectionCount =
+    getPeersInfo.map(_.size)
 
   def getBlockCount =
     (blockchainController ? BlockchainController.GetCurrentHeight).mapTo[Int]
@@ -95,4 +83,5 @@ trait BlockchainCommands {
   def getBlockHash(index: Int) =
     (blockchainController ? BlockchainController.GetBlockHash(index)).mapTo[Hash]
   def getBlock(hash: Hash): Future[Block] = ???
+
 }
