@@ -125,22 +125,25 @@ case class Blockchain(genesis: Block) {
   /**
    * Propose a new block for addition to the Blockchain.
    */
-  @throws[Exception]
   def proposeNewBlock(block: Block): (List[Hash], List[Hash]) = {
-    val prevHash = block.block_header.prev_block
-    val hash = block.block_header.hash
+    try {
+      val prevHash = block.block_header.prev_block
+      val hash = block.block_header.hash
 
-    require(hasData(prevHash), "No previous data to estimate work")
-    saveBlockToStore(block)
-    addHashReferences(block)
+      require(hasData(prevHash), "No previous data to estimate work")
+      saveBlockToStore(block)
+      addHashReferences(block)
 
-    val blockWork = work(hash)
-    val tipWork = work(this.tip)
+      val blockWork = work(hash)
+      val tipWork = work(this.tip)
 
-    if (blockWork > tipWork)
-      appendNewBlock(hash);
-    else
-      (Nil, Nil)
+      if (blockWork > tipWork)
+        appendNewBlock(hash);
+      else
+        (Nil, Nil)
+    } catch {
+      case e: BlockchainException => (Nil, Nil)
+    }
   }
 
   /**
