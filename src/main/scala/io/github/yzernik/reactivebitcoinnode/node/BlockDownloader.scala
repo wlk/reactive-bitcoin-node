@@ -35,6 +35,9 @@ class BlockDownloader(blockchainController: ActorRef, networkParameters: Network
 
   implicit val timeout = Timeout(10 seconds)
 
+  /**
+   * Map of all the unfinished download peers to their last response time.
+   */
   var downloadPeers = Map.empty[ActorRef, Long]
 
   def receive = idle
@@ -59,8 +62,8 @@ class BlockDownloader(blockchainController: ActorRef, networkParameters: Network
   }
 
   /**
-    * Update the recorded response time for this peer.
-    */
+   * Update the recorded response time for this peer.
+   */
   private def updateResponseTime(peer: ActorRef, startTime: DateTime) = {
     val requestTime = DateTime.now.getMillis - startTime.getMillis
     downloadPeers += peer -> requestTime

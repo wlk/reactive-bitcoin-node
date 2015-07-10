@@ -142,7 +142,7 @@ case class Blockchain(genesis: Block) {
       else
         (Nil, Nil)
     } catch {
-      case e: BlockchainException => (Nil, Nil)
+      case e: Exception => (Nil, Nil)
     }
   }
 
