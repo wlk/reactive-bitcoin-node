@@ -71,12 +71,10 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
     }
   }
 
-
   def getPeersInfo =
     (peerManager ? Node.GetPeerInfo).mapTo[List[BTC.PeerInfo]]
   def getConnectionCount =
     getPeersInfo.map(_.size)
-
   def getBlockCount =
     (blockchainController ? BlockchainController.GetCurrentHeight).mapTo[Int]
   def getBestBlockHash: Future[Hash] = ???
