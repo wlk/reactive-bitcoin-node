@@ -1,20 +1,15 @@
 package io.github.yzernik.reactivebitcoinnode.node
 
 import scala.BigInt
-import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
-import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.actorRef2Scala
 import akka.io.IO
-import akka.pattern.ask
-import akka.pattern.pipe
 import akka.util.Timeout
-import io.github.yzernik.bitcoinscodec.messages.Block
 import io.github.yzernik.bitcoinscodec.structures.Hash
 import io.github.yzernik.btcio.actors.BTC
 
@@ -23,12 +18,21 @@ object Node {
     Props(classOf[Node], networkParameters)
 
   sealed trait APICommand
-  case object GetBestBlockHash extends APICommand
-  case class GetBlock(hash: Hash) extends APICommand
-  case object GetBlockCount extends APICommand
-  case class GetBlockHash(index: Int) extends APICommand
-  case object GetConnectionCount extends APICommand
-  case object GetPeerInfo extends APICommand
+
+  // categories of API commands
+  sealed trait BlockchainCommand extends APICommand
+  sealed trait NetworkCommand extends APICommand
+
+  // blockchain commands
+
+  case object GetBestBlockHash extends BlockchainCommand
+  case class GetBlock(hash: Hash) extends BlockchainCommand
+  case object GetBlockCount extends BlockchainCommand
+  case class GetBlockHash(index: Int) extends BlockchainCommand
+
+  // network commands
+  case object GetConnectionCount extends NetworkCommand
+  case object GetPeerInfo extends NetworkCommand
 
 }
 
@@ -53,33 +57,14 @@ class Node(networkParameters: NetworkParameters) extends Actor with ActorLogging
    */
   peerManager ! PeerManager.Initialize(blockchainController)
 
+  /**
+   * Keep the peer manager periodically refreshed.
+   */
   context.system.scheduler.schedule(0 seconds, 1 seconds, peerManager, PeerManager.UpdateConnections)
 
   def receive: Receive = {
-    case cmd: APICommand =>
-      executeCommand(cmd).pipeTo(sender)
+    case cmd: BlockchainCommand => blockchainController forward cmd
+    case cmd: NetworkCommand    => peerManager forward cmd
   }
-
-  private def executeCommand(cmd: APICommand): Future[Any] = {
-    cmd match {
-      case GetConnectionCount  => getConnectionCount
-      case GetPeerInfo         => getPeersInfo
-      case GetBlockCount       => getBlockCount
-      case GetBestBlockHash    => getBestBlockHash
-      case GetBlockHash(index) => getBlockHash(index)
-      case GetBlock(hash)      => ???
-    }
-  }
-
-  def getPeersInfo =
-    (peerManager ? Node.GetPeerInfo).mapTo[List[BTC.PeerInfo]]
-  def getConnectionCount =
-    getPeersInfo.map(_.size)
-  def getBlockCount =
-    (blockchainController ? BlockchainController.GetCurrentHeight).mapTo[Int]
-  def getBestBlockHash: Future[Hash] = ???
-  def getBlockHash(index: Int) =
-    (blockchainController ? BlockchainController.GetBlockHash(index)).mapTo[Hash]
-  def getBlock(hash: Hash): Future[Block] = ???
 
 }

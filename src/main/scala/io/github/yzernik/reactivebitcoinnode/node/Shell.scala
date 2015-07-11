@@ -24,7 +24,7 @@ class NodeArgs extends FieldArgs {
     }
 }
 
-class CLI(node: ActorRef, implicit val ec: ExecutionContext) {
+class CLI(node: ActorRef) {
 
   /**
    * Evaluate a single command line command.
@@ -74,13 +74,13 @@ object Shell {
 
   def main(args: Array[String]) {
     val sys = ActorSystem("shellsys")
-
     val nodeArgs = new NodeArgs
+
     try {
       nodeArgs.parse(args)
       println(s"Starting bitcoin node on network: ${nodeArgs.network}")
       val node = sys.actorOf(Node.props(nodeArgs.getNetworkParams), name = "node")
-      val cli = new CLI(node, sys.dispatcher)
+      val cli = new CLI(node)
       cli.handleInputs
       println(s"Shutting down bitcoin node")
     } catch {

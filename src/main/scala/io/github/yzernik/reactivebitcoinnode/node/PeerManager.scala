@@ -55,6 +55,8 @@ class PeerManager(btc: ActorRef, blockDownloader: ActorRef, networkParameters: N
   }
 
   def active(blockchainController: ActorRef): Receive = {
+    case cmd: Node.NetworkCommand =>
+      handleNetworkAPICommand(cmd)
     case AddNode(addr, connect) =>
       addNode(addr, connect)
     case UpdateConnections =>
@@ -65,12 +67,22 @@ class PeerManager(btc: ActorRef, blockDownloader: ActorRef, networkParameters: N
       connections -= ref
     case GetNetworkTime =>
       sender ! getAverageNetworkTime
-    case Node.GetPeerInfo =>
-      getPeerInfos.pipeTo(sender)
     case GetAddresses =>
       sender ! addresses.toList
     case RelayMessage(msg, from) =>
       relayMessage(msg, from)
+  }
+
+  /**
+   * Handle a network API command.
+   */
+  private def handleNetworkAPICommand(cmd: Node.NetworkCommand) = {
+    cmd match {
+      case Node.GetPeerInfo =>
+        getPeerInfos.pipeTo(sender)
+      case Node.GetConnectionCount =>
+        getPeerInfos.map(_.length).pipeTo(sender)
+    }
   }
 
   /**
