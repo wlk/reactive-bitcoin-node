@@ -9,7 +9,7 @@ Some of the API commands of the [original Bitcoin client](https://en.bitcoin.it/
 
 The bitcoin node can be used in Java or Scala, or run through the command-line interface.
 
-## Running in the shell
+## RPC shell
 
 Install sbt and run
 
@@ -17,7 +17,7 @@ Install sbt and run
 sbt run
 ```
 
-Optionally specify the mainnet or testnet with the network option
+Optionally specify mainnet or testnet with the network option
 
 ```
 sbt "run --network test"
@@ -29,7 +29,7 @@ sbt "run --network main"
 
 ### Commands
 
-Commands can be run throught the shell.
+RPC commands can be entered in the shell.
 
 For example,
 
