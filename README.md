@@ -7,30 +7,24 @@ Akka actor based bitcoin client.
 
 Some of the API commands of the [original Bitcoin client](https://en.bitcoin.it/wiki/Original_Bitcoin_client/API_calls_list) are supported. More are in progress.
 
-The bitcoin node can be used in Java or Scala code, or run through the command-line interface.
+The bitcoin node can be used in Java or Scala, or run through the command-line interface.
 
 ## Running in the shell
 
-### Requirements
+Install sbt and run
 
-- sbt
+```
+sbt run
+```
 
-### Start a node on testnet
+Optionally specify the mainnet or testnet with the network option
 
 ```
 sbt "run --network test"
 ```
 
-### Start a node on mainnet
-
 ```
 sbt "run --network main"
-```
-
-or
-
-```
-sbt run
 ```
 
 ### Commands
