@@ -2,7 +2,7 @@ name := "reactive-bitcoin-node"
 
 organization := "io.github.yzernik"
 
-version := "0.1.0-SNAPSHOT"
+version := "0.1.0"
 
 scalaVersion := "2.11.6"
 
@@ -31,5 +31,3 @@ libraryDependencies ++= {
 scoverage.ScoverageSbtPlugin.instrumentSettings
 
 org.scoverage.coveralls.CoverallsPlugin.coverallsSettings
-
-seq(bintrayPublishSettings:_*)
