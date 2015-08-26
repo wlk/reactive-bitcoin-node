@@ -24,7 +24,6 @@ object Node {
   sealed trait NetworkCommand extends APICommand
 
   // blockchain commands
-
   case object GetBestBlockHash extends BlockchainCommand
   case class GetBlock(hash: Hash) extends BlockchainCommand
   case object GetBlockCount extends BlockchainCommand
