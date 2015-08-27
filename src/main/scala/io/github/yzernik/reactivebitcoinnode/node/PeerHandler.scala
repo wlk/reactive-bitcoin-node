@@ -1,11 +1,9 @@
 package io.github.yzernik.reactivebitcoinnode.node
 
 import java.net.InetSocketAddress
-
 import scala.BigInt
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -28,6 +26,7 @@ import io.github.yzernik.bitcoinscodec.structures.InvVect
 import io.github.yzernik.bitcoinscodec.structures.Message
 import io.github.yzernik.bitcoinscodec.structures.NetworkAddress
 import io.github.yzernik.btcio.actors.BTC
+import io.github.yzernik.reactivebitcoinnode.blockchain.BlockchainController
 
 object PeerHandler {
   def props(blockchainController: ActorRef, peerManager: ActorRef, blockDownloader: ActorRef, networkParameters: NetworkParameters) =

@@ -1,9 +1,9 @@
-package io.github.yzernik.reactivebitcoinnode.node
-
-import scala.collection.mutable.Stack
+package io.github.yzernik.reactivebitcoinnode.blockchain
 
 import org.scalatest.FlatSpec
 import org.scalatest.Matchers
+import io.github.yzernik.reactivebitcoinnode.blockchain.Blockchain
+import io.github.yzernik.reactivebitcoinnode.node.TestNet3Params
 
 class BlockchainSpec extends FlatSpec with Matchers {
 

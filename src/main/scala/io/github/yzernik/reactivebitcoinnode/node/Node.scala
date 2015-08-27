@@ -3,7 +3,6 @@ package io.github.yzernik.reactivebitcoinnode.node
 import scala.BigInt
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
@@ -12,6 +11,7 @@ import akka.io.IO
 import akka.util.Timeout
 import io.github.yzernik.bitcoinscodec.structures.Hash
 import io.github.yzernik.btcio.actors.BTC
+import io.github.yzernik.reactivebitcoinnode.blockchain.BlockchainController
 
 object Node {
   def props(networkParameters: NetworkParameters) =

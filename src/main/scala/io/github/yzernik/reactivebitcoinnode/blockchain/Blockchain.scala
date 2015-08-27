@@ -1,4 +1,4 @@
-package io.github.yzernik.reactivebitcoinnode.node
+package io.github.yzernik.reactivebitcoinnode.blockchain
 
 import io.github.yzernik.bitcoinscodec.messages.Block
 import io.github.yzernik.bitcoinscodec.structures.Hash

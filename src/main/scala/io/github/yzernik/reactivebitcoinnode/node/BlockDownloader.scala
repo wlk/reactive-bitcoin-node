@@ -2,9 +2,7 @@ package io.github.yzernik.reactivebitcoinnode.node
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-
 import org.joda.time.DateTime
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -19,6 +17,7 @@ import io.github.yzernik.bitcoinscodec.messages.GetHeaders
 import io.github.yzernik.bitcoinscodec.messages.Headers
 import io.github.yzernik.bitcoinscodec.structures.Hash
 import io.github.yzernik.btcio.actors.BTC
+import io.github.yzernik.reactivebitcoinnode.blockchain.BlockchainController
 
 object BlockDownloader {
   def props(blockchainController: ActorRef, networkParameters: NetworkParameters) =
