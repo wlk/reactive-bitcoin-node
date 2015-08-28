@@ -1,15 +1,21 @@
-package io.github.yzernik.reactivebitcoinnode.node
+package io.github.yzernik.reactivebitcoinnode.network
 
 import java.net.InetAddress
 import java.net.InetSocketAddress
 
-import scala.annotation.migration
 import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 import scala.util.Random
 import scala.util.Try
 
+import PeerManager.AddNode
+import PeerManager.GetAddresses
+import PeerManager.GetNetworkTime
+import PeerManager.Initialize
+import PeerManager.NUM_CONNECTIONS
+import PeerManager.RelayMessage
+import PeerManager.UpdateConnections
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -17,12 +23,12 @@ import akka.actor.Props
 import akka.actor.Terminated
 import akka.actor.actorRef2Scala
 import akka.pattern.ask
-import akka.pattern.pipe
 import akka.util.Timeout
 import io.github.yzernik.bitcoinscodec.messages.Version
 import io.github.yzernik.bitcoinscodec.structures.Message
 import io.github.yzernik.btcio.actors.BTC
 import io.github.yzernik.btcio.actors.BTC.PeerInfo
+import io.github.yzernik.reactivebitcoinnode.node.NetworkParameters
 
 object PeerManager {
   def props(btc: ActorRef, blockDownloader: ActorRef, networkParameters: NetworkParameters) =
@@ -55,8 +61,8 @@ class PeerManager(btc: ActorRef, blockDownloader: ActorRef, networkParameters: N
   }
 
   def active(blockchainController: ActorRef): Receive = {
-    case cmd: Node.NetworkCommand =>
-      handleNetworkAPICommand(cmd)
+    //    case cmd: Node.NetworkCommand =>
+    //      handleNetworkAPICommand(cmd)
     case AddNode(addr, connect) =>
       addNode(addr, connect)
     case UpdateConnections =>
@@ -76,6 +82,7 @@ class PeerManager(btc: ActorRef, blockDownloader: ActorRef, networkParameters: N
   /**
    * Handle a network API command.
    */
+  /*
   private def handleNetworkAPICommand(cmd: Node.NetworkCommand) = {
     cmd match {
       case Node.GetPeerInfo =>
@@ -84,6 +91,8 @@ class PeerManager(btc: ActorRef, blockDownloader: ActorRef, networkParameters: N
         getPeerInfos.map(_.length).pipeTo(sender)
     }
   }
+  * 
+  */
 
   /**
    * Add a new network address, and potentially connect to it.

@@ -12,6 +12,8 @@ import akka.util.Timeout
 import io.github.yzernik.bitcoinscodec.structures.Hash
 import io.github.yzernik.btcio.actors.BTC
 import io.github.yzernik.reactivebitcoinnode.blockchain.BlockchainController
+import io.github.yzernik.reactivebitcoinnode.network.PeerManager
+import io.github.yzernik.reactivebitcoinnode.network.BlockDownloader
 
 object Node {
   def props(networkParameters: NetworkParameters) =

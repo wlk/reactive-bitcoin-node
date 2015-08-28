@@ -1,8 +1,12 @@
-package io.github.yzernik.reactivebitcoinnode.node
+package io.github.yzernik.reactivebitcoinnode.network
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
+
 import org.joda.time.DateTime
+
+import BlockDownloader.DownloadRequestTimeout
+import BlockDownloader.SyncWithPeer
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -18,6 +22,7 @@ import io.github.yzernik.bitcoinscodec.messages.Headers
 import io.github.yzernik.bitcoinscodec.structures.Hash
 import io.github.yzernik.btcio.actors.BTC
 import io.github.yzernik.reactivebitcoinnode.blockchain.BlockchainController
+import io.github.yzernik.reactivebitcoinnode.node.NetworkParameters
 
 object BlockDownloader {
   def props(blockchainController: ActorRef, networkParameters: NetworkParameters) =
