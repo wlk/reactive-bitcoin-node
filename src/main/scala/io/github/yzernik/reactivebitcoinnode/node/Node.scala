@@ -3,7 +3,6 @@ package io.github.yzernik.reactivebitcoinnode.node
 import scala.BigInt
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-
 import akka.actor.ActorSystem
 import akka.actor.actorRef2Scala
 import akka.io.IO
@@ -12,6 +11,8 @@ import io.github.yzernik.btcio.actors.BTC
 import io.github.yzernik.reactivebitcoinnode.blockchain.BlockchainModule
 import io.github.yzernik.reactivebitcoinnode.network.NetworkModule
 import io.github.yzernik.reactivebitcoinnode.network.PeerManager
+import io.github.yzernik.reactivebitcoinnode.blockchain.BlockchainController
+import io.github.yzernik.reactivebitcoinnode.network.BlockDownloader
 
 object Node {
   val services = BigInt(1L)
@@ -27,6 +28,10 @@ class Node(val networkParameters: NetworkParameters, implicit val system: ActorS
 
   val magic = networkParameters.packetMagic
   val btc = IO(new BTC(magic, Node.services, Node.userAgent))
+
+  val blockchainController = system.actorOf(BlockchainController.props(networkParameters, btc), name = "blockchainController")
+  val blockDownloader = system.actorOf(BlockDownloader.props(blockchainController, networkParameters), name = "blockDownloader")
+  val peerManager = system.actorOf(PeerManager.props(btc, blockDownloader, networkParameters), name = "peerManager")
 
   /**
    * Start the node on the network.

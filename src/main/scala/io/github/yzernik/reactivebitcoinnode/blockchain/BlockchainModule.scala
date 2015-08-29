@@ -16,15 +16,9 @@ import io.github.yzernik.reactivebitcoinnode.node.NetworkParameters
  */
 trait BlockchainModule {
 
-  def system: ActorSystem
-
-  def networkParameters: NetworkParameters
-
-  def btc: ActorRef
-
   implicit val timeout: Timeout
 
-  lazy val blockchainController = system.actorOf(BlockchainController.props(networkParameters, btc), name = "blockchainController")
+  def blockchainController: ActorRef
 
   def getBestBlockHash =
     (blockchainController ? BlockchainController.GetBestBlockHash).mapTo[Hash]

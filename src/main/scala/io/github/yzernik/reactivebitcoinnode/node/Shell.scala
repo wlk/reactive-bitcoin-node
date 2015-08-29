@@ -43,7 +43,7 @@ object Shell {
     val cmdpattern = """[\s]*([^\s]+)(.*)""".r
     input match {
       case cmdpattern("getpeerinfo", param) =>
-        awaitRPC(???).toString
+        awaitRPC(node.getPeerInfo).toString
       case cmdpattern("getconnectioncount", param) =>
         awaitRPC(node.getConnectionCount).toString
       case cmdpattern("getblockcount", param) =>

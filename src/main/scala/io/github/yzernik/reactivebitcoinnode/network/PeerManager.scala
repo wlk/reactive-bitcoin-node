@@ -103,22 +103,9 @@ class PeerManager(btc: ActorRef, blockDownloader: ActorRef, networkParameters: N
       relayMessage(msg, from)
     case GetConnectionCount =>
       getPeerInfos.map(_.length).pipeTo(sender)
+    case GetPeerInfo =>
+      getPeerInfos.pipeTo(sender)
   }
-
-  /**
-   * Handle a network API command.
-   */
-  /*
-  private def handleNetworkAPICommand(cmd: Node.NetworkCommand) = {
-    cmd match {
-      case Node.GetPeerInfo =>
-        getPeerInfos.pipeTo(sender)
-      case Node.GetConnectionCount =>
-        getPeerInfos.map(_.length).pipeTo(sender)
-    }
-  }
-  * 
-  */
 
   /**
    * Add a new network address, and potentially connect to it.

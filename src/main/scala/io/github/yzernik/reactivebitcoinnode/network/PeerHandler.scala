@@ -1,8 +1,5 @@
 package io.github.yzernik.reactivebitcoinnode.network
 
-import java.net.InetSocketAddress
-
-import scala.BigInt
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
@@ -13,7 +10,6 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.actor.actorRef2Scala
-import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout
 import io.github.yzernik.bitcoinscodec.messages.Addr
@@ -27,9 +23,9 @@ import io.github.yzernik.bitcoinscodec.messages.Ping
 import io.github.yzernik.bitcoinscodec.messages.Pong
 import io.github.yzernik.bitcoinscodec.structures.InvVect
 import io.github.yzernik.bitcoinscodec.structures.Message
-import io.github.yzernik.bitcoinscodec.structures.NetworkAddress
 import io.github.yzernik.btcio.actors.BTC
 import io.github.yzernik.reactivebitcoinnode.blockchain.BlockchainController
+import io.github.yzernik.reactivebitcoinnode.blockchain.BlockchainModule
 import io.github.yzernik.reactivebitcoinnode.node.NetworkParameters
 
 object PeerHandler {
@@ -40,8 +36,10 @@ object PeerHandler {
 
 }
 
-class PeerHandler(blockchainController: ActorRef, peerManager: ActorRef, blockDownloader: ActorRef, networkParameters: NetworkParameters)
-    extends Actor with ActorLogging {
+class PeerHandler(val blockchainController: ActorRef, val peerManager: ActorRef, blockDownloader: ActorRef, networkParameters: NetworkParameters)
+    extends Actor with ActorLogging
+    with BlockchainModule
+    with NetworkModule {
   import PeerHandler._
   import context.dispatcher
 
@@ -77,88 +75,40 @@ class PeerHandler(blockchainController: ActorRef, peerManager: ActorRef, blockDo
    */
   private def handleMsg(msg: Message, conn: ActorRef) = {
     msg match {
+
       case addr: Addr =>
-        handleAddr(addr)
+        addr.addrs.foreach {
+          case (_, addr) =>
+            addNode(addr.address, false)
+        }
+
       case headers: Headers =>
-        handleHeaders(headers, conn)
-      case getAddr: GetAddr =>
-        handleGetAddr(conn)
+        blockDownloader ! headers
+
+      case _: GetAddr =>
+        getAddr.map(BTC.Send).pipeTo(conn)
+
       case ping: Ping =>
-        handlePing(ping, conn)
+        conn ! BTC.Send(Pong(ping.nonce))
+
       case alert: Alert =>
-        handleAlert(alert, conn)
+        println(s"Alert: ${alert.comment}")
+        relayMessage(alert, conn)
+
       case inv: Inv =>
-        handleInv(inv, conn)
+        inv.invs.foreach { iv =>
+          if (iv.inv_type == InvVect.MSG_BLOCK) {
+            conn ! BTC.Send(GetData(List(iv)))
+          }
+        }
+        relayMessage(inv, conn) // TODO: validate before relaying Inv.
+
       case block: Block =>
-        handleBlock(block, conn)
+        blockchainController ! BlockchainController.ProposeNewBlock(block)
+
       case other =>
         log.info(s"Peer Handler received message: $other")
     }
   }
-
-  /**
-   * Handle an Addr message from a peer.
-   */
-  private def handleAddr(addr: Addr) =
-    addr.addrs.foreach { addr =>
-      val socketAddr = addr._2.address
-      peerManager ! PeerManager.AddNode(socketAddr, false)
-    }
-
-  /**
-   * Handle a Headers message.
-   */
-  private def handleHeaders(headers: Headers, conn: ActorRef) = {
-    blockDownloader ! headers
-  }
-
-  /**
-   * Handle a GetAddr message.
-   */
-  private def handleGetAddr(conn: ActorRef) = {
-    getAddr.map(BTC.Send).pipeTo(conn)
-  }
-
-  /**
-   * Get the Addr message to send to a peer.
-   */
-  private def getAddr =
-    for {
-      addrs <- (peerManager ? PeerManager.GetAddresses).mapTo[List[InetSocketAddress]]
-      t <- (peerManager ? PeerManager.GetNetworkTime).mapTo[Int]
-    } yield Addr(addrs.map { a => (t.toLong, NetworkAddress(BigInt(1), a)) })
-
-  /**
-   * Handle a Ping message.
-   */
-  private def handlePing(ping: Ping, conn: ActorRef) = {
-    conn ! BTC.Send(Pong(ping.nonce))
-  }
-
-  /**
-   * Handle an Alert message.
-   */
-  private def handleAlert(alert: Alert, conn: ActorRef) = {
-    println(s"Alert: ${alert.comment}")
-    peerManager ! PeerManager.RelayMessage(alert, conn)
-  }
-
-  /**
-   * Handle an Inv message.
-   */
-  private def handleInv(inv: Inv, conn: ActorRef) = {
-    inv.invs.foreach { iv =>
-      if (iv.inv_type == InvVect.MSG_BLOCK) {
-        conn ! BTC.Send(GetData(List(iv)))
-      }
-    }
-    peerManager ! PeerManager.RelayMessage(inv, conn) // TODO: validate before relaying Inv.
-  }
-
-  /**
-   * Handle a Block message.
-   */
-  private def handleBlock(block: Block, conn: ActorRef) =
-    blockchainController ! BlockchainController.ProposeNewBlock(block)
 
 }
