@@ -2,9 +2,7 @@ package io.github.yzernik.reactivebitcoinnode.network
 
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
-
 import org.joda.time.DateTime
-
 import BlockDownloader.DownloadRequestTimeout
 import BlockDownloader.SyncWithPeer
 import akka.actor.Actor
@@ -23,6 +21,7 @@ import io.github.yzernik.bitcoinscodec.structures.Hash
 import io.github.yzernik.btcio.actors.BTC
 import io.github.yzernik.reactivebitcoinnode.blockchain.BlockchainController
 import io.github.yzernik.reactivebitcoinnode.node.NetworkParameters
+import io.github.yzernik.reactivebitcoinnode.blockchain.BlockchainModule
 
 object BlockDownloader {
   def props(blockchainController: ActorRef, networkParameters: NetworkParameters) =
@@ -32,7 +31,8 @@ object BlockDownloader {
   case object DownloadRequestTimeout
 }
 
-class BlockDownloader(blockchainController: ActorRef, networkParameters: NetworkParameters) extends Actor with ActorLogging {
+class BlockDownloader(val blockchainController: ActorRef, networkParameters: NetworkParameters) extends Actor with ActorLogging
+    with BlockchainModule {
   import BlockDownloader._
   import context.dispatcher
   import context.system
@@ -78,8 +78,8 @@ class BlockDownloader(blockchainController: ActorRef, networkParameters: Network
    */
   private def handleHeaders(peer: ActorRef, headers: Headers) = {
     if (headers.invs.isEmpty) downloadPeers -= peer
-    headers.invs.foreach { h =>
-      blockchainController ! BlockchainController.ProposeNewBlock(h)
+    headers.invs.foreach {
+      proposeNewBlock
     }
   }
 
@@ -97,13 +97,7 @@ class BlockDownloader(blockchainController: ActorRef, networkParameters: Network
   }
 
   /**
-   * Get the block locator hashes.
-   */
-  private def getBlockLocator =
-    (blockchainController ? BlockchainController.GetBlockLocator)((5 seconds)).mapTo[List[Hash]]
-
-  /**
-   * Get the GetHeaders message.
+   * Get a GetHeaders message.
    */
   private def getGetHeaders =
     getBlockLocator.map { bl =>

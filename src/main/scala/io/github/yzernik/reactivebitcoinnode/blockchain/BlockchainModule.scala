@@ -32,4 +32,10 @@ trait BlockchainModule {
   def getBlockHash(index: Int) =
     (blockchainController ? BlockchainController.GetBlockHash(index)).mapTo[Hash]
 
+  def getBlockLocator =
+    (blockchainController ? BlockchainController.GetBlockLocator).mapTo[List[Hash]]
+
+  def proposeNewBlock(block: Block) =
+    blockchainController ! BlockchainController.ProposeNewBlock(block)
+
 }
