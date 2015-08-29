@@ -25,29 +25,29 @@ object Shell {
   /**
    * Repeatedly handle command line commands until the exit.
    */
-  def handleInputs(client: RPCClient): Unit = {
+  def handleInputs(node: Node): Unit = {
     var ok = true
     do {
       print("reactive-bitcoin-node>")
       val ln = scala.io.StdIn.readLine
       ok = ln != null && ln != "quit" && ln != "exit"
       if (ok && !ln.isEmpty())
-        println(evalCommand(client, ln))
+        println(evalCommand(node, ln))
     } while (ok)
   }
 
   /**
    * Evaluate a single command line command.
    */
-  def evalCommand(client: RPCClient, input: String): String = {
+  def evalCommand(node: Node, input: String): String = {
     val cmdpattern = """[\s]*([^\s]+)(.*)""".r
     input match {
       case cmdpattern("getpeerinfo", param) =>
-        awaitRPC(client.getPeerInfo).toString
+        awaitRPC(???).toString
       case cmdpattern("getconnectioncount", param) =>
-        awaitRPC(client.getConnectionCount).toString
+        awaitRPC(node.getConnectionCount).toString
       case cmdpattern("getblockcount", param) =>
-        awaitRPC(client.getBlockCount).toString
+        awaitRPC(node.getBlockCount).toString
       case _ =>
         s"command not found: $input"
     }
@@ -66,9 +66,8 @@ object Shell {
     try {
       nodeArgs.parse(args)
       println(s"Starting bitcoin node on network: ${nodeArgs.network}")
-      val node = sys.actorOf(Node.props(nodeArgs.getNetworkParams), name = "node")
-      val client = new RPCClient(node)
-      handleInputs(client)
+      val node = new Node(nodeArgs.getNetworkParams, sys)
+      handleInputs(node)
       println(s"Shutting down bitcoin node")
     } catch {
       case e: com.quantifind.sumac.FeedbackException =>
