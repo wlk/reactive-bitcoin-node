@@ -117,7 +117,7 @@ class PeerManager(btc: ActorRef, blockDownloader: ActorRef, networkParameters: N
 
   private def registerConnection(blockchainController: ActorRef, conn: ActorRef, v: Version, inbound: Boolean) = {
     context.watch(conn)
-    val handler = context.actorOf(PeerHandler.props(blockchainController, self, blockDownloader, networkParameters))
+    val handler = context.actorOf(PeerHandler.props(blockchainController, self, blockDownloader))
     handler ! PeerHandler.Initialize(conn, inbound)
     connections += conn -> v
   }

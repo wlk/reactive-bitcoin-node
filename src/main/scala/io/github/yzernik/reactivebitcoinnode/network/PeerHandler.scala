@@ -24,17 +24,16 @@ import io.github.yzernik.bitcoinscodec.structures.InvVect
 import io.github.yzernik.bitcoinscodec.structures.Message
 import io.github.yzernik.btcio.actors.BTC
 import io.github.yzernik.reactivebitcoinnode.blockchain.BlockchainModule
-import io.github.yzernik.reactivebitcoinnode.node.NetworkParameters
 
 object PeerHandler {
-  def props(blockchainController: ActorRef, peerManager: ActorRef, blockDownloader: ActorRef, networkParameters: NetworkParameters) =
-    Props(classOf[PeerHandler], blockchainController, peerManager, blockDownloader, networkParameters)
+  def props(blockchainController: ActorRef, peerManager: ActorRef, blockDownloader: ActorRef) =
+    Props(classOf[PeerHandler], blockchainController, peerManager, blockDownloader)
 
   case class Initialize(conn: ActorRef, inbound: Boolean)
 
 }
 
-class PeerHandler(val blockchainController: ActorRef, val peerManager: ActorRef, blockDownloader: ActorRef, networkParameters: NetworkParameters)
+class PeerHandler(val blockchainController: ActorRef, val peerManager: ActorRef, blockDownloader: ActorRef)
     extends Actor with ActorLogging
     with BlockchainModule
     with NetworkModule {
@@ -90,14 +89,12 @@ class PeerHandler(val blockchainController: ActorRef, val peerManager: ActorRef,
         sendMessage(Pong(ping.nonce), conn)
 
       case alert: Alert =>
-        println(s"Alert: ${alert.comment}")
         relayMessage(alert, conn)
 
       case inv: Inv =>
         inv.invs.foreach { iv =>
-          if (iv.inv_type == InvVect.MSG_BLOCK) {
+          if (iv.inv_type == InvVect.MSG_BLOCK)
             sendMessage(GetData(List(iv)), conn)
-          }
         }
         relayMessage(inv, conn) // TODO: validate before relaying Inv.
 

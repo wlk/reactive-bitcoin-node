@@ -44,3 +44,8 @@ class Node(val networkParameters: NetworkParameters, implicit val system: ActorS
   system.scheduler.schedule(0 seconds, 1 seconds, peerManager, PeerManager.UpdateConnections)
 
 }
+
+class MainNetNode(implicit override val system: ActorSystem)
+  extends Node(MainNetParams, system) 
+
+
