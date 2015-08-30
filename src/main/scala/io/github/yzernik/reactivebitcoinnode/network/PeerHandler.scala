@@ -10,7 +10,6 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.actor.actorRef2Scala
-import akka.pattern.pipe
 import akka.util.Timeout
 import io.github.yzernik.bitcoinscodec.messages.Addr
 import io.github.yzernik.bitcoinscodec.messages.Alert
@@ -24,7 +23,6 @@ import io.github.yzernik.bitcoinscodec.messages.Pong
 import io.github.yzernik.bitcoinscodec.structures.InvVect
 import io.github.yzernik.bitcoinscodec.structures.Message
 import io.github.yzernik.btcio.actors.BTC
-import io.github.yzernik.reactivebitcoinnode.blockchain.BlockchainController
 import io.github.yzernik.reactivebitcoinnode.blockchain.BlockchainModule
 import io.github.yzernik.reactivebitcoinnode.node.NetworkParameters
 
@@ -86,10 +84,10 @@ class PeerHandler(val blockchainController: ActorRef, val peerManager: ActorRef,
         blockDownloader ! headers
 
       case _: GetAddr =>
-        getAddr.map(BTC.Send).pipeTo(conn)
+        sendMessage(getAddr, conn)
 
       case ping: Ping =>
-        conn ! BTC.Send(Pong(ping.nonce))
+        sendMessage(Pong(ping.nonce), conn)
 
       case alert: Alert =>
         println(s"Alert: ${alert.comment}")
@@ -98,13 +96,13 @@ class PeerHandler(val blockchainController: ActorRef, val peerManager: ActorRef,
       case inv: Inv =>
         inv.invs.foreach { iv =>
           if (iv.inv_type == InvVect.MSG_BLOCK) {
-            conn ! BTC.Send(GetData(List(iv)))
+            sendMessage(GetData(List(iv)), conn)
           }
         }
         relayMessage(inv, conn) // TODO: validate before relaying Inv.
 
       case block: Block =>
-        blockchainController ! BlockchainController.ProposeNewBlock(block)
+        proposeNewBlock(block)
 
       case other =>
         log.info(s"Peer Handler received message: $other")

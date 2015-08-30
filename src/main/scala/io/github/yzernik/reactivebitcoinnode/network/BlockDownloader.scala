@@ -31,9 +31,9 @@ object BlockDownloader {
   case object DownloadRequestTimeout
 }
 
-class BlockDownloader(val blockchainController: ActorRef, networkParameters: NetworkParameters) extends Actor with ActorLogging
+class BlockDownloader(val blockchainController: ActorRef, networkParameters: NetworkParameters)
+    extends Actor with ActorLogging
     with BlockchainModule {
-  import BlockDownloader._
   import context.dispatcher
   import context.system
 
