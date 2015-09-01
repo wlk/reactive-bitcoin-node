@@ -3,6 +3,7 @@ package io.github.yzernik.reactivebitcoinnode.network
 import java.net.InetSocketAddress
 
 import scala.BigInt
+import scala.annotation.migration
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.language.postfixOps
@@ -13,9 +14,11 @@ import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.Timeout
 import io.github.yzernik.bitcoinscodec.messages.Addr
+import io.github.yzernik.bitcoinscodec.messages.Version
 import io.github.yzernik.bitcoinscodec.structures.Message
 import io.github.yzernik.bitcoinscodec.structures.NetworkAddress
 import io.github.yzernik.btcio.actors.BTC
+import io.github.yzernik.btcio.actors.BTC.PeerInfo
 
 /**
  * @author yzernik
@@ -28,21 +31,38 @@ trait NetworkModule {
 
   def peerManager: ActorRef
 
-  def getConnectionCount =
-    (peerManager ? PeerManager.GetConnectionCount).mapTo[Int]
+  private def getConnections(implicit executor: scala.concurrent.ExecutionContext) =
+    (peerManager ? PeerManager.GetConnections).mapTo[Map[ActorRef, Version]]
+
+  def getConnectionCount(implicit executor: scala.concurrent.ExecutionContext) =
+    getConnections.map(_.size)
 
   def addNode(socketAddr: InetSocketAddress, connect: Boolean) =
     peerManager ! PeerManager.AddNode(socketAddr, connect)
 
-  def getAddresses =
-    (peerManager ? PeerManager.GetAddresses).mapTo[List[InetSocketAddress]]
+  def getPeerInfos(implicit executor: scala.concurrent.ExecutionContext) =
+    for {
+      connections <- getConnections
+      infos <- Future.sequence {
+        connections.keys.map { ref =>
+          (ref ? BTC.GetPeerInfo).mapTo[PeerInfo]
+        }
+      }
+    } yield infos.toList
 
-  def getNetworkTime =
-    (peerManager ? PeerManager.GetNetworkTime).mapTo[Long]
+  def getAddresses(implicit executor: scala.concurrent.ExecutionContext) =
+    getConnections.map(_.values.toList.map { _.addr_recv.address })
 
-  /**
-   * Get the Addr message to send to a peer.
-   */
+  def getNetworkTime(implicit executor: scala.concurrent.ExecutionContext) =
+    getConnections
+      .map { c =>
+        if (c.isEmpty) 0
+        else {
+          val times = c.values.map(_.timestamp)
+          times.sum / times.size
+        }
+      }
+
   def getAddr(implicit executor: scala.concurrent.ExecutionContext) =
     for {
       addrs <- getAddresses
@@ -55,10 +75,12 @@ trait NetworkModule {
   def sendMessage(msg: Message, conn: ActorRef) =
     conn ! BTC.Send(msg)
 
-  def relayMessage(msg: Message, from: ActorRef) =
-    peerManager ! PeerManager.RelayMessage(msg, from)
-
-  def getPeerInfo =
-    (peerManager ? PeerManager.GetPeerInfo).mapTo[List[BTC.PeerInfo]]
+  def relayMessage(msg: Message, from: ActorRef)(implicit executor: scala.concurrent.ExecutionContext) =
+    getConnections.map { c =>
+      c.keys.filter(_ != from)
+        .foreach { peer =>
+          peer ! BTC.Send(msg)
+        }
+    }
 
 }

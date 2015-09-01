@@ -22,6 +22,8 @@ class NodeArgs extends FieldArgs {
 
 object Shell {
 
+  import scala.concurrent.ExecutionContext.Implicits.global
+
   /**
    * Repeatedly handle command line commands until the exit.
    */
@@ -43,7 +45,7 @@ object Shell {
     val cmdpattern = """[\s]*([^\s]+)(.*)""".r
     input match {
       case cmdpattern("getpeerinfo", param) =>
-        awaitRPC(node.getPeerInfo).toString
+        awaitRPC(node.getPeerInfos).toString
       case cmdpattern("getconnectioncount", param) =>
         awaitRPC(node.getConnectionCount).toString
       case cmdpattern("getblockcount", param) =>

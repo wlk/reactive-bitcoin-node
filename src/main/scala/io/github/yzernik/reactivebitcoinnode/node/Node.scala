@@ -31,12 +31,7 @@ class Node(val networkParameters: NetworkParameters, implicit val system: ActorS
 
   val blockchainController = system.actorOf(BlockchainController.props(networkParameters, btc), name = "blockchainController")
   val blockDownloader = system.actorOf(BlockDownloader.props(blockchainController, networkParameters), name = "blockDownloader")
-  val peerManager = system.actorOf(PeerManager.props(btc, blockDownloader, networkParameters), name = "peerManager")
-
-  /**
-   * Start the node on the network.
-   */
-  peerManager ! PeerManager.Initialize(blockchainController)
+  val peerManager = system.actorOf(PeerManager.props(blockchainController, btc, blockDownloader, networkParameters), name = "peerManager")
 
   /**
    * Keep the peer manager periodically refreshed.

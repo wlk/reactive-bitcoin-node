@@ -3,18 +3,14 @@ package io.github.yzernik.reactivebitcoinnode.network
 import java.net.InetAddress
 import java.net.InetSocketAddress
 
-import scala.concurrent.Future
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 import scala.util.Random
 import scala.util.Try
 
 import PeerManager.AddNode
-import PeerManager.GetAddresses
-import PeerManager.GetNetworkTime
-import PeerManager.Initialize
+import PeerManager.GetConnections
 import PeerManager.NUM_CONNECTIONS
-import PeerManager.RelayMessage
 import PeerManager.UpdateConnections
 import akka.actor.Actor
 import akka.actor.ActorLogging
@@ -22,56 +18,25 @@ import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.Terminated
 import akka.actor.actorRef2Scala
-import akka.pattern.ask
 import akka.util.Timeout
 import io.github.yzernik.bitcoinscodec.messages.Version
-import io.github.yzernik.bitcoinscodec.structures.Message
 import io.github.yzernik.btcio.actors.BTC
-import io.github.yzernik.btcio.actors.BTC.PeerInfo
 import io.github.yzernik.reactivebitcoinnode.node.NetworkParameters
 
-import java.net.InetAddress
-import java.net.InetSocketAddress
-
-import scala.annotation.migration
-import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
-import scala.language.postfixOps
-import scala.util.Random
-import scala.util.Try
-
-import akka.actor.Actor
-import akka.actor.ActorLogging
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.actor.Terminated
-import akka.actor.actorRef2Scala
-import akka.pattern.ask
-import akka.pattern.pipe
-import akka.util.Timeout
-import io.github.yzernik.bitcoinscodec.messages.Version
-import io.github.yzernik.bitcoinscodec.structures.Message
-import io.github.yzernik.btcio.actors.BTC
-import io.github.yzernik.btcio.actors.BTC.PeerInfo
-
 object PeerManager {
-  def props(btc: ActorRef, blockDownloader: ActorRef, networkParameters: NetworkParameters) =
-    Props(classOf[PeerManager], btc, blockDownloader, networkParameters)
+  def props(blockchainController: ActorRef, btc: ActorRef, blockDownloader: ActorRef, networkParameters: NetworkParameters) =
+    Props(classOf[PeerManager], blockchainController, btc, blockDownloader, networkParameters)
 
-  case class Initialize(blockchainController: ActorRef)
   case object UpdateConnections
   case class AddNode(addr: InetSocketAddress, connect: Boolean)
-  case object GetNetworkTime
-  case object GetAddresses
-  case class RelayMessage(msg: Message, from: ActorRef)
-  case object GetConnectionCount
-  case object GetPeerInfo
+  case object GetConnections
 
   val NUM_CONNECTIONS = 10
 
 }
 
-class PeerManager(btc: ActorRef, blockDownloader: ActorRef, networkParameters: NetworkParameters) extends Actor with ActorLogging {
+class PeerManager(blockchainController: ActorRef, btc: ActorRef, blockDownloader: ActorRef,
+                  networkParameters: NetworkParameters) extends Actor with ActorLogging {
   import context.system
   import context.dispatcher
   import PeerManager._
@@ -82,11 +47,6 @@ class PeerManager(btc: ActorRef, blockDownloader: ActorRef, networkParameters: N
   var connections: Map[ActorRef, Version] = Map.empty
 
   def receive = {
-    case Initialize(blockchainController) =>
-      context.become(active(blockchainController))
-  }
-
-  def active(blockchainController: ActorRef): Receive = {
     case AddNode(addr, connect) =>
       addNode(addr, connect)
     case UpdateConnections =>
@@ -95,16 +55,8 @@ class PeerManager(btc: ActorRef, blockDownloader: ActorRef, networkParameters: N
       registerConnection(blockchainController, sender, version, inbound)
     case Terminated(ref) =>
       connections -= ref
-    case GetNetworkTime =>
-      sender ! getAverageNetworkTime
-    case GetAddresses =>
-      sender ! addresses.toList
-    case RelayMessage(msg, from) =>
-      relayMessage(msg, from)
-    case GetConnectionCount =>
-      getPeerInfos.map(_.length).pipeTo(sender)
-    case GetPeerInfo =>
-      getPeerInfos.pipeTo(sender)
+    case GetConnections =>
+      sender ! connections
   }
 
   /**
@@ -139,26 +91,6 @@ class PeerManager(btc: ActorRef, blockDownloader: ActorRef, networkParameters: N
       }
 
   /**
-   * Get the average network time of the connected peers.
-   */
-  private def getAverageNetworkTime =
-    if (connections.isEmpty) 0
-    else {
-      val times = connections.values.map(_.timestamp)
-      times.sum / times.size
-    }
-
-  /**
-   * Get the peer info from each of the connected peers.
-   */
-  private def getPeerInfos = {
-    val fInfos = connections.keys.map { ref =>
-      (ref ? BTC.GetPeerInfo).mapTo[PeerInfo]
-    }
-    Future.sequence(fInfos.toList)
-  }
-
-  /**
    * Get the list of DNS seed addresses.
    */
   private def getSeedAddresses(seeds: List[String], port: Int) =
@@ -166,13 +98,5 @@ class PeerManager(btc: ActorRef, blockDownloader: ActorRef, networkParameters: N
       fallback <- seeds
       address <- Try(InetAddress.getAllByName(fallback)).getOrElse(Array())
     } yield new InetSocketAddress(address, port)
-
-  /**
-   * Relay a message from a peer to the other peers.
-   */
-  private def relayMessage(msg: Message, conn: ActorRef) =
-    for { (c, _) <- connections } {
-      if (conn != c) c ! BTC.Send(msg)
-    }
 
 }
