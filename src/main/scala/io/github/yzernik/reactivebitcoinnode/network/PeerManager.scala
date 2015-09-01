@@ -44,7 +44,7 @@ class PeerManager(blockchainController: ActorRef, btc: ActorRef, blockDownloader
   implicit val timeout = Timeout(10 seconds)
 
   var addresses: Set[InetSocketAddress] = getSeedAddresses(networkParameters.dnsSeeds, networkParameters.port).toSet
-  var connections: Map[ActorRef, Version] = Map.empty
+  var connections: Set[ActorRef] = Set.empty
 
   def receive = {
     case AddNode(addr, connect) =>
@@ -52,7 +52,7 @@ class PeerManager(blockchainController: ActorRef, btc: ActorRef, blockDownloader
     case UpdateConnections =>
       updateConnections
     case BTC.Connected(version, event, inbound) =>
-      registerConnection(blockchainController, sender, version, inbound)
+      registerConnection(blockchainController, sender, inbound)
     case Terminated(ref) =>
       connections -= ref
     case GetConnections =>
@@ -67,11 +67,11 @@ class PeerManager(blockchainController: ActorRef, btc: ActorRef, blockDownloader
     if (connect) btc ! BTC.Connect(addr)
   }
 
-  private def registerConnection(blockchainController: ActorRef, conn: ActorRef, v: Version, inbound: Boolean) = {
+  private def registerConnection(blockchainController: ActorRef, conn: ActorRef, inbound: Boolean) = {
     context.watch(conn)
     val handler = context.actorOf(PeerHandler.props(blockchainController, self, blockDownloader))
     handler ! PeerHandler.Initialize(conn, inbound)
-    connections += conn -> v
+    connections += conn
   }
 
   /**

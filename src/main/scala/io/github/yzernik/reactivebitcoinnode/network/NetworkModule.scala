@@ -32,7 +32,7 @@ trait NetworkModule {
   def peerManager: ActorRef
 
   private def getConnections(implicit executor: scala.concurrent.ExecutionContext) =
-    (peerManager ? PeerManager.GetConnections).mapTo[Map[ActorRef, Version]]
+    (peerManager ? PeerManager.GetConnections).mapTo[Set[ActorRef]]
 
   def getConnectionCount(implicit executor: scala.concurrent.ExecutionContext) =
     getConnections.map(_.size)
@@ -44,23 +44,20 @@ trait NetworkModule {
     for {
       connections <- getConnections
       infos <- Future.sequence {
-        connections.keys.map { ref =>
+        connections.toList.map { ref =>
           (ref ? BTC.GetPeerInfo).mapTo[PeerInfo]
         }
       }
-    } yield infos.toList
+    } yield infos
 
   def getAddresses(implicit executor: scala.concurrent.ExecutionContext) =
-    getConnections.map(_.values.toList.map { _.addr_recv.address })
+    for {
+      peer <- getPeerInfos
+    } yield peer.map(_.addr)
 
   def getNetworkTime(implicit executor: scala.concurrent.ExecutionContext) =
     getConnections
-      .map { c =>
-        if (c.isEmpty) 0
-        else {
-          val times = c.values.map(_.timestamp)
-          times.sum / times.size
-        }
+      .map { c => 0
       }
 
   def getAddr(implicit executor: scala.concurrent.ExecutionContext) =
@@ -77,7 +74,7 @@ trait NetworkModule {
 
   def relayMessage(msg: Message, from: ActorRef)(implicit executor: scala.concurrent.ExecutionContext) =
     getConnections.map { c =>
-      c.keys.filter(_ != from)
+      c.filter(_ != from)
         .foreach { peer =>
           peer ! BTC.Send(msg)
         }

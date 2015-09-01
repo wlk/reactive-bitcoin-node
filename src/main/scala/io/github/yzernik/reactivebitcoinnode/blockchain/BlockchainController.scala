@@ -37,7 +37,6 @@ class BlockchainController(networkParameters: NetworkParameters, btc: ActorRef)
     case ProposeNewBlock(block) =>
       val (a, b) = blockchain.proposeNewBlock(block)
       btc ! BTC.UpdateHeight(blockchain.getCurrentHeight)
-    //log.info(s"Current height: ${blockchain.getCurrentHeight}, hash: ${blockchain.tip}")
     case GetBlockCount =>
       sender ! blockchain.getCurrentHeight
   }
