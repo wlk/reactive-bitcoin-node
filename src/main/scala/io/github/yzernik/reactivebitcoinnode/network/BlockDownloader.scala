@@ -21,23 +21,26 @@ import io.github.yzernik.bitcoinscodec.structures.Hash
 import io.github.yzernik.btcio.actors.BTC
 import io.github.yzernik.reactivebitcoinnode.blockchain.BlockchainController
 import io.github.yzernik.reactivebitcoinnode.node.NetworkParameters
-import io.github.yzernik.reactivebitcoinnode.blockchain.BlockchainModule
+import io.github.yzernik.reactivebitcoinnode.blockchain.SPVBlockchainAccess
 
 object BlockDownloader {
-  def props(blockchainController: ActorRef, networkParameters: NetworkParameters) =
+  def props(blockchainController: ActorRef,
+            networkParameters: NetworkParameters) =
     Props(classOf[BlockDownloader], blockchainController, networkParameters)
 
   case class SyncWithPeer(conn: ActorRef)
   case object DownloadRequestTimeout
 }
 
-class BlockDownloader(val blockchainController: ActorRef, networkParameters: NetworkParameters)
-    extends Actor with ActorLogging
-    with BlockchainModule {
+class BlockDownloader(blockchainController: ActorRef,
+                      networkParameters: NetworkParameters)
+    extends Actor with ActorLogging {
   import context.dispatcher
   import context.system
 
   implicit val timeout = Timeout(10 seconds)
+
+  val bc = new SPVBlockchainAccess(blockchainController)
 
   /**
    * Map of all the unfinished download peers to their last response time.
@@ -79,7 +82,7 @@ class BlockDownloader(val blockchainController: ActorRef, networkParameters: Net
   private def handleHeaders(peer: ActorRef, headers: Headers) = {
     if (headers.invs.isEmpty) downloadPeers -= peer
     headers.invs.foreach {
-      proposeNewBlock
+      bc.proposeNewBlock
     }
   }
 
@@ -100,7 +103,7 @@ class BlockDownloader(val blockchainController: ActorRef, networkParameters: Net
    * Get a GetHeaders message.
    */
   private def getGetHeaders =
-    getBlockLocator.map { bl =>
+    bc.getBlockLocator.map { bl =>
       GetHeaders(networkParameters.PROTOCOL_VERSION, bl, Hash.NULL)
     }
 

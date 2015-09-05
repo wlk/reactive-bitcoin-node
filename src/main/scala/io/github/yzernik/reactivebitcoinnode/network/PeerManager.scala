@@ -24,7 +24,10 @@ import io.github.yzernik.btcio.actors.BTC
 import io.github.yzernik.reactivebitcoinnode.node.NetworkParameters
 
 object PeerManager {
-  def props(blockchainController: ActorRef, btc: ActorRef, blockDownloader: ActorRef, networkParameters: NetworkParameters) =
+  def props(blockchainController: ActorRef,
+            btc: ActorRef,
+            blockDownloader: ActorRef,
+            networkParameters: NetworkParameters) =
     Props(classOf[PeerManager], blockchainController, btc, blockDownloader, networkParameters)
 
   case object UpdateConnections
@@ -35,7 +38,9 @@ object PeerManager {
 
 }
 
-class PeerManager(blockchainController: ActorRef, btc: ActorRef, blockDownloader: ActorRef,
+class PeerManager(blockchainController: ActorRef,
+                  btc: ActorRef,
+                  blockDownloader: ActorRef,
                   networkParameters: NetworkParameters) extends Actor with ActorLogging {
   import context.system
   import context.dispatcher
@@ -69,7 +74,7 @@ class PeerManager(blockchainController: ActorRef, btc: ActorRef, blockDownloader
 
   private def registerConnection(blockchainController: ActorRef, conn: ActorRef, inbound: Boolean) = {
     context.watch(conn)
-    val handler = context.actorOf(PeerHandler.props(blockchainController, self, blockDownloader))
+    val handler = context.actorOf(PeerHandler.props(blockchainController, self, blockDownloader, networkParameters))
     handler ! PeerHandler.Initialize(conn, inbound)
     connections += conn
   }
