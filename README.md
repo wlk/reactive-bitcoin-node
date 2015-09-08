@@ -42,7 +42,8 @@ to get information about the current state of the blockchain.
 or
 
 ```
-scala> val peers: Future[List[io.github.yzernik.btcio.actors.BTC.PeerInfo]] = node.getPeerInfo
+scala> import io.github.yzernik.btcio.actors.BTC._
+scala> val peers: Future[List[PeerInfo]] = node.getPeerInfo
 ```
 
 to get info about the currently connected peers.
