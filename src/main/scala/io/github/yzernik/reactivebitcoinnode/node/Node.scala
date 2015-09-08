@@ -21,7 +21,7 @@ object Node {
   val userAgent = "reactive-btc"
 }
 
-class Node(networkParameters: NetworkParameters, implicit val system: ActorSystem) {
+class Node(networkParameters: NetworkParameters = MainNetParams)(implicit val system: ActorSystem) {
   import system.dispatcher
 
   implicit val timeout = Timeout(5 seconds)
@@ -44,14 +44,11 @@ class Node(networkParameters: NetworkParameters, implicit val system: ActorSyste
   def getBlockCount: Future[Int] =
     bc.getBlockchain.map(_.getCurrentHeight)
 
-  def getPeerInfos: Future[List[BTC.PeerInfo]] =
+  def getPeerInfo: Future[List[BTC.PeerInfo]] =
     na.getPeerInfos
 
   def getConnectionCount: Future[Int] =
     na.getConnections.map(_.size)
 }
-
-class MainNetNode(implicit override val system: ActorSystem)
-  extends Node(MainNetParams, system) 
 
 

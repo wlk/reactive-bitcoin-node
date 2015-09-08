@@ -9,41 +9,43 @@ Some of the API commands of the [original Bitcoin client](https://en.bitcoin.it/
 
 The bitcoin node can be used in Java or Scala, or run through the command-line interface.
 
-## RPC shell
+## Usage
 
-Install sbt and run
-
-```
-sbt run
-```
-
-Optionally specify mainnet or testnet with the network option
+Create an instance of Bitcoin Node object with an actor system.
 
 ```
-sbt "run --network test"
+scala> import io.github.yzernik.reactivebitcoinnode.node._
+scala> import akka.actor.ActorSystem
+scala> implicit val sys = ActorSystem("sys")
+scala> val node = new Node()
 ```
 
+Optionally specify which network parameters to use.
+
 ```
-sbt "run --network main"
+scala> val node = new Node(TestNet3Params)
 ```
 
 ### Commands
 
-RPC commands can be entered in the shell.
+API commands are available as asynchronous methods on the node object.
 
 For example,
 
 ```
-reactive-bitcoin-node> getconnectioncount
-10
+scala> import scala.concurrent.Future
+scala> val count: Future[Int] = node.getBlockCount
 ```
+
+to get information about the current state of the blockchain.
 
 or
 
 ```
-reactive-bitcoin-node> getblockhash 73546
-000000000099ae23ec45ae651c5fa6cdc3505e20e5daf6a3c33b65e05311839c
+scala> val peers: Future[List[io.github.yzernik.btcio.actors.BTC.PeerInfo]] = node.getPeerInfo
 ```
+
+to get info about the currently connected peers.
 
 etc.
 

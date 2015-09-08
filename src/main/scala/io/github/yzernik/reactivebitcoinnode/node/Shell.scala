@@ -45,7 +45,7 @@ object Shell {
     val cmdpattern = """[\s]*([^\s]+)(.*)""".r
     input match {
       case cmdpattern("getpeerinfo", param) =>
-        awaitRPC(node.getPeerInfos).toString
+        awaitRPC(node.getPeerInfo).toString
       case cmdpattern("getconnectioncount", param) =>
         awaitRPC(node.getConnectionCount).toString
       case cmdpattern("getblockcount", param) =>
@@ -62,13 +62,13 @@ object Shell {
     Await.result(r, 10 seconds)
 
   def main(args: Array[String]) {
-    val sys = ActorSystem("shellsys")
+    implicit val sys = ActorSystem("shellsys")
     val nodeArgs = new NodeArgs
 
     try {
       nodeArgs.parse(args)
       println(s"Starting bitcoin node on network: ${nodeArgs.network}")
-      val node = new Node(nodeArgs.getNetworkParams, sys)
+      val node = new Node(nodeArgs.getNetworkParams)
       handleInputs(node)
       println(s"Shutting down bitcoin node")
     } catch {
