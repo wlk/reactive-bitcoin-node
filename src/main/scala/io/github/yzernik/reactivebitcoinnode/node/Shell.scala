@@ -34,24 +34,27 @@ object Shell {
       val ln = scala.io.StdIn.readLine
       ok = ln != null && ln != "quit" && ln != "exit"
       if (ok && !ln.isEmpty())
-        println(evalCommand(node, ln))
+        evalCommand(node, ln)
     } while (ok)
   }
 
   /**
    * Evaluate a single command line command.
    */
-  def evalCommand(node: Node, input: String): String = {
+  def evalCommand(node: Node, input: String): Unit = {
     val cmdpattern = """[\s]*([^\s]+)(.*)""".r
     input match {
       case cmdpattern("getpeerinfo", param) =>
-        awaitRPC(node.getPeerInfo).toString
+        val peers = awaitRPC(node.getPeerInfo)
+        for (peer <- peers) println(peer)
       case cmdpattern("getconnectioncount", param) =>
-        awaitRPC(node.getConnectionCount).toString
+        val count = awaitRPC(node.getConnectionCount)
+        println(count)
       case cmdpattern("getblockcount", param) =>
-        awaitRPC(node.getBlockCount).toString
+        val count = awaitRPC(node.getBlockCount)
+        println(count)
       case _ =>
-        s"command not found: $input"
+        println(s"command not found: $input")
     }
   }
 
